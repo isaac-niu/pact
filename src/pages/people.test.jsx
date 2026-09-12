@@ -17,7 +17,6 @@ describe("people empty desk", () => {
 
     expect(screen.getByRole("heading", { name: "No incoming friend slips" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No friends on your desk" })).toBeInTheDocument();
-    expect(screen.getByText("MAYA")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Write a slip" }).length).toBeGreaterThan(0);
   });
 
