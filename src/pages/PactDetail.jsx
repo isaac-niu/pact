@@ -9,6 +9,7 @@ import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
 import RailBook from "../components/RailBook.jsx";
+import TicketShare from "../components/TicketShare.jsx";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -33,7 +34,6 @@ export default function PactDetail() {
   const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, flagAppeal, bankOf } = usePact();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [localPreview, setLocalPreview] = useState("");
   const [gradeReason, setGradeReason] = useState("");
@@ -129,18 +129,6 @@ export default function PactDetail() {
     e.target.value = "";
   }
 
-  async function copyShare() {
-    const line = winner
-      ? `PACT SETTLED · ${winner.handle} takes ${sol(pot)} SOL · ${pact.title}`
-      : `PACT · ${creator.handle} vs ${opponent.handle} · ${pact.title}`;
-    try {
-      await navigator.clipboard.writeText(line);
-      setCopied("copied");
-    } catch {
-      setCopied(line);
-    }
-  }
-
   return (
     <div>
       <div className="page-head">
@@ -199,6 +187,7 @@ export default function PactDetail() {
       </article>
 
       {pactVisibility(pact) === "public" ? <RailBook pact={pact} /> : null}
+      <TicketShare pact={pact} />
 
       <div className="detail-grid">
         <div className="card">
@@ -315,10 +304,6 @@ export default function PactDetail() {
                     {winner.handle} takes the pot · {sol(pot)} SOL
                   </div>
                   <Announcer pact={pact} winnerHandle={winner.handle} />
-                  <button className="btn btn-ghost" type="button" onClick={copyShare}>
-                    {copied === "copied" ? "Copied the post" : "Share the ticket"}
-                  </button>
-                  {copied && copied !== "copied" ? <p className="hint">{copied}</p> : null}
                 </>
               ) : null}
             </div>
