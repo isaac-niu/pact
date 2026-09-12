@@ -4,6 +4,7 @@ import { sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
 import { pactsOnTape } from "../lib/visibility.js";
 import { useOnboarding } from "../components/OnboardingWalkthrough.jsx";
+import InstallDesk from "../components/InstallDesk.jsx";
 
 const STEPS = [
   { n: "01", label: "Say it" },
@@ -64,6 +65,7 @@ export default function Home() {
             Walk the desk
           </button>
         ) : null}
+        <InstallDesk />
       </div>
 
       <div className="hero-board">

@@ -7,6 +7,7 @@ import AuthGate from "./auth/AuthGate.jsx";
 import { PactProvider } from "./store.jsx";
 import { WalletProvider } from "./wallet/WalletProvider.jsx";
 import { boot } from "./api/pact.js";
+import { registerServiceWorker } from "./lib/pwa.js";
 import "./index.css";
 
 if (!globalThis.Buffer) globalThis.Buffer = Buffer;
@@ -27,3 +28,4 @@ root.render(
 );
 
 boot().catch(() => {});
+registerServiceWorker().catch(() => {});
