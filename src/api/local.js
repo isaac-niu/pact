@@ -1,6 +1,7 @@
 import { STARTING_BANK, normalizeDeskActor, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
+import { ONBOARDING_KEY } from "../lib/onboarding.js";
 import {
   acceptedNotice,
   markAllNoticesRead,
@@ -256,6 +257,12 @@ export function switchUser(id) {
 
 export function resetDesk() {
   persist(emptyDemoState());
+  // A wiped desk is a first visit again — replay SAMPLE vs real slip.
+  try {
+    localStorage.removeItem(ONBOARDING_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 function readFileAsDataUrl(file) {

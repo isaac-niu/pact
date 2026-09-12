@@ -3,6 +3,7 @@ import { usePact } from "../store.jsx";
 import { sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
 import { pactsOnTape } from "../lib/visibility.js";
+import { useOnboarding } from "../components/OnboardingWalkthrough.jsx";
 
 const STEPS = [
   { n: "01", label: "Say it" },
@@ -13,6 +14,7 @@ const STEPS = [
 
 export default function Home() {
   const { pacts, events, userId } = usePact();
+  const tour = useOnboarding();
   const publicBoard = pactsOnTape(pacts, "public", userId);
   const live = publicBoard.filter((p) => p.status !== "resolved").length;
   const publicMarks = events.filter((e) => publicBoard.some((p) => p.id === e.pactId));
@@ -57,10 +59,18 @@ export default function Home() {
         <Link className="btn btn-ghost" to="/board">
           Check the board
         </Link>
+        {tour && !tour.active ? (
+          <button className="btn btn-ghost" type="button" onClick={tour.start}>
+            Walk the desk
+          </button>
+        ) : null}
       </div>
 
       <div className="hero-board">
-        <article className="ticket ticket-hero">
+        <article
+          className={`ticket ticket-hero${tour?.active ? " is-tour" : ""}`}
+          data-tour="sample-ticket"
+        >
           <div className="ticket-edge" aria-hidden="true" />
           <header className="ticket-head">
             <span>Official slip</span>

@@ -17,6 +17,7 @@ import Crew from "./pages/Crew.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
 import Board from "./pages/Board.jsx";
 import { WalletRail } from "./components/WalletRail.jsx";
+import { OnboardingCoach, OnboardingProvider } from "./components/OnboardingWalkthrough.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -119,6 +120,7 @@ function Shell({ children }) {
   const { backend, unreadNotices } = usePact();
   const tapeLabel = unreadNotices > 0 ? `Tape, ${unreadNotices} unread` : "Tape";
   return (
+    <OnboardingProvider>
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
@@ -152,8 +154,10 @@ function Shell({ children }) {
           <AccountControl />
         </div>
       </header>
+      <OnboardingCoach />
       {children}
     </div>
+    </OnboardingProvider>
   );
 }
 

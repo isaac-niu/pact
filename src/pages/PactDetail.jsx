@@ -227,7 +227,7 @@ export default function PactDetail() {
         </div>
       </div>
 
-      <article className="ticket ticket-detail">
+      <article className="ticket ticket-detail" data-tour="live-ticket">
         <div className="ticket-edge" aria-hidden="true" />
         <header className="ticket-head">
           <span>1v1 desk · {pactVisibility(pact)} tape</span>

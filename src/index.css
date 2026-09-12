@@ -325,6 +325,28 @@ h2 {
   cursor: not-allowed;
 }
 
+.tour-coach {
+  border: 1px solid var(--lime-dim);
+  background: var(--panel);
+  padding: 16px 18px 18px;
+  margin: 0 0 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.tour-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ticket-hero.is-tour {
+  outline: 1px dashed var(--lime);
+  outline-offset: 4px;
+}
+
 .hero-board {
   display: grid;
   grid-template-columns: 1.4fr 0.6fr;
