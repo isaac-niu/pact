@@ -46,9 +46,9 @@ Switcher → **Friend**. Click **Accept · 2.00 SOL**. Pot shows **4.00 SOL**.
 
 Switcher → **You**. Upload any photo (gym selfie preferred; a cat still demos the loop). Click **Send to referee**.
 
-**If Gemini is wired (Person C):** the verdict is real vision output `{pass, confidence, rationale}`.
+**If Gemini is wired:** the verdict is real vision output `{pass, confidence, rationale}` from Flash (`gemini-3.6-flash`).
 
-**If Gemini is not wired (current POC):** a mocked referee still returns pass/fail + rationale in ~1.4s. **Say:** “Tonight the desk is a local referee. Same ticket — tomorrow this is Gemini Flash on the photo plus the written goal.”
+**If Gemini falls back to mock:** filename bands still demo the loop — `gym.jpg` auto-pass, `cat.jpg` auto-fail, `blur.jpg` friend-verify. **Say:** “Same ticket either way — photo plus the written goal.”
 
 Do **not** apologize at length. Show the verdict card.
 

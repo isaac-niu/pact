@@ -57,7 +57,7 @@ Pages import only this module. Local mock is the default. If `/api/config` says 
 | `submitEvidence(pactId, file, { actorId })` | Photo → Gemini or mock referee → payout or friend-verify |
 | `verifyPact(pactId, { pass }, { actorId })` | Friend-verify fallback when Gemini is unsure |
 
-`src/api/referee.js` remains the in-browser mock. Server Gemini lives in `server/gemini.js`.
+`src/api/referee.js` remains the in-browser mock (gym.jpg pass, cat.jpg fail, blur.jpg review). Server Gemini lives in `server/gemini.js` (`gemini-3.6-flash`).
 
 ## Scripts
 
