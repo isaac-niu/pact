@@ -14,6 +14,7 @@ export async function api(path, { token, method = "GET", body } = {}) {
   return result;
 }
 
+/** One probe. Retries and stop conditions live in src/lib/pollHygiene.js. */
 export async function fetchHealth() {
   for (const path of ["/api/auth/health", "/api/health"]) {
     try {

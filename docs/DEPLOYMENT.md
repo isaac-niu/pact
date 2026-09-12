@@ -139,6 +139,8 @@ Vite proxies `/api` to `:3000`. Without the server, the UI still works; announce
 
 ## Health
 
+Browser and desk poll hygiene (backoff, hidden-tab pause, stop after misses) is in [HEALTH.md](./HEALTH.md).
+
 `GET /api/health` returns booleans only:
 
 ```json

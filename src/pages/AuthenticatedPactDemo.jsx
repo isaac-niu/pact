@@ -1,6 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, fetchHealth } from "../api.js";
+import { startHealthWatch } from "../lib/pollHygiene.js";
 import { CreateGroupForm, FriendsList, GroupList, JoinCodeForm } from "../components/SocialForms.jsx";
 import { AUTH0_CALLBACK_URL, AUTH0_LOGOUT_URL, clientEnvReady, env } from "../env.js";
 import { createSocialActions } from "../lib/socialActions.js";
@@ -615,13 +616,10 @@ export default function AuthenticatedPactDemo() {
   const [health, setHealth] = useState(null);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchHealth().then((body) => {
-      if (!cancelled) setHealth(body);
+    return startHealthWatch({
+      fetchHealth,
+      setHealth,
     });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   if (!health) {
@@ -640,6 +638,11 @@ export default function AuthenticatedPactDemo() {
         <p>
           Start the backend with <code>npm run server</code> (live Auth0 + Atlas) or{" "}
           <code>PACT_MOCK_AUTH=1 npm run server</code> for ISAAC/MAYA.
+        </p>
+        <p className="hint">
+          {health.stopped
+            ? "Stopped checking — refresh to try again. The desk will not hammer /api/health."
+            : "Checking again with backoff. Hidden tabs pause. Five misses and this desk stops."}
         </p>
       </section>
     );
