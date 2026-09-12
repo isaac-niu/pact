@@ -153,6 +153,7 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
       return group ? clone(group) : null;
     },
     async saveGroup(group) { groups.set(group.id, clone(group)); return clone(group); },
+    async deleteGroup(id) { groups.delete(id); return { deleted: true, id }; },
 
     async getPact(id) {
       const pact = pacts.get(id);

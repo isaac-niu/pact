@@ -64,6 +64,9 @@ describe("AuthenticatedPactDemo", () => {
       if (path === "/api/pacts" && (!options.method || options.method === "GET")) return [];
       if (path === "/api/ledger") return { balanceLamports: 10_000_000_000, transactions: [] };
       if (path === "/api/users") return people;
+      if (path.startsWith("/api/groups/directory")) {
+        return groups.filter((group) => group.discoverable && !group.archivedAt);
+      }
       if (path === "/api/groups" && (!options.method || options.method === "GET")) return groups;
       if (path === "/api/groups" && options.method === "POST") {
         const created = {

@@ -43,6 +43,10 @@ function PactDesk({
   onJoinGroup,
   onJoinWithCode,
   onApprove,
+  onRemove,
+  onTransfer,
+  onArchive,
+  onDelete,
   onAddFriend,
   onAcceptFriend,
   incomingFriends = [],
@@ -201,8 +205,13 @@ function PactDesk({
           <GroupList
             groups={groups}
             userId={userId}
+            people={users}
             onJoin={onJoinGroup}
             onApprove={onApprove}
+            onRemove={onRemove}
+            onTransfer={onTransfer}
+            onArchive={onArchive}
+            onDelete={onDelete}
             busy={busy}
           />
         </div>
@@ -358,6 +367,10 @@ function MockPactDesk() {
       onJoinGroup={social.joinGroup}
       onJoinWithCode={social.joinWithCode}
       onApprove={social.approveMember}
+      onRemove={social.removeMember}
+      onTransfer={social.transferOwnership}
+      onArchive={social.archiveGroup}
+      onDelete={social.deleteGroup}
       onAddFriend={social.addFriend}
       onAcceptFriend={social.acceptFriend}
       busy={busy}
@@ -546,6 +559,10 @@ function LivePactDesk() {
       onJoinGroup={socialActions.joinGroup}
       onJoinWithCode={socialActions.joinWithCode}
       onApprove={socialActions.approveMember}
+      onRemove={socialActions.removeMember}
+      onTransfer={socialActions.transferOwnership}
+      onArchive={socialActions.archiveGroup}
+      onDelete={socialActions.deleteGroup}
       onAddFriend={socialActions.addFriend}
       onAcceptFriend={socialActions.acceptFriend}
       incomingFriends={friends.incoming}
