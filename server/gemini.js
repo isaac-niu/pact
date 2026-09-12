@@ -10,7 +10,7 @@
  * Missing key / bad image / API error → mock so Person A can still demo.
  */
 
-const DEFAULT_MODEL = "gemini-3.6-flash";
+export const DEFAULT_MODEL = "gemini-3.6-flash";
 const FLASH_PATH = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
