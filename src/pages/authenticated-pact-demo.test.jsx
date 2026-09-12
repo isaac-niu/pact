@@ -138,7 +138,7 @@ describe("AuthenticatedPactDemo", () => {
     const directoryCheck = screen.getByRole("checkbox", { name: /list in the directory/i });
     expect(directoryCheck.closest("label").classList.contains("check")).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add friend" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add friend" }));
     expect(await screen.findByText("Friend added.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Friend added" })).toBeDisabled();
 
