@@ -15,12 +15,26 @@ import {
   formatChecklistPrompt,
   pactChecklist,
 } from "../src/lib/successCriteria.js";
+import { labelSignal, signalSupportsGoal } from "../src/lib/proofSignals.js";
 
 export const DEFAULT_MODEL = "gemini-3.6-flash";
 const FLASH_PATH = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-export function mockVerdict({ title, criteria, checklist, fileName } = {}) {
+export function mockVerdict({ title, criteria, checklist, fileName, signal } = {}) {
+  if (signal) {
+    const hold = signalSupportsGoal(signal, { title, criteria });
+    const line = hold
+      ? `Alternate proof holds. ${labelSignal(signal)}.`
+      : `Alternate proof is off the written line. ${labelSignal(signal)}.`;
+    return attachChecklistToVerdict(band(hold, hold ? 0.88 : 0.86, line, "mock"), {
+      title,
+      criteria,
+      checklist,
+      fileName: hold ? "signal.jpg" : "off.jpg",
+      signal,
+    });
+  }
   if (!fileName) {
     return attachChecklistToVerdict(
       {
@@ -138,7 +152,8 @@ export function geminiEnabled(env = process.env) {
 export async function judgeEvidence(input, env = process.env) {
   const key = env.GEMINI_API_KEY;
   const frames = mediaParts(input);
-  if (!key || !frames.length) return mockVerdict(input);
+  if (!key || (!frames.length && !input.signal)) return mockVerdict(input);
+  if (input.signal && !frames.length) return mockVerdict(input);
 
   const items = pactChecklist(input);
   const checklistBlock = items.length

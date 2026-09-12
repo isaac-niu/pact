@@ -163,10 +163,11 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     method: "POST",
     body: JSON.stringify({
       actorId,
-      evidenceName: payload.name || payload.files?.[0]?.name || "proof.jpg",
+      evidenceName: payload.name || payload.files?.[0]?.name || payload.signal && "signal",
       evidenceDataUrl: payload.dataUrl || payload.files?.[0]?.dataUrl,
       evidenceFiles: payload.files,
       evidenceKind: payload.kind,
+      signal: payload.signal,
     }),
   });
   apply(out.state);
