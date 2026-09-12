@@ -98,13 +98,28 @@ h3,
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
 
 .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 28px;
   letter-spacing: 0.16em;
+}
+
+.brand-logo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.brand-wordmark {
+  line-height: 1;
 }
 
 .brand-sub {

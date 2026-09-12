@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PACT">
+  <title>PACT</title>
+  <circle cx="256" cy="256" r="250" fill="#000"/>
+  <circle cx="256" cy="256" r="242" fill="none" stroke="#fff" stroke-width="8"/>
+
+  <path d="M220 114c19-16 53-16 72 0" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+
+  <circle cx="256" cy="158" r="35" fill="none" stroke="#fff" stroke-width="7"/>
+  <line x1="256" y1="134" x2="256" y2="182" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path
+    d="M271 146c0-9-7-13-15-13s-16 4-16 12 10 11 16 13 15 8 15 14-7 14-16 14-17-5-17-13"
+    fill="none"
+    stroke="#fff"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+
+  <g fill="#000" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M108 252
+             c0-18 14-30 32-30h40
+             c18-28 58-36 80-8
+             c10-14 28-16 38 2
+             c-16 10-22 22-10 34
+             c-22 20-58 28-92 20
+             h-56c-18 0-32-12-32-18z"/>
+    <path d="M404 252
+             c0-18-14-30-32-30h-40
+             c-18-28-58-36-80-8
+             c-10-14-28-16-38 2
+             c16 10 22 22 10 34
+             c22 20 58 28 92 20
+             h56c18 0 32-12 32-18z"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round">
+    <path d="M168 236v36"/>
+    <path d="M344 236v36"/>
+    <path d="M196 254c24 16 48 18 72 2"/>
+    <path d="M204 268c20 12 40 14 60 2"/>
+  </g>
+
+  <text
+    x="256"
+    y="368"
+    text-anchor="middle"
+    fill="#fff"
+    font-family="Anton, 'Arial Black', sans-serif"
+    font-size="56"
+    letter-spacing="8"
+  >PACT</text>
+
+  <text
+    x="256"
+    y="404"
+    text-anchor="middle"
+    fill="#fff"
+    font-family="Barlow, Arial, sans-serif"
+    font-size="12"
+    font-weight="500"
+    xml:space="preserve" style="white-space:pre"
+  >SAY IT.  STAKE IT.  PROVE IT.  SHARE IT.</text>
+
+  <line x1="158" y1="420" x2="354" y2="420" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</svg>
