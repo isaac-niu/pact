@@ -9,12 +9,12 @@
  *   { result: "pass"|"fail"|"review", confidence, rationale, source, auto }
  */
 
-export async function judgeEvidence({ title, criteria, fileName, dataUrl }) {
+export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...extra }) {
   try {
     const res = await fetch("/api/referee", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title, criteria, fileName, dataUrl }),
+      body: JSON.stringify({ title, criteria, fileName, dataUrl, ...extra }),
     });
     if (res.ok) return await res.json();
   } catch {

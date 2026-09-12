@@ -19,6 +19,7 @@ This branch owns the referee. Person A's sportsbook UI is the surface. Person B 
    - `cat.jpg` / `dog.jpg` → fail
    - `blur.jpg` / `unsure.jpg` → friend-verify
 5. Virtual pot moves on auto-resolve and on friend-verify.
+6. If `MONGODB_URI` is set, proof lands in **GridFS** (`evidence` bucket) and the verdict is upserted on `pacts` by `clientId` so Person B can hang `evidenceUrl` on the pact record. Atlas down → keep the in-browser data URL.
 
 Current Flash model for new AI Studio keys is `gemini-3.6-flash` (`GEMINI_MODEL`). `gemini-2.5-flash` is retired for new users.
 

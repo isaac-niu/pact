@@ -403,13 +403,22 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     criteria: pact.criteria,
     fileName: evidenceName,
     dataUrl: evidenceUrl,
+    pactId,
+    creatorId: pact.creatorId,
+    opponentId: pact.opponentId,
+    stake: pact.stake,
   });
 
   const latest = state.pacts.find((p) => p.id === pactId);
   if (!latest) throw new Error("Slip vanished mid-call");
+  const framed = {
+    ...latest,
+    evidenceUrl: verdict.evidenceUrl || latest.evidenceUrl,
+    evidenceGridFsId: verdict.evidenceGridFsId || null,
+  };
 
   if (verdict.auto === false || verdict.result === "review") {
-    const reviewed = { ...latest, status: "review", verdict };
+    const reviewed = { ...framed, status: "review", verdict };
     persist({
       ...state,
       pacts: state.pacts.map((p) => (p.id === pactId ? reviewed : p)),
@@ -418,7 +427,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
           id: uid("ev"),
           pactId,
           type: "review",
-          actorId: latest.opponentId,
+          actorId: framed.opponentId,
           at: Date.now(),
           note: "Gemini unsure — friend verifies",
         },
@@ -428,7 +437,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     return reviewed;
   }
 
-  return settle(latest, verdict);
+  return settle(framed, verdict);
 }
 
 export async function verifyPact(pactId, pass, ctx = {}) {
@@ -439,7 +448,7 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
   if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
 
-  return settle(pact, {
+  const resolved = settle(pact, {
     result: pass ? "pass" : "fail",
     confidence: pact.verdict?.confidence ?? 0.5,
     rationale: pass
@@ -448,4 +457,24 @@ export async function verifyPact(pactId, pass, ctx = {}) {
     source: "friend",
     auto: true,
   });
+
+  fetch("/api/pacts/verify", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      pactId,
+      title: pact.title,
+      criteria: pact.criteria,
+      creatorId: pact.creatorId,
+      opponentId: pact.opponentId,
+      stake: pact.stake,
+      evidenceUrl: pact.evidenceUrl,
+      evidenceName: pact.evidenceName,
+      evidenceGridFsId: pact.evidenceGridFsId,
+      verdict: resolved.verdict,
+      winnerId: resolved.winnerId,
+    }),
+  }).catch(() => {});
+
+  return resolved;
 }

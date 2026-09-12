@@ -16,7 +16,7 @@ export default function Home() {
 
   return (
     <section className="hero">
-      <p className="kicker">1v1 accountability · virtual SOL · mocked referee</p>
+      <p className="kicker">1v1 accountability · virtual SOL · Gemini referee</p>
       <h1>
         Bet on the
         <br />
