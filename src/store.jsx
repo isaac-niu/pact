@@ -21,6 +21,7 @@ import {
 } from "./api/pact.js";
 import { USERS, otherUserId, userById } from "./data/users.js";
 import { noticesForUser, unreadCount } from "./lib/notifications.js";
+import { POLL_POLICIES, createHygienePoll } from "./lib/pollHygiene.js";
 
 const PactContext = createContext(null);
 
@@ -30,11 +31,10 @@ export function PactProvider({ children }) {
   useEffect(() => subscribe(setSnap), []);
 
   useEffect(() => {
-    apiTickReminders().catch(() => {});
-    const timer = setInterval(() => {
-      apiTickReminders().catch(() => {});
-    }, 60_000);
-    return () => clearInterval(timer);
+    return createHygienePoll({
+      policy: POLL_POLICIES.reminders,
+      run: () => apiTickReminders(),
+    }).start();
   }, []);
 
   const user = userById(snap.userId);
