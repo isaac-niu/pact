@@ -6,6 +6,7 @@ import { buildAnnouncement, synthesize } from "./elevenlabs.js";
 import { handleDeskApi } from "./httpDesk.js";
 import { connectMongo } from "./mongo.js";
 import { handleRefereeApi } from "./refereePlugin.js";
+import { bootAuthApi, getAuthApiHandler, isPersonBApi } from "./authGateway.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 loadEnvFile(path.join(root, ".env"));
@@ -130,6 +131,15 @@ function serveStatic(req, res) {
 
 async function handleApi(req, res) {
   try {
+    if (isPersonBApi(req)) {
+      const authApi = getAuthApiHandler();
+      if (!authApi) {
+        send(res, 503, { error: "auth_api_unavailable" });
+        return;
+      }
+      await authApi(req, res);
+      return;
+    }
     if (await handleDeskApi(req, res, { send, readBody })) return;
     const readJson = async (request, limit) => {
       const raw = await readBody(request, limit);
@@ -186,8 +196,8 @@ const server = createServer(async (req, res) => {
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "access-control-allow-origin": "*",
-        "access-control-allow-methods": "GET,POST,OPTIONS",
-        "access-control-allow-headers": "content-type, x-pact-actor",
+        "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+        "access-control-allow-headers": "content-type, authorization, x-pact-actor",
       });
       res.end();
       return;
@@ -211,7 +221,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-connectMongo().finally(() => {
+Promise.all([connectMongo().catch((err) => console.error(err)), bootAuthApi()]).finally(() => {
   server.listen(PORT, HOST, () => {
     console.log(`pact listening on ${HOST}:${PORT}`);
   });

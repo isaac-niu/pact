@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchAnnouncementAudio, isMuted, setMuted as persistMuted } from "../announcer.js";
+import { fetchAnnouncementAudio, fetchDeskConfig, isMuted, setMuted as persistMuted } from "../announcer.js";
 
 export default function Announcer({ pact, winnerHandle }) {
   const [audioUrl, setAudioUrl] = useState(null);
   const [muted, setMuted] = useState(isMuted);
   const [status, setStatus] = useState("idle");
+  const [liveVoice, setLiveVoice] = useState(false);
   const audioRef = useRef(null);
   const requested = useRef(null);
+
+  useEffect(() => {
+    fetchDeskConfig().then((cfg) => {
+      setLiveVoice(Boolean(cfg?.features?.elevenlabs || cfg?.announcer));
+    });
+  }, []);
 
   useEffect(() => {
     if (!pact?.verdict || requested.current === pact.id) return;
@@ -66,11 +73,15 @@ export default function Announcer({ pact, winnerHandle }) {
         </button>
       </div>
       <p className="hint">
-        {status === "off" || (!audioUrl && status !== "loading")
-          ? "Announcer is optional. Add ELEVENLABS_API_KEY on the server to hear the settle call."
-          : muted
-            ? "Desk is muted."
-            : "Sportsbook call plays once when the slip settles. Voice by ElevenLabs."}
+        {status === "loading"
+          ? "Desk is calling the settle…"
+          : audioUrl
+            ? muted
+              ? "Desk is muted."
+              : "Sportsbook call plays when the slip settles. Voice by ElevenLabs."
+            : liveVoice
+              ? "ElevenLabs is on the desk; this slip did not return a call."
+              : "Settle stands on the ticket even if the desk is quiet."}
       </p>
     </div>
   );

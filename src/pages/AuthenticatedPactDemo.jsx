@@ -3,6 +3,19 @@ import { useCallback, useEffect, useState } from "react";
 import { api, fetchHealth } from "../api.js";
 import { AUTH0_CALLBACK_URL, AUTH0_LOGOUT_URL, clientEnvReady, env } from "../env.js";
 
+function clientCallbackUrl() {
+  return env.AUTH0_CALLBACK_URL || AUTH0_CALLBACK_URL;
+}
+
+function clientLogoutUrl() {
+  if (env.AUTH0_LOGOUT_URL) return env.AUTH0_LOGOUT_URL;
+  try {
+    return new URL(clientCallbackUrl()).origin;
+  } catch {
+    return AUTH0_LOGOUT_URL;
+  }
+}
+
 const MOCK_PEOPLE = {
   isaac: { name: "ISAAC", id: "auth0|demo-isaac", opponent: "auth0|demo-maya" },
   maya: { name: "MAYA", id: "auth0|demo-maya", opponent: "auth0|demo-isaac" },
@@ -327,7 +340,7 @@ function LivePactDesk() {
       <section className="card">
         <h2>Sign in to Pact</h2>
         <p>
-          Live Auth0 login for {AUTH0_CALLBACK_URL}. Protected pact data stays hidden until you
+          Live Auth0 login for {clientCallbackUrl()}. Protected pact data stays hidden until you
           authenticate. Have two demo accounts sign in once so they can challenge each other.
         </p>
         <div className="auth-actions">
@@ -339,7 +352,7 @@ function LivePactDesk() {
                 appState: { returnTo: "/app" },
                 authorizationParams: {
                   audience: env.AUTH0_AUDIENCE,
-                  redirect_uri: env.AUTH0_CALLBACK_URL || AUTH0_CALLBACK_URL,
+                  redirect_uri: clientCallbackUrl(),
                 },
               })
             }
@@ -357,7 +370,7 @@ function LivePactDesk() {
       subtitle={me?.email || user?.email || me?.id}
       onSignOut={() =>
         logout({
-          logoutParams: { returnTo: AUTH0_LOGOUT_URL },
+          logoutParams: { returnTo: clientLogoutUrl() },
         })
       }
       pacts={activeFeed === "mine" ? pacts.filter((pact) => !pact.groupId || pact.creatorId === me?.id || pact.opponentId === me?.id) : pacts.filter((pact) => pact.groupId === activeFeed && pact.sharedToGroupAt)}

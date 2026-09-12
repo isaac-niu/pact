@@ -1,10 +1,10 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
 import { api } from "./api.js";
 import { sol } from "./lib/format.js";
-import { AUTH0_LOGOUT_URL, clientEnvReady } from "./env.js";
+import { AUTH0_LOGOUT_URL, clientEnvReady, env, pageIsHttps } from "./env.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -15,22 +15,32 @@ import Callback from "./pages/Callback.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
+function onAuthRoute(pathname) {
+  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+}
+
 function Auth0Account() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
 
   if (isLoading) return <span className="account-status">Checking account…</span>;
   if (!isAuthenticated) {
-    return <button className="account-login" type="button" onClick={() => loginWithRedirect()}>Sign in</button>;
+    return (
+      <button className="account-login" type="button" onClick={() => loginWithRedirect()}>
+        Sign in
+      </button>
+    );
   }
 
   const name = user?.name || user?.nickname || user?.email || "Signed-in user";
   return (
     <div className="account-control" aria-label="Signed-in account">
-      <span className="account-name" title={name}>{name}</span>
+      <span className="account-name" title={name}>
+        {name}
+      </span>
       <button
         className="account-logout"
         type="button"
-        onClick={() => logout({ logoutParams: { returnTo: AUTH0_LOGOUT_URL } })}
+        onClick={() => logout({ logoutParams: { returnTo: env.AUTH0_LOGOUT_URL || AUTH0_LOGOUT_URL } })}
       >
         Sign out
       </button>
@@ -39,8 +49,13 @@ function Auth0Account() {
 }
 
 export function AccountControl() {
-  if (!clientEnvReady().ready) {
-    return <NavLink className="account-login" to="/app">Sign in</NavLink>;
+  const { pathname } = useLocation();
+  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
+    return (
+      <NavLink className="account-login" to="/app">
+        Sign in
+      </NavLink>
+    );
   }
   return <Auth0Account />;
 }
@@ -80,10 +95,10 @@ function Auth0Balance() {
   );
 }
 
-function LocalBalance({ user, bank }) {
+function DeskBalance({ user, bank }) {
   return (
-    <NavLink to="/me" className="bank-chip" title="Local demo virtual SOL ledger">
-      <span className="bank-who">{user.handle}</span>
+    <NavLink to="/me" className="bank-chip" title="Virtual SOL ledger">
+      <span className="bank-who">{user?.handle ?? "ISAAC"}</span>
       <b>{sol(bank)}</b>
       <span>SOL</span>
     </NavLink>
@@ -91,7 +106,10 @@ function LocalBalance({ user, bank }) {
 }
 
 export function BalanceControl({ user, bank }) {
-  if (!clientEnvReady().ready) return <LocalBalance user={user} bank={bank} />;
+  const { pathname } = useLocation();
+  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
+    return <DeskBalance user={user} bank={bank} />;
+  }
   return <Auth0Balance />;
 }
 

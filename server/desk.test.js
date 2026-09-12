@@ -53,3 +53,19 @@ test("high-confidence pass pays the challenger", async () => {
   assert.equal(out.result.winnerId, "you");
   assert.equal(bankOf("you", out.state), before + 4);
 });
+
+test("createPact stores public vs private tape", async () => {
+  const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
+  const pub = await desk.createPact(
+    emptyDemoState(),
+    { title: "Gym", criteria: "Selfie", stake: 1, opponentId: "friend" },
+    "you",
+  );
+  assert.equal(pub.result.visibility, "public");
+  const priv = await desk.createPact(
+    emptyDemoState(),
+    { title: "Secret", criteria: "Selfie", stake: 1, opponentId: "friend", visibility: "private" },
+    "you",
+  );
+  assert.equal(priv.result.visibility, "private");
+});

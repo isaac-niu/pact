@@ -15,9 +15,13 @@ export async function api(path, { token, method = "GET", body } = {}) {
 }
 
 export async function fetchHealth() {
-  try {
-    return await api("/api/health");
-  } catch {
-    return { status: "down" };
+  for (const path of ["/api/auth/health", "/api/health"]) {
+    try {
+      const body = await api(path);
+      if (body?.auth?.mode || body?.status === "ok") return body;
+    } catch {
+      /* try the next health URL */
+    }
   }
+  return { status: "down" };
 }

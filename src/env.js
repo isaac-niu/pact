@@ -25,6 +25,29 @@ export const AUTH0_LOGOUT_URL = "http://localhost:5173";
 export const AUTH0_ORIGIN = "http://localhost:5173";
 export const RECOMMENDED_AUTH0_AUDIENCE = "https://pact-api";
 
+export function pageIsHttps() {
+  return typeof window !== "undefined" && window.location?.protocol === "https:";
+}
+
+/** Public Auth0 URLs for this process. Uses PUBLIC_URL on Vultr; localhost in tests. */
+export function getAuth0PublicUrls(environment = process.env) {
+  const publicUrl = String(environment.PUBLIC_URL || "")
+    .trim()
+    .replace(/\/$/, "");
+  if (publicUrl) {
+    return {
+      callbackUrl: `${publicUrl}/callback`,
+      logoutUrl: publicUrl,
+      origin: publicUrl,
+    };
+  }
+  return {
+    callbackUrl: AUTH0_CALLBACK_URL,
+    logoutUrl: AUTH0_LOGOUT_URL,
+    origin: AUTH0_ORIGIN,
+  };
+}
+
 /**
  * Read a single VITE_ env var. Returns undefined when absent.
  */
@@ -110,6 +133,7 @@ export const env = {
   AUTH0_CLIENT_ID: getViteEnv("AUTH0_CLIENT_ID"),
   AUTH0_AUDIENCE: getViteEnv("AUTH0_AUDIENCE"),
   AUTH0_CALLBACK_URL: getViteEnv("AUTH0_CALLBACK_URL") || AUTH0_CALLBACK_URL,
+  AUTH0_LOGOUT_URL: getViteEnv("AUTH0_LOGOUT_URL") || AUTH0_LOGOUT_URL,
   API_URL: getViteEnv("API_URL"),
 };
 

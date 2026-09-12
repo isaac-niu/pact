@@ -39,13 +39,15 @@ function apply(snap) {
     pacts: snap.pacts || [],
     events: snap.events || [],
     ledger: snap.ledger || [],
+    users: snap.users || [],
   };
   notify();
 }
 
 export async function maybeRemote() {
   try {
-    const cfg = await fetch("/api/config", { cache: "no-store" }).then((r) => r.json());
+    const ctrl = AbortSignal.timeout(5000);
+    const cfg = await fetch("/api/config", { cache: "no-store", signal: ctrl }).then((r) => r.json());
     if (!cfg?.features?.mongo) return false;
     enabled = true;
     const snap = await req("/api/desk");
@@ -67,6 +69,7 @@ export function getSnapshot() {
 
 export function subscribe(fn) {
   listeners.add(fn);
+  fn(getSnapshot());
   const t = setInterval(() => {
     if (!enabled) return;
     req("/api/desk")

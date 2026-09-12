@@ -2,7 +2,7 @@ import { STARTING_BANK } from "./users.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 3;
 
 function gymPact(now) {
   return {
@@ -22,6 +22,7 @@ function gymPact(now) {
       rationale: "Clear gym-floor selfie. Subject in frame, workout context visible.",
     },
     winnerId: "you",
+    visibility: "public",
     createdAt: now - 2 * DAY,
     acceptedAt: now - 2 * DAY + 20 * 60 * 1000,
     provedAt: now - 2 * DAY + 80 * 60 * 1000,
@@ -43,6 +44,7 @@ function leetPact(now) {
     evidenceName: null,
     verdict: null,
     winnerId: null,
+    visibility: "public",
     createdAt: now - 6 * 60 * 60 * 1000,
     acceptedAt: now - 5 * 60 * 60 * 1000,
     provedAt: null,
@@ -64,6 +66,7 @@ function runPact(now) {
     evidenceName: null,
     verdict: null,
     winnerId: null,
+    visibility: "private",
     createdAt: now - 30 * 60 * 1000,
     acceptedAt: null,
     provedAt: null,
