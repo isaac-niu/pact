@@ -146,6 +146,32 @@ export function demoLedger(pacts) {
   ].sort((a, b) => b.at - a.at);
 }
 
+export function demoTalk(pacts) {
+  const gym = pacts.find((p) => p.id === "demo-settled-gym");
+  return {
+    reactions: [
+      {
+        id: "rx-gym-won",
+        eventId: "ev-gym-won",
+        pactId: gym.id,
+        userId: "friend",
+        emoji: "🔥",
+        at: gym.resolvedAt + 30_000,
+      },
+    ],
+    comments: [
+      {
+        id: "cm-gym-won",
+        eventId: "ev-gym-won",
+        pactId: gym.id,
+        userId: "friend",
+        body: "Clean frame. Book stands.",
+        at: gym.resolvedAt + 45_000,
+      },
+    ],
+  };
+}
+
 export function demoNotices(pacts) {
   const gym = pacts.find((p) => p.id === "demo-settled-gym");
   const leet = pacts.find((p) => p.id === "demo-live-leetcode");
@@ -184,6 +210,7 @@ export function demoNotices(pacts) {
 
 export function emptyDemoState(now = Date.now()) {
   const pacts = demoPacts(now);
+  const talk = demoTalk(pacts);
   return {
     userId: "you",
     seedVersion: SEED_VERSION,
@@ -192,5 +219,7 @@ export function emptyDemoState(now = Date.now()) {
     events: demoEvents(pacts),
     ledger: demoLedger(pacts),
     notifications: demoNotices(pacts),
+    reactions: talk.reactions,
+    comments: talk.comments,
   };
 }

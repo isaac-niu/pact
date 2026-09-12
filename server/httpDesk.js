@@ -9,6 +9,8 @@ import {
   markNoticeRead,
   markAllNoticesRead,
   tickReminders,
+  reactToMark,
+  commentOnMark,
 } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
@@ -110,6 +112,25 @@ export async function handleDeskApi(req, res, { send, readBody }) {
     }
     const payload = await jsonBody(req, readBody, 32_000);
     const out = await markNoticeRead(decodeURIComponent(noticeMatch[1]), actorOf(req, payload));
+    send(res, 200, out);
+    return true;
+  }
+
+  const markMatch = url.match(/^\/api\/marks\/([^/]+)\/(react|comment)$/);
+  if (markMatch && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const eventId = decodeURIComponent(markMatch[1]);
+    const payload = await jsonBody(req, readBody, 32_000);
+    const actor = actorOf(req, payload);
+    if (markMatch[2] === "react") {
+      const out = await reactToMark(eventId, payload.emoji, actor);
+      send(res, 200, out);
+      return true;
+    }
+    const out = await commentOnMark(eventId, payload.body, actor);
     send(res, 200, out);
     return true;
   }

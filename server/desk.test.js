@@ -203,6 +203,16 @@ test("resolved series slips spawn the next stake on the reminder tick", async ()
   assert.equal(ticked.result.spawned, 1);
 });
 
+test("spectators can heat a public mark and post a short take", async () => {
+  const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
+  const state = emptyDemoState();
+  const heated = await desk.reactToMark(state, "ev-gym-won", "🔥", "you");
+  assert.equal(heated.result.emoji, "🔥");
+  const talked = await desk.commentOnMark(heated.state, "ev-gym-won", "Book stands.", "you");
+  assert.equal(talked.result.body, "Book stands.");
+  assert.equal(talked.state.comments[0].eventId, "ev-gym-won");
+});
+
 test("createPact stores public vs private tape", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const pub = await desk.createPact(

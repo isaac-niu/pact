@@ -92,6 +92,8 @@ function publicState(state, actorId = "you") {
     events: state.events,
     ledger: state.ledger,
     notifications: state.notifications || [],
+    reactions: state.reactions || [],
+    comments: state.comments || [],
     users: usersFromState(state),
     backend: "mongo",
   };
@@ -144,4 +146,12 @@ export async function tickReminders(now) {
     return { result: preview.result, state: publicState(state) };
   }
   return mutate((next) => desk.tickReminders(next, now));
+}
+
+export function reactToMark(eventId, emoji, actorId) {
+  return mutate((state) => desk.reactToMark(state, eventId, emoji, actorId));
+}
+
+export function commentOnMark(eventId, body, actorId) {
+  return mutate((state) => desk.commentOnMark(state, eventId, body, actorId));
 }
