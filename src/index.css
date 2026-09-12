@@ -1220,6 +1220,16 @@ label .hint {
     display: none;
   }
 
+  .notice-list li a,
+  .deadline-banner {
+    grid-template-columns: auto 1fr;
+  }
+
+  .notice-list time,
+  .deadline-banner .meta {
+    display: none;
+  }
+
   .odds-cell {
     border-right: 0;
     border-bottom: 1px solid var(--line);
