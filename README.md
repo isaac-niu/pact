@@ -44,9 +44,9 @@ npm start
 | Path | Screen |
 | --- | --- |
 | `/` | Pitch |
-| `/create` | Write slip |
-| `/feed` | Event tape + slips |
-| `/pact/:id` | Ticket, evidence, verdict |
+| `/create` | Write slip (signed-in: challenge a real Auth0 friend) |
+| `/feed` | Event tape + slips (signed-in: includes live 1v1s) |
+| `/pact/:id` | Ticket, evidence, verdict (Gemini upload on accepted live slips) |
 | `/me` | Profile, rate, virtual SOL bank |
 | `/app` | Authenticated Auth0 / mock ISAAC-FRIEND desk |
 | `/callback` | Auth0 return route |

@@ -124,10 +124,20 @@ export function createMongoStore(db) {
       return withoutMongoId(await pacts.findOne({ id }));
     },
 
-    async createPact({ title, stakeLamports, creatorId, opponentId = null, groupId = null }) {
+    async createPact({
+      title,
+      stakeLamports,
+      creatorId,
+      opponentId = null,
+      groupId = null,
+      criteria = null,
+      deadline = null,
+      visibility = "public",
+    }) {
       const pact = {
         id: randomUUID(),
         title,
+        criteria: criteria ? String(criteria).trim() : null,
         stakeLamports,
         creatorId,
         opponentId,
@@ -135,6 +145,14 @@ export function createMongoStore(db) {
         sharedToGroupAt: null,
         status: "draft",
         winnerId: null,
+        visibility: visibility === "private" ? "private" : "public",
+        deadline: Number(deadline) || null,
+        evidenceUrl: null,
+        evidenceName: null,
+        verdict: null,
+        acceptedAt: null,
+        provedAt: null,
+        resolvedAt: null,
         createdAt: now(),
         updatedAt: now(),
       };

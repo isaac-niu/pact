@@ -94,6 +94,105 @@ describe("Pact API (mock auth)", () => {
       11 * LAMPORTS_PER_SOL,
     );
   });
+
+  it("stores criteria on a live 1v1 and lets the creator upload Gemini proof", async () => {
+    await start();
+    const isaac = await login("isaac");
+    const friend = await login("friend");
+    const created = await api("/api/pacts", {
+      method: "POST",
+      headers: auth(isaac.body.token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        title: "I'll upload a gym selfie",
+        criteria: "Face or body in frame with gym floor or equipment visible.",
+        stakeLamports: LAMPORTS_PER_SOL,
+        opponentId: friend.body.user.id,
+        visibility: "public",
+        deadline: Date.now() + 86_400_000,
+      }),
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.criteria).toContain("gym floor");
+    expect(created.body.visibility).toBe("public");
+    expect(created.body.status).toBe("draft");
+
+    const listed = await api("/api/pacts", { headers: auth(isaac.body.token) });
+    expect(listed.body.map((pact) => pact.id)).toContain(created.body.id);
+
+    expect(
+      (
+        await api(`/api/pacts/${created.body.id}/evidence`, {
+          method: "POST",
+          headers: auth(isaac.body.token, { "content-type": "application/json" }),
+          body: JSON.stringify({
+            evidenceName: "gym.jpg",
+            evidenceUrl: "data:image/png;base64,aaa",
+            verdict: { result: "pass", confidence: 0.91, rationale: "Gym in frame.", source: "gemini", auto: true },
+          }),
+        })
+      ).status,
+    ).toBe(409);
+
+    await api(`/api/pacts/${created.body.id}/accept`, {
+      method: "PATCH",
+      headers: auth(friend.body.token),
+    });
+
+    expect(
+      (
+        await api(`/api/pacts/${created.body.id}/evidence`, {
+          method: "POST",
+          headers: auth(friend.body.token, { "content-type": "application/json" }),
+          body: JSON.stringify({
+            evidenceName: "gym.jpg",
+            evidenceUrl: "data:image/png;base64,aaa",
+            verdict: { result: "pass", confidence: 0.91, rationale: "Gym in frame.", source: "gemini", auto: true },
+          }),
+        })
+      ).status,
+    ).toBe(403);
+
+    const proved = await api(`/api/pacts/${created.body.id}/evidence`, {
+      method: "POST",
+      headers: auth(isaac.body.token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        evidenceName: "gym.jpg",
+        evidenceUrl: "data:image/png;base64,aaa",
+        verdict: { result: "pass", confidence: 0.91, rationale: "Gym in frame.", source: "gemini", auto: true },
+      }),
+    });
+    expect(proved.status).toBe(200);
+    expect(proved.body.status).toBe("settled");
+    expect(proved.body.winnerId).toBe(isaac.body.user.id);
+    expect(proved.body.verdict.source).toBe("gemini");
+    expect(proved.body.evidenceName).toBe("gym.jpg");
+
+    const review = await api("/api/pacts", {
+      method: "POST",
+      headers: auth(isaac.body.token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        title: "Blurry gym",
+        criteria: "Gym floor in frame.",
+        stakeLamports: LAMPORTS_PER_SOL,
+        opponentId: friend.body.user.id,
+      }),
+    });
+    await api(`/api/pacts/${review.body.id}/accept`, {
+      method: "PATCH",
+      headers: auth(friend.body.token),
+    });
+    const unsure = await api(`/api/pacts/${review.body.id}/evidence`, {
+      method: "POST",
+      headers: auth(isaac.body.token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        evidenceName: "blur.jpg",
+        evidenceUrl: "data:image/png;base64,bbb",
+        verdict: { result: "review", confidence: 0.55, rationale: "Too blurry.", source: "gemini", auto: false },
+      }),
+    });
+    expect(unsure.body.status).toBe("review");
+    expect(unsure.body.winnerId).toBeNull();
+  });
 });
 
 describe("Pact API authorization", () => {

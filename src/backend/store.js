@@ -48,6 +48,7 @@ export function publicPact(pact) {
   return {
     id: pact.id,
     title: pact.title,
+    criteria: pact.criteria ?? null,
     stakeLamports: pact.stakeLamports,
     creatorId: pact.creatorId,
     opponentId: pact.opponentId,
@@ -55,6 +56,14 @@ export function publicPact(pact) {
     sharedToGroupAt: pact.sharedToGroupAt ?? null,
     status: pact.status,
     winnerId: pact.winnerId ?? null,
+    visibility: pact.visibility === "private" ? "private" : "public",
+    deadline: pact.deadline ?? null,
+    evidenceUrl: pact.evidenceUrl ?? null,
+    evidenceName: pact.evidenceName ?? null,
+    verdict: pact.verdict ?? null,
+    acceptedAt: pact.acceptedAt ?? null,
+    provedAt: pact.provedAt ?? null,
+    resolvedAt: pact.resolvedAt ?? null,
     createdAt: pact.createdAt,
     updatedAt: pact.updatedAt,
   };
@@ -160,10 +169,20 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
       return pact ? clone(pact) : null;
     },
 
-    async createPact({ title, stakeLamports, creatorId, opponentId = null, groupId = null }) {
+    async createPact({
+      title,
+      stakeLamports,
+      creatorId,
+      opponentId = null,
+      groupId = null,
+      criteria = null,
+      deadline = null,
+      visibility = "public",
+    }) {
       const pact = {
         id: randomUUID(),
         title,
+        criteria: criteria ? String(criteria).trim() : null,
         stakeLamports,
         creatorId,
         opponentId,
@@ -171,6 +190,14 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
         sharedToGroupAt: null,
         status: "draft",
         winnerId: null,
+        visibility: visibility === "private" ? "private" : "public",
+        deadline: Number(deadline) || null,
+        evidenceUrl: null,
+        evidenceName: null,
+        verdict: null,
+        acceptedAt: null,
+        provedAt: null,
+        resolvedAt: null,
         createdAt: now(),
         updatedAt: now(),
       };

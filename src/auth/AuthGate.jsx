@@ -2,16 +2,17 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AUTH0_CALLBACK_URL, clientEnvReady, env, pageIsHttps } from "../env.js";
 
-function needsAuth0(pathname) {
+export function needsAuth0(pathname) {
   if (pageIsHttps()) return true;
-  // /create needs a live Auth0 session too: it offers "send to a group",
-  // which is an authenticated-desk feature (real multi-person groups only
-  // exist behind Auth0 + Mongo, not the local you/friend desk).
+  // Write/Tape/ticket need the session so a signed-in 1v1 can leave the
+  // local You/Friend desk and show up for Gemini on /feed.
   return (
     pathname === "/app" ||
     pathname.startsWith("/app/") ||
     pathname === "/callback" ||
     pathname === "/create" ||
+    pathname === "/feed" ||
+    pathname.startsWith("/pact/") ||
     pathname === "/people" ||
     pathname === "/crew"
   );

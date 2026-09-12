@@ -13,6 +13,7 @@ import {
   applyRemoveMember,
   applyTransferOwnership,
 } from "../lib/groupAdmin.js";
+import { shouldAutoSettle } from "../lib/livePacts.js";
 
 export { LAMPORTS_PER_SOL };
 
@@ -296,6 +297,9 @@ export function createPactRequestHandler(options = {}) {
         creatorId: user.id,
         opponentId: opponent?.id ?? null,
         groupId: group?.id ?? null,
+        criteria: body.criteria ?? null,
+        deadline: body.deadline ?? null,
+        visibility: body.visibility,
       });
       return send(res, 201, publicPact(pact));
     }
@@ -348,6 +352,7 @@ export function createPactRequestHandler(options = {}) {
         await store.saveUser(creator);
         await store.saveUser(opponent);
         pact.status = "accepted";
+        pact.acceptedAt = Date.now();
         await store.addTransaction({
           pactId: pact.id,
           type: "lock",
@@ -369,6 +374,7 @@ export function createPactRequestHandler(options = {}) {
         await store.saveUser(winnerUser);
         pact.status = "settled";
         pact.winnerId = winnerUser.id;
+        pact.resolvedAt = Date.now();
         await store.addTransaction({
           pactId: pact.id,
           type: "settle",
@@ -376,6 +382,45 @@ export function createPactRequestHandler(options = {}) {
         });
       }
 
+      const saved = await store.savePact(pact);
+      return send(res, 200, publicPact(saved));
+    }
+
+    const evidenceMatch = url.pathname.match(/^\/api\/pacts\/([^/]+)\/evidence$/);
+    if (req.method === "POST" && evidenceMatch) {
+      const pact = await store.getPact(evidenceMatch[1]);
+      if (!pact) return send(res, 404, { error: "Pact not found" });
+      if (pact.creatorId !== user.id) return send(res, 403, { error: "Only the challenger uploads proof" });
+      if (pact.status !== "accepted" && pact.status !== "evidence") {
+        return send(res, 409, { error: "This slip is not live for proof" });
+      }
+      const body = await bodyOf(req);
+      if (!body?.evidenceUrl && !body?.verdict) {
+        return send(res, 400, { error: "evidenceUrl or verdict is required" });
+      }
+      pact.evidenceUrl = body.evidenceUrl || pact.evidenceUrl || null;
+      pact.evidenceName = body.evidenceName || pact.evidenceName || "proof.jpg";
+      pact.verdict = body.verdict || pact.verdict || null;
+      pact.provedAt = Date.now();
+      if (shouldAutoSettle(pact.verdict)) {
+        const winnerId = pact.verdict.result === "pass" ? pact.creatorId : pact.opponentId;
+        const winnerUser = winnerId ? await store.getUserById(winnerId) : null;
+        if (!winnerUser) return send(res, 409, { error: "Could not settle this proof" });
+        winnerUser.balanceLamports += pact.stakeLamports * 2;
+        await store.saveUser(winnerUser);
+        pact.status = "settled";
+        pact.winnerId = winnerUser.id;
+        pact.resolvedAt = Date.now();
+        await store.addTransaction({
+          pactId: pact.id,
+          type: "settle",
+          amountLamports: pact.stakeLamports * 2,
+        });
+      } else if (pact.verdict?.result === "review" || pact.verdict?.source === "gemini-error") {
+        pact.status = "review";
+      } else {
+        pact.status = "evidence";
+      }
       const saved = await store.savePact(pact);
       return send(res, 200, publicPact(saved));
     }
