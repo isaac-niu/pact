@@ -10,6 +10,7 @@ const PACT_LABELS = {
   accepted: "Live",
   evidence: "Evidence",
   judging: "Desk",
+  review: "Review",
   resolved: "Settled",
 };
 

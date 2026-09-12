@@ -35,7 +35,7 @@ function Shell({ children }) {
           <NavLink to="/" className="brand-mark">
             PACT
           </NavLink>
-          <span className="brand-sub">Local desk</span>
+          <span className="brand-sub">Gemini desk</span>
         </div>
         <nav className="nav">
           <NavLink to="/" end>

@@ -8,8 +8,10 @@
  *   createPact({ title, criteria, stake, deadline, opponentId }, { actorId })
  *   acceptPact(pactId, { actorId })
  *   submitEvidence(pactId, file, { actorId })
+ *   verifyPact(pactId, pass, { actorId })
  *
- * No Auth0, Mongo, Gemini SDK, Solana, ElevenLabs, or Vultr here.
+ * Person C fills submitEvidence + verifyPact (Gemini Flash + friend fallback).
+ * Auth0 / Mongo / Vultr stay on other lanes.
  */
 
 import * as local from "./local.js";
@@ -17,11 +19,13 @@ import * as local from "./local.js";
 export const createPact = local.createPact;
 export const acceptPact = local.acceptPact;
 export const submitEvidence = local.submitEvidence;
+export const verifyPact = local.verifyPact;
 
 export const pactApi = {
   createPact,
   acceptPact,
   submitEvidence,
+  verifyPact,
 };
 
 export {

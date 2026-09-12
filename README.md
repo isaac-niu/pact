@@ -1,51 +1,54 @@
-# PACT — Person A UI
+# PACT — Person C (Gemini lane)
 
-Sportsbook-ticket UI for a 1v1 accountability pact. Friend A writes a slip, Friend B matches a **virtual SOL** stake, A uploads a photo, a mocked referee stands the ticket, winner takes the pot.
+Social media for accountability, not attention.
 
-This branch is **UI + mock data only**. No Auth0, Mongo, Gemini SDK, real Solana, ElevenLabs, or Vultr.
+**Loop:** say it → stake virtual SOL → prove it with a photo → share it.
 
-Two hardcoded desks live in the top-right pill: **You (ISAAC)** and **Friend (MAYA)**.
+This branch owns the referee. Person A's sportsbook UI is the surface. Person B still owns Auth0/Mongo; Person D still owns Vultr/ElevenLabs.
+
+## What C shipped
+
+1. Photo upload stays on the slip (data URL in the local desk; B can swap in GridFS later).
+2. `POST /api/referee` sends the photo + written goal to **Gemini 2.5 Flash**.
+3. Verdict on the ticket: `{ pass, confidence, rationale }` mapped to:
+   - **≥ 0.8** — auto-resolve (pass → challenger, fail → friend)
+   - **< 0.4** — friend wins
+   - **middle** — friend-verify fallback (one Stand / Scratch button, not a committee)
+4. Missing `GEMINI_API_KEY` or a Gemini error **falls back to mock** so A can still demo:
+   - any real file → pass
+   - `cat.jpg` / `dog.jpg` → fail
+   - `blur.jpg` / `unsure.jpg` → friend-verify
+5. Virtual pot moves on auto-resolve and on friend-verify.
+
+Current Flash model for new AI Studio keys is `gemini-3.6-flash` (`GEMINI_MODEL`). `gemini-2.5-flash` is retired for new users.
 
 ## Run
 
 ```bash
+cp .env.example .env   # paste GEMINI_API_KEY from the group chat
 npm install
+npm test
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`). No `.env` and no extra environment variables.
-
-State lives in `localStorage` (`pact.demo.v2`). Photos stay in the browser as data URLs. First visit seeds three demo slips so the tape is never empty. **Me → Reset local desk** wipes and reseeds.
+Open the URL Vite prints (`http://127.0.0.1:43127`). No second terminal — the referee is a Vite middleware so the key never hits the browser.
 
 ## 60-second click-through
 
-1. **Home** — read the pitch. The loop is **Say it → stake it → prove it → share it**. Click **Write a slip**.
-2. Leave the default title (“I'll upload a gym selfie”), criteria, 2 SOL stake, deadline, and opponent **Friend (MAYA)**. Click **Post to the board**. ISAAC’s bank drops by 2.00.
-3. Still ISAAC, the slip is **OPEN**. Flip the switcher to **Friend**.
-4. Click **Accept · 2.00 SOL**. MAYA matches. Pot locks at **4.00 SOL**.
-5. Flip back to **You**. Upload any photo (gym selfie, cat, screenshot — the referee only checks that a file exists).
-6. After ~1.2s the mocked desk returns **PASS**, a confidence number, a one-line rationale, and who takes the pot. ISAAC’s bank credits **+4.00**. Open **Me** to see success rate + ledger. Open **Tape** for posted / accepted / proved / won / lost marks.
+1. **Write** a slip: “I'll upload a gym selfie”, 2 SOL, Friend (MAYA).
+2. Switch to **Friend** → **Accept**.
+3. Switch back to **You**. Upload a gym photo. Gemini should **PASS** and ISAAC takes the pot.
+4. Repeat with a cat photo against a gym goal. Gemini should **FAIL** (or land in review). If the stamp says **REVIEW**, switch to Friend and tap **Friend: pass** or **Friend: fail** — the pot still moves.
 
-That’s the product: accountability with a sportsbook ticket, not a platform.
+## API Person A already calls
 
-## Integration holes for B / C
-
-Pages talk to `src/api/pact.js` only. Swap these three functions later — signatures stay the same, defaults stay local:
-
-| Function | Local behavior |
+| Function | C behavior |
 | --- | --- |
-| `createPact({ title, criteria, stake, deadline, opponentId }, { actorId })` | Writes the slip, posts a `posted` event, deducts creator stake |
-| `acceptPact(pactId, { actorId })` | Counterparty matches stake, pot locks |
-| `submitEvidence(pactId, file, { actorId })` | Stores the photo, delays, mocked referee, pays the winner |
+| `submitEvidence(pactId, file, { actorId })` | Stores the photo, calls Gemini, auto-settles or parks in `review` |
+| `verifyPact(pactId, pass, { actorId })` | Friend-only. Settles a `review` slip and pays the pot |
 
-`src/api/referee.js` is the Gemini-shaped hole (`{ result, confidence, rationale }`). File present ⇒ eligible to pass.
+`GET /api/config` → `{ features: { gemini: true/false } }` so the desk can tell Flash from the mock.
 
-## Routes
+## Not this lane
 
-| Path | Screen |
-| --- | --- |
-| `/` | One-screen pitch + CTA |
-| `/create` | Write slip |
-| `/feed` | Event tape + slips |
-| `/pact/:id` | Ticket, evidence, verdict |
-| `/me` | Name, rate, virtual SOL bank, ledger |
+Auth0, Mongo cluster, Vultr, ElevenLabs, DMs, groups, real SOL.

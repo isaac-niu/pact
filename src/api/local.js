@@ -320,9 +320,47 @@ export async function acceptPact(pactId, ctx = {}) {
   return next;
 }
 
+function settle(latest, verdict) {
+  const winnerId = verdict.result === "pass" ? latest.creatorId : latest.opponentId;
+  const loserId = winnerId === latest.creatorId ? latest.opponentId : latest.creatorId;
+  const resolvedAt = Date.now();
+  const pot = latest.stake * 2;
+  const resolved = {
+    ...latest,
+    status: "resolved",
+    verdict,
+    winnerId,
+    resolvedAt,
+  };
+
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === latest.id ? resolved : p)),
+    events: [
+      { id: uid("ev"), pactId: latest.id, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
+      { id: uid("ev"), pactId: latest.id, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
+      ...state.events,
+    ],
+    ledger: [
+      {
+        id: uid("ld"),
+        userId: winnerId,
+        amount: pot,
+        kind: "payout",
+        pactId: latest.id,
+        at: resolvedAt,
+        note: "Pot paid",
+      },
+      ...state.ledger,
+    ],
+  });
+
+  return resolved;
+}
+
 /**
- * Local submitEvidence. File on the slip ⇒ mocked referee can pass.
- * Short delay, then confidence + one-line rationale and pot payout.
+ * Local submitEvidence. Stores the photo, asks Gemini Flash (via /api/referee).
+ * ≥0.8 auto-resolves, <0.4 friend wins, middle band waits on friend-verify.
  */
 export async function submitEvidence(pactId, file, ctx = {}) {
   const actorId = ctx.actorId ?? state.userId;
@@ -364,44 +402,50 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     title: pact.title,
     criteria: pact.criteria,
     fileName: evidenceName,
+    dataUrl: evidenceUrl,
   });
 
   const latest = state.pacts.find((p) => p.id === pactId);
   if (!latest) throw new Error("Slip vanished mid-call");
 
-  const winnerId = verdict.result === "pass" ? latest.creatorId : latest.opponentId;
-  const loserId = winnerId === latest.creatorId ? latest.opponentId : latest.creatorId;
-  const resolvedAt = Date.now();
-  const pot = latest.stake * 2;
-  const resolved = {
-    ...latest,
-    status: "resolved",
-    verdict,
-    winnerId,
-    resolvedAt,
-  };
+  if (verdict.auto === false || verdict.result === "review") {
+    const reviewed = { ...latest, status: "review", verdict };
+    persist({
+      ...state,
+      pacts: state.pacts.map((p) => (p.id === pactId ? reviewed : p)),
+      events: [
+        {
+          id: uid("ev"),
+          pactId,
+          type: "review",
+          actorId: latest.opponentId,
+          at: Date.now(),
+          note: "Gemini unsure — friend verifies",
+        },
+        ...state.events,
+      ],
+    });
+    return reviewed;
+  }
 
-  persist({
-    ...state,
-    pacts: state.pacts.map((p) => (p.id === pactId ? resolved : p)),
-    events: [
-      { id: uid("ev"), pactId, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
-      { id: uid("ev"), pactId, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
-      ...state.events,
-    ],
-    ledger: [
-      {
-        id: uid("ld"),
-        userId: winnerId,
-        amount: pot,
-        kind: "payout",
-        pactId,
-        at: resolvedAt,
-        note: "Pot paid",
-      },
-      ...state.ledger,
-    ],
+  return settle(latest, verdict);
+}
+
+export async function verifyPact(pactId, pass, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const pact = state.pacts.find((p) => p.id === pactId);
+  if (!pact) throw new Error("Slip not on the board");
+  if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
+  if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
+
+  return settle(pact, {
+    result: pass ? "pass" : "fail",
+    confidence: pact.verdict?.confidence ?? 0.5,
+    rationale: pass
+      ? "Friend verified the proof. Desk stands the slip."
+      : "Friend rejected the proof. Stake goes to the counterparty.",
+    source: "friend",
+    auto: true,
   });
-
-  return resolved;
 }

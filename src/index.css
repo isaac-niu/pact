@@ -636,6 +636,11 @@ textarea {
   border-color: #3d4a18;
 }
 
+.badge.type-review {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
 .badge.type-lost {
   color: var(--red);
   border-color: #5a241c;
@@ -742,6 +747,17 @@ textarea {
 
 .verdict.fail .result {
   color: var(--red);
+}
+
+.verdict.review .result {
+  color: var(--amber);
+}
+
+.verify-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
 }
 
 .result {

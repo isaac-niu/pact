@@ -8,12 +8,19 @@ const STAMPS = {
   accepted: { label: "LIVE", className: "stamp-live" },
   evidence: { label: "PROOF", className: "stamp-live" },
   judging: { label: "DESK", className: "stamp-hot" },
+  review: { label: "REVIEW", className: "stamp-hot" },
   resolved: { label: "GRADED", className: "stamp-done" },
 };
 
+function sourceLabel(verdict) {
+  if (verdict?.source === "gemini") return "Gemini Flash";
+  if (verdict?.source === "friend") return "friend verify";
+  return "mocked";
+}
+
 export default function PactDetail() {
   const { id } = useParams();
-  const { pacts, events, userId, acceptPact, submitEvidence, bankOf } = usePact();
+  const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, bankOf } = usePact();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -35,6 +42,7 @@ export default function PactDetail() {
   const canAccept = pact.status === "open" && userId === pact.opponentId;
   const canUpload =
     (pact.status === "accepted" || pact.status === "evidence") && userId === pact.creatorId;
+  const canVerify = pact.status === "review" && userId === pact.opponentId;
   const marks = events.filter((e) => e.pactId === pact.id).sort((a, b) => a.at - b.at);
   const tone = deadlineTone(pact.deadline);
 
@@ -45,6 +53,18 @@ export default function PactDetail() {
       await acceptPact(pact.id);
     } catch (err) {
       setError(err.message || "Could not accept");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onVerify(pass) {
+    setError("");
+    setBusy(true);
+    try {
+      await verifyPact(pact.id, pass);
+    } catch (err) {
+      setError(err.message || "Could not verify");
     } finally {
       setBusy(false);
     }
@@ -130,9 +150,7 @@ export default function PactDetail() {
           {pact.evidenceUrl ? (
             <img className="preview" src={pact.evidenceUrl} alt={pact.evidenceName || "Evidence"} />
           ) : (
-            <p className="hint">
-              No photo yet. Challenger drops a local file — it never leaves this browser.
-            </p>
+            <p className="hint">No photo yet. Challenger drops a frame for Gemini Flash.</p>
           )}
           {canUpload ? (
             <label className="file">
@@ -166,23 +184,44 @@ export default function PactDetail() {
           {pact.status === "accepted" ? (
             <p className="hint">Live. {creator.handle} owes a photo.</p>
           ) : null}
+          {pact.status === "review" ? (
+            <p className="hint">
+              Gemini is in the middle band. {opponent.handle} verifies the frame — one button, not a
+              committee.
+            </p>
+          ) : null}
+          {canVerify ? (
+            <div className="verify-row">
+              <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
+                Friend: pass
+              </button>
+              <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => onVerify(false)}>
+                Friend: fail
+              </button>
+            </div>
+          ) : null}
+          {pact.status === "review" && !canVerify ? (
+            <p className="hint">Switch to {opponent.handle} in the top-right to stand or scratch this slip.</p>
+          ) : null}
           {error ? <p className="err">{error}</p> : null}
 
           {pact.verdict ? (
             <div className={`verdict ${pact.verdict.result}`}>
               <div className="result">{pact.verdict.result}</div>
               <div className="hint">
-                Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · mocked
+                Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
               </div>
               <p>{pact.verdict.rationale}</p>
-              <div className="payout">
-                {winner.handle} takes the pot · {sol(pot)} SOL
-              </div>
-              <button className="btn btn-ghost" type="button" onClick={copyShare}>
-                {copied === "copied" ? "Copied the post" : "Share the ticket"}
-              </button>
-              {copied && copied !== "copied" ? (
-                <p className="hint">{copied}</p>
+              {pact.status === "resolved" && winner ? (
+                <>
+                  <div className="payout">
+                    {winner.handle} takes the pot · {sol(pot)} SOL
+                  </div>
+                  <button className="btn btn-ghost" type="button" onClick={copyShare}>
+                    {copied === "copied" ? "Copied the post" : "Share the ticket"}
+                  </button>
+                  {copied && copied !== "copied" ? <p className="hint">{copied}</p> : null}
+                </>
               ) : null}
             </div>
           ) : null}
