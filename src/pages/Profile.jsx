@@ -95,6 +95,9 @@ export default function Profile() {
               )}
             </>
           )}
+          <Link className="btn btn-lime" to="/wallet">
+            Add SOL
+          </Link>
         </div>
       </div>
     </div>

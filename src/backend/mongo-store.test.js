@@ -24,6 +24,9 @@ function createFakeCollection(docs = []) {
         project() {
           return this;
         },
+        sort() {
+          return this;
+        },
         async toArray() {
           return rows;
         },
@@ -55,6 +58,8 @@ describe("mongo store", () => {
           users: createFakeCollection(),
           pacts: createFakeCollection(),
           transactions: createFakeCollection(),
+          groups: createFakeCollection(),
+          messages: createFakeCollection(),
         };
         return this._cols[name];
       },
@@ -72,8 +77,32 @@ describe("mongo store", () => {
     await store.addTransaction({ pactId: pact.id, type: "lock", amountLamports: 10 });
 
     expect((await store.getUserByAuthSub("auth0|alice")).name).toBe("ALICE");
+    expect((await store.getUserByAuthSub("auth0|alice")).sub).toBe("auth0|alice");
     expect(await store.listPactsForUser(alice.id)).toHaveLength(1);
     expect(await store.listPactsForUser("auth0|stranger")).toHaveLength(0);
     expect(await store.listTransactionsForUser(bob.id)).toHaveLength(1);
+  });
+
+  it("stores friend requests and messages", async () => {
+    const db = {
+      collection(name) {
+        this._cols ??= {
+          users: createFakeCollection(),
+          pacts: createFakeCollection(),
+          transactions: createFakeCollection(),
+          groups: createFakeCollection(),
+          messages: createFakeCollection(),
+        };
+        return this._cols[name];
+      },
+    };
+    const store = createMongoStore(db);
+    const alice = await store.upsertUserFromAuth({ sub: "auth0|alice", name: "ALICE" });
+    const bob = await store.upsertUserFromAuth({ sub: "auth0|bob", name: "BOB" });
+    expect(await store.requestFriend(alice.id, bob.id)).toEqual({ status: "requested" });
+    expect(await store.acceptFriend(bob.id, alice.id)).toEqual({ status: "friends" });
+    await store.addMessage({ fromId: alice.id, toId: bob.id, body: "Gym?" });
+    expect(await store.listMessages(bob.id, alice.id)).toHaveLength(1);
+    expect((await store.listThreads(bob.id))[0].otherId).toBe(alice.id);
   });
 });

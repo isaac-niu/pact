@@ -12,11 +12,24 @@ import PactDetail from "./pages/PactDetail.jsx";
 import Profile from "./pages/Profile.jsx";
 import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
+import Wallet from "./pages/Wallet.jsx";
+import People from "./pages/People.jsx";
+import Inbox from "./pages/Inbox.jsx";
+import Crew from "./pages/Crew.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 function onAuthRoute(pathname) {
-  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+  return (
+    pathname === "/app" ||
+    pathname.startsWith("/app/") ||
+    pathname === "/callback" ||
+    pathname === "/create" ||
+    pathname === "/people" ||
+    pathname === "/crew" ||
+    pathname === "/inbox" ||
+    pathname === "/wallet"
+  );
 }
 
 function Auth0Account() {
@@ -25,7 +38,15 @@ function Auth0Account() {
   if (isLoading) return <span className="account-status">Checking account…</span>;
   if (!isAuthenticated) {
     return (
-      <button className="account-login" type="button" onClick={() => loginWithRedirect()}>
+      <button
+        className="account-login"
+        type="button"
+        onClick={() =>
+          loginWithRedirect({
+            authorizationParams: { audience: env.AUTH0_AUDIENCE },
+          })
+        }
+      >
         Sign in
       </button>
     );
@@ -71,7 +92,9 @@ function Auth0Balance() {
     }
 
     let active = true;
-    getAccessTokenSilently()
+    getAccessTokenSilently({
+      authorizationParams: { audience: env.AUTH0_AUDIENCE },
+    })
       .then((token) => api("/api/ledger", { token }))
       .then((ledger) => {
         if (active) setBalanceLamports(ledger.balanceLamports);
@@ -91,7 +114,7 @@ function Auth0Balance() {
   const name = user?.name || user?.nickname || user?.email || "Account";
   const balance = balanceLamports === null ? "—" : sol(balanceLamports / LAMPORTS_PER_SOL);
   return (
-    <NavLink to="/app" className="bank-chip" title="Your authenticated virtual SOL ledger">
+    <NavLink to="/wallet" className="bank-chip" title="Your authenticated virtual SOL ledger">
       <span className="bank-who">{isLoading ? "Account" : name}</span>
       <b>{balance}</b>
       <span>SOL</span>
@@ -127,6 +150,10 @@ function Shell({ children }) {
           </NavLink>
           <NavLink to="/create">Write</NavLink>
           <NavLink to="/feed">Tape</NavLink>
+          <NavLink to="/people">People</NavLink>
+          <NavLink to="/crew">Crew</NavLink>
+          <NavLink to="/inbox">Inbox</NavLink>
+          <NavLink to="/wallet">Bank</NavLink>
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/app">Pact app</NavLink>
         </nav>
@@ -149,6 +176,10 @@ export default function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/pact/:id" element={<PactDetail />} />
         <Route path="/me" element={<Profile />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/people" element={<People />} />
+        <Route path="/crew" element={<Crew />} />
+        <Route path="/inbox" element={<Inbox />} />
         <Route path="/profile" element={<Navigate to="/me" replace />} />
         <Route path="/app" element={<AuthenticatedPactDemo />} />
         <Route path="/callback" element={<Callback />} />

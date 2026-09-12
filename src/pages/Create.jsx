@@ -1,24 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { usePact } from "../store.jsx";
+import { useLiveAccount } from "../auth/useLiveAccount.js";
 import { api } from "../api.js";
-import { clientEnvReady, env } from "../env.js";
 import { defaultDeadline, localInputValue, sol } from "../lib/format.js";
-
-const LAMPORTS_PER_SOL = 1_000_000_000;
+import { LAMPORTS_PER_SOL } from "../backend/constants.js";
 
 export default function Create() {
   const { createPact, user, opponent, bank } = usePact();
-  // Auth0Provider only mounts here once Auth0 env vars are configured (see
-  // AuthGate). Without it useAuth0() safely returns a stub context frozen
-  // at isAuthenticated: false / isLoading: true — so gate on env readiness
-  // too, or "Sign in" would render forever disabled with no explanation,
-  // and calling its stub loginWithRedirect would throw.
-  const authConfigured = clientEnvReady().ready;
-  const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, loginWithRedirect } =
-    useAuth0();
+  const live = useLiveAccount();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [title, setTitle] = useState("I'll upload a gym selfie");
   const [criteria, setCriteria] = useState(
     "Face or body in frame with gym floor or equipment visible.",
@@ -26,66 +18,48 @@ export default function Create() {
   const [stake, setStake] = useState("2");
   const [deadline, setDeadline] = useState(localInputValue(defaultDeadline()));
   const [visibility, setVisibility] = useState("public");
-  const [destination, setDestination] = useState("desk"); // "desk" | "group"
-  const [groups, setGroups] = useState([]);
-  const [myId, setMyId] = useState(null);
+  const [sendTarget, setSendTarget] = useState("opponent");
+  const [opponentId, setOpponentId] = useState(params.get("vs") || "");
   const [groupId, setGroupId] = useState("");
-  const [groupsError, setGroupsError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const amount = Number(stake);
   const pot = Number.isFinite(amount) ? amount * 2 : 0;
-  const opponentId = opponent.id;
-
-  const tokenOf = useCallback(
-    () => getAccessTokenSilently({ authorizationParams: { audience: env.AUTH0_AUDIENCE } }),
-    [getAccessTokenSilently],
+  const livePeople = live.people;
+  const myGroups = useMemo(
+    () => live.groups.filter((group) => group.memberIds?.includes(live.me?.id)),
+    [live.groups, live.me],
   );
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setGroups([]);
-      setMyId(null);
-      return undefined;
-    }
-    let active = true;
-    (async () => {
-      try {
-        const token = await tokenOf();
-        const [identity, myGroups] = await Promise.all([
-          api("/api/auth/me", { token }),
-          api("/api/groups", { token }),
-        ]);
-        if (!active) return;
-        setMyId(identity.id);
-        setGroups(myGroups.filter((g) => g.memberIds?.includes(identity.id)));
-      } catch (err) {
-        if (active) setGroupsError(err.message || "Could not load your groups");
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticated, tokenOf]);
-
-  const myGroups = groups.filter((g) => !myId || g.memberIds?.includes(myId));
+  const chosen =
+    livePeople.find((person) => person.id === opponentId) ||
+    (live.live ? null : { id: opponent.id, name: opponent.handle });
+  const chosenGroup = myGroups.find((group) => group.id === groupId);
+  const challengerName = live.me?.name || user.handle;
+  const friendName =
+    sendTarget === "group"
+      ? chosenGroup?.name || "a group"
+      : chosen?.name || opponent.handle;
+  const postingLive = live.live && sendTarget !== "desk";
 
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      if (destination === "group") {
-        if (!groupId) throw new Error("Pick a group to send this slip to");
-        const token = await tokenOf();
+      if (postingLive || sendTarget === "group") {
+        if (sendTarget === "group" && !groupId) throw new Error("Pick a group to send this slip to");
+        if (sendTarget === "opponent" && !opponentId) throw new Error("Pick a signed-in friend");
+        const token = await live.tokenOf();
         await api("/api/pacts", {
           token,
           method: "POST",
           body: {
             title,
+            criteria,
             stakeLamports: Math.round(amount * LAMPORTS_PER_SOL),
-            groupId,
+            visibility,
+            ...(sendTarget === "group" ? { groupId } : { opponentId }),
           },
         });
         navigate("/app");
@@ -96,7 +70,7 @@ export default function Create() {
         criteria,
         stake: amount,
         deadline: new Date(deadline).getTime(),
-        opponentId,
+        opponentId: opponent.id,
         visibility,
       });
       navigate(`/pact/${pact.id}`);
@@ -117,6 +91,17 @@ export default function Create() {
           </div>
         </div>
         <form className="card form" onSubmit={onSubmit}>
+          {live.live ? (
+            <p className="hint">
+              Pitching as <b>{challengerName}</b> from your Auth0 account. Pick a signed-in person or
+              a group — not the Maya demo desk.
+            </p>
+          ) : (
+            <p className="hint">
+              Demo desk posts ISAAC vs MAYA. <Link to="/app">Sign in</Link> to pitch a real account
+              or send the slip to a group.
+            </p>
+          )}
           <label>
             Title
             <textarea
@@ -142,7 +127,7 @@ export default function Create() {
                 type="number"
                 min="0.1"
                 step="0.1"
-                max={destination === "desk" ? bank : undefined}
+                max={sendTarget === "opponent" && !live.live ? bank : undefined}
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 required
@@ -155,7 +140,7 @@ export default function Create() {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 required
-                disabled={destination === "group"}
+                disabled={sendTarget === "group"}
               />
             </label>
           </div>
@@ -163,26 +148,36 @@ export default function Create() {
           <fieldset className="opp-field">
             <legend>Send to</legend>
             <div className="tape-choice" role="radiogroup" aria-label="Opponent or group">
-              <label className={`opp-card ${destination === "desk" ? "on" : ""}`}>
+              <label className={`opp-card ${sendTarget !== "group" ? "on" : ""}`}>
                 <input
                   type="radio"
-                  name="destination"
-                  value="desk"
-                  checked={destination === "desk"}
-                  onChange={() => setDestination("desk")}
+                  name="sendTarget"
+                  value="opponent"
+                  checked={sendTarget !== "group"}
+                  onChange={() => {
+                    setSendTarget("opponent");
+                    setGroupId("");
+                  }}
                 />
                 <span>
-                  <b>{opponent.handle}</b>
-                  <em>{opponent.pill} · 1v1 on this desk</em>
+                  <b>{live.live ? "Opponent" : opponent.handle}</b>
+                  <em>
+                    {live.live
+                      ? "1v1 with someone who has signed in."
+                      : `${opponent.pill} · demo desk until you sign in`}
+                  </em>
                 </span>
               </label>
-              <label className={`opp-card ${destination === "group" ? "on" : ""}`}>
+              <label className={`opp-card ${sendTarget === "group" ? "on" : ""}`}>
                 <input
                   type="radio"
-                  name="destination"
+                  name="sendTarget"
                   value="group"
-                  checked={destination === "group"}
-                  onChange={() => setDestination("group")}
+                  checked={sendTarget === "group"}
+                  onChange={() => {
+                    setSendTarget("group");
+                    setOpponentId("");
+                  }}
                 />
                 <span>
                   <b>A group</b>
@@ -192,15 +187,10 @@ export default function Create() {
             </div>
           </fieldset>
 
-          {destination === "group" ? (
+          {sendTarget === "group" ? (
             <fieldset className="opp-field">
               <legend>Group</legend>
-              {!authConfigured ? (
-                <p className="hint">
-                  Groups need Auth0 configured on this desk (see <code>env-template.txt</code>) —
-                  not available on this run.
-                </p>
-              ) : !isAuthenticated ? (
+              {!live.live ? (
                 <div className="opp-card">
                   <span>
                     <b>Sign in required</b>
@@ -209,16 +199,19 @@ export default function Create() {
                   <button
                     className="btn btn-ghost"
                     type="button"
-                    disabled={authLoading}
-                    onClick={() => loginWithRedirect({ appState: { returnTo: "/create" } })}
+                    onClick={() => live.loginWithRedirect?.({ appState: { returnTo: "/create" } })}
                   >
                     Sign in
                   </button>
                 </div>
               ) : myGroups.length === 0 ? (
                 <p className="hint">
-                  {groupsError ||
-                    "You're not in a group yet. Create or join one in the Pact app, then come back here."}
+                  {live.error || (
+                    <>
+                      You&apos;re not in a group yet. Make one in <Link to="/crew">Crew</Link>, then
+                      come back.
+                    </>
+                  )}
                 </p>
               ) : (
                 <label>
@@ -227,15 +220,30 @@ export default function Create() {
                     <option value="" disabled>
                       Choose a group
                     </option>
-                    {myGroups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name} · {g.memberIds.length} member{g.memberIds.length === 1 ? "" : "s"}
+                    {myGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} · {group.memberIds.length} member
+                        {group.memberIds.length === 1 ? "" : "s"}
                       </option>
                     ))}
                   </select>
                 </label>
               )}
             </fieldset>
+          ) : live.live ? (
+            <label>
+              Opponent
+              <select value={opponentId} onChange={(e) => setOpponentId(e.target.value)} required>
+                <option value="">Select a signed-in account</option>
+                {livePeople.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                    {person.friend ? " · friend" : ""}
+                    {person.email ? ` · ${person.email}` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
           ) : (
             <fieldset className="opp-field">
               <legend>Tape</legend>
@@ -270,13 +278,47 @@ export default function Create() {
             </fieldset>
           )}
 
+          {live.live && sendTarget !== "group" ? (
+            <fieldset className="opp-field">
+              <legend>Tape</legend>
+              <div className="tape-choice" role="radiogroup" aria-label="Public or private tape">
+                <label className={`opp-card ${visibility === "public" ? "on" : ""}`}>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    checked={visibility === "public"}
+                    onChange={() => setVisibility("public")}
+                  />
+                  <span>
+                    <b>Public tape</b>
+                    <em>Anyone on the board can see this slip and its marks.</em>
+                  </span>
+                </label>
+                <label className={`opp-card ${visibility === "private" ? "on" : ""}`}>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="private"
+                    checked={visibility === "private"}
+                    onChange={() => setVisibility("private")}
+                  />
+                  <span>
+                    <b>Private tape</b>
+                    <em>Only you and {friendName} see this slip.</em>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
+
           {error ? <p className="err">{error}</p> : null}
           <p className="hint">
-            {destination === "group"
-              ? `Posting as the group's stake — everyone in the group sees this slip once it's up.`
-              : `${user.handle} posts a slip. ${opponent.handle} must accept and match ${sol(
-                  amount || 0,
-                )} SOL. Bank ${sol(bank)} SOL. Stakes are virtual SOL on this desk.`}
+            {sendTarget === "group"
+              ? "Posting as the group's stake — everyone in the group sees this slip once it's up."
+              : `${challengerName} posts a slip. ${friendName} matches ${sol(amount || 0)} SOL.${
+                  live.live ? "" : ` Demo bank ${sol(bank)} SOL.`
+                }`}
           </p>
           <button className="btn btn-lime" type="submit" disabled={busy}>
             Post to the board
@@ -289,7 +331,7 @@ export default function Create() {
         <header className="ticket-head">
           <span>Preview</span>
           <span className="stamp">
-            {destination === "group" ? "GROUP" : visibility === "private" ? "PRIVATE" : "PUBLIC"}
+            {sendTarget === "group" ? "GROUP" : visibility === "private" ? "PRIVATE" : "PUBLIC"}
           </span>
         </header>
         <h3>{title.trim() || "Untitled pact"}</h3>
@@ -297,16 +339,12 @@ export default function Create() {
         <div className="vs compact">
           <div className="side">
             <div className="odds-label">Challenger</div>
-            <div className="side-name">{user.handle}</div>
+            <div className="side-name">{challengerName}</div>
           </div>
           <div className="vs-mark">VS</div>
           <div className="side">
-            <div className="odds-label">{destination === "group" ? "Group" : "Friend"}</div>
-            <div className="side-name">
-              {destination === "group"
-                ? myGroups.find((g) => g.id === groupId)?.name || "—"
-                : opponent.handle}
-            </div>
+            <div className="odds-label">{sendTarget === "group" ? "Group" : "Friend"}</div>
+            <div className="side-name">{friendName}</div>
           </div>
         </div>
         <div className="odds-strip">
@@ -316,7 +354,7 @@ export default function Create() {
           </div>
           <div className="odds-cell">
             <div className="odds-label">Pot</div>
-            <div className="odds-value lime">{destination === "group" ? "—" : sol(pot)}</div>
+            <div className="odds-value lime">{sendTarget === "group" ? "—" : sol(pot)}</div>
           </div>
         </div>
       </article>

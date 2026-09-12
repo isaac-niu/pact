@@ -207,6 +207,7 @@ function PactDesk({
       <div className="card">
         <h3>Ledger / balance</h3>
         <p>{ledger ? `${ledger.balanceLamports / 1_000_000_000} SOL available` : "Loading balance…"}</p>
+        <a className="btn btn-ghost" href="/wallet">Add SOL</a>
       </div>
     </section>
   );

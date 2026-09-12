@@ -34,6 +34,9 @@ export function submitEvidence(...args) {
 export function verifyPact(...args) {
   return impl.verifyPact(...args);
 }
+export function depositFunds(...args) {
+  return impl.depositFunds(...args);
+}
 export function getSnapshot() {
   return impl.getSnapshot();
 }

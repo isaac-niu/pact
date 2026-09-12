@@ -1,4 +1,4 @@
-import { liveConfig, getDesk, createPact, acceptPact, submitEvidence, verifyPact } from "./deskStore.js";
+import { liveConfig, getDesk, createPact, acceptPact, submitEvidence, verifyPact, depositFunds } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
 
@@ -59,6 +59,17 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       return true;
     }
     send(res, 200, { persist: true, users: await listDeskUsers() });
+    return true;
+  }
+
+  if (url === "/api/desk/deposit" && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await depositFunds(payload, actorOf(req, payload));
+    send(res, 200, out);
     return true;
   }
 

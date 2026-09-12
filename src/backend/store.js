@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DEMO_USERS, STARTING_BALANCE_LAMPORTS } from "./constants.js";
+import { withIdentity } from "./userIdentity.js";
 
 function now() {
   return Date.now();
@@ -25,11 +26,12 @@ export function publicUser(user) {
   };
 }
 
-export function publicDirectoryUser(user) {
+export function publicDirectoryUser(user, viewer = null) {
   return {
     id: user.id,
     name: user.name,
     email: user.email ?? null,
+    friend: Boolean(viewer?.friendIds?.includes(user.id)),
   };
 }
 
@@ -54,10 +56,11 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
   const pacts = new Map();
   const groups = new Map();
   const transactions = [];
+  const messages = [];
 
   if (seedDemoUsers) {
     for (const user of Object.values(DEMO_USERS)) {
-      users.set(user.id, { ...user, createdAt: now(), lastLoginAt: now() });
+      users.set(user.id, withIdentity({ ...user, createdAt: now(), lastLoginAt: now() }));
     }
   }
 
@@ -68,37 +71,45 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
     },
 
     async getUserByAuthSub(authSub) {
-      const user = [...users.values()].find((entry) => entry.authSub === authSub || entry.id === authSub);
+      const user = [...users.values()].find(
+        (entry) => entry.authSub === authSub || entry.sub === authSub || entry.id === authSub,
+      );
       return user ? clone(user) : null;
     },
 
     async upsertUserFromAuth(profile) {
-      const authSub = profile.sub;
-      const existing = [...users.values()].find((entry) => entry.authSub === authSub || entry.id === authSub);
+      const ident = withIdentity(profile);
+      const existing = [...users.values()].find(
+        (entry) => entry.authSub === ident.authSub || entry.sub === ident.sub || entry.id === ident.id,
+      );
       if (existing) {
         existing.lastLoginAt = now();
+        existing.sub = ident.sub;
+        existing.authSub = ident.authSub;
         if (profile.email) existing.email = profile.email;
         if (profile.name || profile.nickname) existing.name = displayName(profile);
         users.set(existing.id, existing);
         return clone(existing);
       }
 
-      const user = {
-        id: authSub,
-        authSub,
+      const user = withIdentity({
         name: displayName(profile),
         email: profile.email ?? null,
         balanceLamports: STARTING_BALANCE_LAMPORTS,
         createdAt: now(),
         lastLoginAt: now(),
-      };
+        friendIds: [],
+        incomingFriendIds: [],
+        outgoingFriendIds: [],
+      }, ident);
       users.set(user.id, user);
       return clone(user);
     },
 
     async saveUser(user) {
-      users.set(user.id, { ...users.get(user.id), ...user });
-      return clone(users.get(user.id));
+      const next = withIdentity({ ...users.get(user.id), ...user });
+      users.set(next.id, next);
+      return clone(next);
     },
 
     async listUsers() {
@@ -177,10 +188,74 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
     async listTransactionsForUser(userId) {
       return transactions
         .filter((entry) => {
+          if (entry.userId === userId) return true;
           const pact = pacts.get(entry.pactId);
           return pact && (pact.creatorId === userId || pact.opponentId === userId);
         })
         .map(clone);
+    },
+
+    async requestFriend(fromId, toId) {
+      if (fromId === toId) throw new Error("Cannot friend yourself");
+      const from = users.get(fromId);
+      const to = users.get(toId);
+      if (!from || !to) throw new Error("User not found");
+      const a = withIdentity(from);
+      const b = withIdentity(to);
+      if (a.friendIds.includes(toId)) return { status: "friends" };
+      a.outgoingFriendIds = [...new Set([...a.outgoingFriendIds, toId])];
+      b.incomingFriendIds = [...new Set([...b.incomingFriendIds, fromId])];
+      users.set(fromId, a);
+      users.set(toId, b);
+      return { status: "requested" };
+    },
+
+    async acceptFriend(userId, fromId) {
+      const meDoc = users.get(userId);
+      const themDoc = users.get(fromId);
+      if (!meDoc || !themDoc) throw new Error("User not found");
+      const me = withIdentity(meDoc);
+      const them = withIdentity(themDoc);
+      if (!me.incomingFriendIds.includes(fromId)) throw new Error("No request");
+      me.incomingFriendIds = me.incomingFriendIds.filter((id) => id !== fromId);
+      them.outgoingFriendIds = them.outgoingFriendIds.filter((id) => id !== userId);
+      me.friendIds = [...new Set([...me.friendIds, fromId])];
+      them.friendIds = [...new Set([...them.friendIds, userId])];
+      users.set(userId, me);
+      users.set(fromId, them);
+      return { status: "friends" };
+    },
+
+    async addMessage({ fromId, toId, body }) {
+      const message = {
+        id: randomUUID(),
+        threadKey: [fromId, toId].sort().join(":"),
+        fromId,
+        toId,
+        body,
+        createdAt: now(),
+      };
+      messages.push(message);
+      return clone(message);
+    },
+
+    async listMessages(userId, otherId) {
+      const threadKey = [userId, otherId].sort().join(":");
+      return messages.filter((row) => row.threadKey === threadKey).map(clone);
+    },
+
+    async listThreads(userId) {
+      const rows = [...messages].sort((a, b) => b.createdAt - a.createdAt);
+      const seen = new Set();
+      const threads = [];
+      for (const row of rows) {
+        if (row.fromId !== userId && row.toId !== userId) continue;
+        const otherId = row.fromId === userId ? row.toId : row.fromId;
+        if (seen.has(otherId)) continue;
+        seen.add(otherId);
+        threads.push({ otherId, last: clone(row) });
+      }
+      return threads;
     },
   };
 }

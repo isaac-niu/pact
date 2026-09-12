@@ -69,3 +69,12 @@ test("createPact stores public vs private tape", async () => {
   );
   assert.equal(priv.result.visibility, "private");
 });
+
+test("deposit credits virtual SOL on the desk", async () => {
+  const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
+  const start = emptyDemoState();
+  const before = bankOf("you", start);
+  const out = await desk.deposit(start, { amount: 10, processor: "card" }, "you");
+  assert.equal(out.result.amount, 10);
+  assert.equal(bankOf("you", out.state), before + 10);
+});

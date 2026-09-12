@@ -11,7 +11,11 @@ function needsAuth0(pathname) {
     pathname === "/app" ||
     pathname.startsWith("/app/") ||
     pathname === "/callback" ||
-    pathname === "/create"
+    pathname === "/create" ||
+    pathname === "/people" ||
+    pathname === "/crew" ||
+    pathname === "/inbox" ||
+    pathname === "/wallet"
   );
 }
 

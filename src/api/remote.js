@@ -159,3 +159,13 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   apply(out.state);
   return out.result;
 }
+
+export async function depositFunds(input, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req("/api/desk/deposit", {
+    method: "POST",
+    body: JSON.stringify({ ...input, actorId }),
+  });
+  apply(out.state);
+  return out.result;
+}
