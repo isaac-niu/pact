@@ -59,7 +59,7 @@ export default function RailBook({ pact }) {
           {mine.settledAt ? (mine.won ? " · paid" : " · faded") : ""}
         </p>
       ) : null}
-      {canFade ? (
+      {canFade && !mine ? (
         <form className="take-form rail-form" onSubmit={onLock}>
           <div className="rail-sides" role="group" aria-label="Fade which desk">
             <button
