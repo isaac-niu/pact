@@ -11,6 +11,8 @@ import TapeTalk from "../components/TapeTalk.jsx";
 import RailBook from "../components/RailBook.jsx";
 import TicketShare from "../components/TicketShare.jsx";
 import { ChecklistGrade, ChecklistGradeForm, ChecklistList } from "../components/ChecklistMarks.jsx";
+import ProofPreview from "../components/ProofPreview.jsx";
+import { isAllowedProofFile, requireProofFiles } from "../lib/proofMedia.js";
 import { pactChecklist } from "../lib/successCriteria.js";
 
 const STAMPS = {
@@ -36,7 +38,7 @@ export default function PactDetail() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
-  const [localPreview, setLocalPreview] = useState("");
+  const [localFiles, setLocalFiles] = useState([]);
   const [gradeReason, setGradeReason] = useState("");
   const [itemMarks, setItemMarks] = useState([]);
   const [flagNote, setFlagNote] = useState("");
@@ -101,24 +103,39 @@ export default function PactDetail() {
     }
   }
 
-  async function takeFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Drop a photo (png, jpg, webp).");
+  async function takeFiles(list) {
+    const raw = Array.from(list || []).filter(Boolean);
+    if (!raw.length) return;
+    try {
+      requireProofFiles(raw);
+    } catch (err) {
+      setError(err.message || "Drop a photo (png, jpg, webp), a burst, or a short clip.");
+      return;
+    }
+    if (raw.some((file) => !isAllowedProofFile(file))) {
+      setError("Drop a photo (png, jpg, webp), a burst, or a short clip.");
       return;
     }
     setError("");
-    if (localPreview) URL.revokeObjectURL(localPreview);
+    localFiles.forEach((file) => {
+      if (file.dataUrl?.startsWith("blob:")) URL.revokeObjectURL(file.dataUrl);
+    });
     try {
       if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-        setLocalPreview(URL.createObjectURL(file));
+        setLocalFiles(
+          raw.map((file) => ({
+            name: file.name,
+            mime: file.type,
+            dataUrl: URL.createObjectURL(file),
+          })),
+        );
       }
     } catch {
       /* jsdom / old browsers */
     }
     setBusy(true);
     try {
-      await submitEvidence(pact.id, file);
+      await submitEvidence(pact.id, raw.length === 1 ? raw[0] : raw);
     } catch (err) {
       setError(err.message || "Could not send proof");
     } finally {
@@ -127,8 +144,7 @@ export default function PactDetail() {
   }
 
   async function onFile(e) {
-    const file = e.target.files?.[0];
-    await takeFile(file);
+    await takeFiles(e.target.files);
     e.target.value = "";
   }
 
@@ -197,18 +213,7 @@ export default function PactDetail() {
       <div className="detail-grid">
         <div className="card">
           <div className="kicker">Evidence</div>
-          {pact.evidenceUrl || localPreview ? (
-            <div className="proof-frame">
-              <img
-                className="preview"
-                src={pact.evidenceUrl || localPreview}
-                alt={pact.evidenceName || "Evidence"}
-              />
-              {pact.evidenceName ? <span className="proof-name">{pact.evidenceName}</span> : null}
-            </div>
-          ) : (
-            <p className="hint">No photo yet. Challenger drops a frame for Gemini Flash.</p>
-          )}
+          <ProofPreview pact={pact} localFiles={localFiles} />
           {canUpload ? (
             <label
               className={`dropzone ${dragOver ? "is-over" : ""} ${busy ? "is-busy" : ""}`}
@@ -220,19 +225,22 @@ export default function PactDetail() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                takeFile(e.dataTransfer.files?.[0]);
+                takeFiles(e.dataTransfer.files);
               }}
             >
               <input
                 type="file"
-                accept="image/*"
-                aria-label="Upload photo"
+                accept="image/*,video/mp4,video/webm,video/quicktime"
+                multiple
+                aria-label="Upload proof"
                 onChange={onFile}
                 disabled={busy}
               />
-              <span className="dropzone-kicker">{busy ? "Sending to the desk…" : "Proof frame"}</span>
-              <span className="dropzone-title">Upload photo</span>
-              <span className="dropzone-hint">Drop an image here or click to browse. PNG, JPG, WebP.</span>
+              <span className="dropzone-kicker">{busy ? "Sending to the desk…" : "Proof desk"}</span>
+              <span className="dropzone-title">Upload proof</span>
+              <span className="dropzone-hint">
+                One photo, a burst (up to 4), or a short clip. PNG, JPG, WebP, MP4, WebM.
+              </span>
             </label>
           ) : null}
           {pact.status === "open" && userId === pact.creatorId ? (
@@ -261,7 +269,7 @@ export default function PactDetail() {
             <p className="hint">Waiting on {opponent.handle} to accept.</p>
           ) : null}
           {pact.status === "accepted" ? (
-            <p className="hint">Live. {creator.handle} owes a photo.</p>
+            <p className="hint">Live. {creator.handle} owes a frame, burst, or clip.</p>
           ) : null}
           {pact.status === "review" ? (
             <p className="hint">

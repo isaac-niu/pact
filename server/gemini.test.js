@@ -89,8 +89,9 @@ test("blurry filename parks in friend-verify", () => {
   assert.equal(v.auto, false);
 });
 
-test("parseDataUrl accepts image payloads only", () => {
+test("parseDataUrl accepts image and short-clip payloads", () => {
   assert.deepEqual(parseDataUrl("data:image/jpeg;base64,abc"), { mime: "image/jpeg", data: "abc" });
+  assert.deepEqual(parseDataUrl("data:video/mp4;base64,abc"), { mime: "video/mp4", data: "abc" });
   assert.equal(parseDataUrl("data:text/plain;base64,abc"), null);
   assert.equal(parseDataUrl("not-a-data-url"), null);
 });

@@ -11,12 +11,12 @@
 
 import { attachChecklistToVerdict } from "../lib/successCriteria.js";
 
-export async function judgeEvidence({ title, criteria, checklist, fileName, dataUrl, ...extra }) {
+export async function judgeEvidence({ title, criteria, checklist, fileName, dataUrl, files, kind, ...extra }) {
   try {
     const res = await fetch("/api/referee", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title, criteria, checklist, fileName, dataUrl, ...extra }),
+      body: JSON.stringify({ title, criteria, checklist, fileName, dataUrl, files, kind, ...extra }),
     });
     if (res.ok) return await res.json();
   } catch {

@@ -139,6 +139,8 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       checklist: payload.checklist,
       fileName: payload.fileName,
       dataUrl: payload.dataUrl,
+      files: payload.files,
+      kind: payload.kind,
     });
 
     let evidenceUrl = payload.dataUrl || null;

@@ -20,6 +20,7 @@ import {
 } from "../src/lib/appeals.js";
 import { applyComment, applyReaction } from "../src/lib/tapeTalk.js";
 import { attachChecklistToVerdict, friendItemMarks, slipCriteria } from "../src/lib/successCriteria.js";
+import { normalizeProofPayload, primaryProofFile } from "../src/lib/proofMedia.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -68,6 +69,8 @@ export function createDeskLogic(judge) {
         status: "open",
         evidenceUrl: null,
         evidenceName: null,
+        evidenceKind: "photo",
+        evidenceFiles: [],
         verdict: null,
         winnerId: null,
         visibility: input.visibility === "private" ? "private" : "public",
@@ -132,9 +135,11 @@ export function createDeskLogic(judge) {
       if (!pact) throw new Error("Slip not on the board");
       if (pact.creatorId !== actorId) throw new Error("Only the challenger uploads proof");
       if (!["accepted", "evidence"].includes(pact.status)) throw new Error("This slip is not live for proof");
-      if (!file?.dataUrl) throw new Error("Add a photo first");
+      const payload = normalizeProofPayload(file);
+      const primary = primaryProofFile(payload);
+      if (!primary?.dataUrl) throw new Error("Add a photo first");
 
-      const evidenceName = file.name || "proof.jpg";
+      const evidenceName = payload.label;
       const provedAt = Date.now();
       let nextState = {
         ...state,
@@ -143,8 +148,10 @@ export function createDeskLogic(judge) {
             ? {
                 ...p,
                 status: "judging",
-                evidenceUrl: file.dataUrl,
+                evidenceUrl: primary.dataUrl,
                 evidenceName,
+                evidenceKind: payload.kind,
+                evidenceFiles: payload.files,
                 provedAt,
                 verdict: null,
                 winnerId: null,
@@ -164,7 +171,9 @@ export function createDeskLogic(judge) {
           criteria: pact.criteria,
           checklist: pact.checklist,
           fileName: evidenceName,
-          dataUrl: file.dataUrl,
+          dataUrl: primary.dataUrl,
+          files: payload.files,
+          kind: payload.kind,
         }),
         { ...pact, fileName: evidenceName },
       );

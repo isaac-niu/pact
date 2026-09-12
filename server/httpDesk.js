@@ -157,7 +157,12 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       const payload = await jsonBody(req, readBody, 8_000_000);
       const out = await submitEvidence(
         pactId,
-        { dataUrl: payload.evidenceDataUrl, name: payload.evidenceName },
+        {
+          dataUrl: payload.evidenceDataUrl,
+          name: payload.evidenceName,
+          files: payload.evidenceFiles,
+          kind: payload.evidenceKind,
+        },
         actorOf(req, payload),
       );
       send(res, 200, out);
