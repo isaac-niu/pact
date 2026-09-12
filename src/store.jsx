@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { emptyDemoState } from "./demo/fixtures.js";
 
 export const USERS = [
   { id: "you", name: "You", handle: "ISAAC", tag: "CHALLENGER" },
@@ -33,14 +34,15 @@ const VERDICTS = {
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { userId: "you", pacts: [] };
+    // First visit only — never overwrite an existing board.
+    if (!raw) return emptyDemoState();
     const parsed = JSON.parse(raw);
     return {
       userId: parsed.userId === "friend" ? "friend" : "you",
       pacts: Array.isArray(parsed.pacts) ? parsed.pacts : [],
     };
   } catch {
-    return { userId: "you", pacts: [] };
+    return emptyDemoState();
   }
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
+import Announcer from "../components/Announcer.jsx";
 
 export default function PactDetail() {
   const { id } = useParams();
@@ -121,6 +122,7 @@ export default function PactDetail() {
               <div className="payout">
                 {winner.handle} takes the pot · {pot} SOL
               </div>
+              <Announcer pact={pact} winnerHandle={winner.handle} />
             </div>
           )}
         </div>

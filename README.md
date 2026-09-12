@@ -1,25 +1,49 @@
 # PACT
 
-Local proof of concept for a 1v1 self-improvement challenge. Friend A writes a pact, Friend B accepts and matches a fake SOL stake, A uploads a photo, a mocked referee calls pass/fail, and the pot is marked paid. No Auth0, MongoDB, Solana, Gemini, wallets, or API keys.
+Social media for accountability, not attention.
 
-## Run
+Local 1v1 loop: write a pact, a friend matches a **virtual SOL** stake, upload a photo, referee calls pass/fail, winner takes the pot. Pitch the loop — not Venmo + Twitter + gambling.
+
+## Run (laptop)
 
 ```bash
+cp .env.example .env   # empty keys are fine
 npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
+Open `http://localhost:5173`. State is `localStorage`. Switch **You / Friend** in the top-right (ISAAC vs MAYA). A first visit loads sample slips so the board is not empty.
 
-State lives in `localStorage`. Photos stay in the browser as object URLs. Two hardcoded demo users — **You (ISAAC)** and **Friend (MAYA)** — switch from the top-right pill.
+Production-style local server (what Vultr runs):
 
-## 60-second demo
+```bash
+npm run build
+npm start
+# http://127.0.0.1:3000
+```
 
-1. Home: read the pitch. Click **Open a pact**.
-2. Leave the default challenge (“I'll upload a gym selfie”) and a 2 SOL stake. Click **Post to the board**.
-3. You are still ISAAC, so the slip is waiting. Flip the switcher to **Friend**.
-4. Click **Accept · 2.00 SOL**. The pot is now 4.00 SOL.
-5. Flip back to **You**. Upload any photo (a gym selfie, a cat, a screenshot — the referee only checks that a file exists).
-6. Click **Send to referee**. After ~1.4s you get pass/fail, a confidence number, a one-line rationale, and who takes the pot.
+## Lane docs
 
-That’s the product: accountability with a sportsbook ticket, not a platform.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — nginx, systemd, Vultr, env names
+- [docs/DEMO.md](docs/DEMO.md) — 3-minute judging script + fallbacks
+
+## What’s in this POC vs later
+
+| Now | Person B / C / later |
+| --- | --- |
+| User switcher | Auth0 |
+| localStorage | MongoDB Atlas |
+| Mocked referee | Gemini Flash on the photo |
+| Virtual SOL on the ticket | Virtual SOL ledger |
+| Optional ElevenLabs on settle | Same, if `ELEVENLABS_API_KEY` is set |
+| Vultr + nginx | Live URL for judges |
+
+## Scripts
+
+```bash
+npm test              # env/announcer unit checks
+npm run build
+npm start
+BASE_URL=http://127.0.0.1:3000 npm run smoke
+DEMO_SEED=true npm run seed   # prints fixtures; will not write production Mongo
+```

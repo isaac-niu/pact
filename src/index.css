@@ -421,6 +421,16 @@ textarea {
   font-size: 13px;
 }
 
+.announcer {
+  margin-top: 14px;
+}
+
+.announcer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 720px) {
   .topbar,
   .slip,
