@@ -143,7 +143,14 @@ Browsers with empty `localStorage` get sample slips (ISAAC vs MAYA). That is per
 
 `npm run seed` **refuses** unless `DEMO_SEED=true`, and still refuses in `NODE_ENV=production` unless `DEMO_SEED_PRODUCTION=true`. It does not write Mongo.
 
-## Rollback
+If the homepage times out from the internet but `curl localhost` works on the box, **UFW is probably allowing only SSH**. `deploy/bootstrap.sh` opens 80/tcp (and 443). To fix a box by hand:
+
+```bash
+ufw allow 80/tcp
+ufw status
+```
+
+Do not expose Node's `:3000` publicly.
 
 ```bash
 systemctl stop pact

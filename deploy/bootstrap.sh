@@ -10,8 +10,8 @@ if [[ ! -f package.json ]]; then
   exit 1
 fi
 
-# vite lives in devDependencies — install them for the build, then prune.
-npm ci --include=dev
+# vite lives in devDependencies — do not let NODE_ENV=production skip it.
+NPM_CONFIG_PRODUCTION=false npm ci
 npm run build
 npm prune --omit=dev
 export NODE_ENV=production
@@ -26,6 +26,11 @@ systemctl daemon-reload
 systemctl enable --now pact
 systemctl restart pact
 systemctl reload nginx || systemctl restart nginx
+
+if command -v ufw >/dev/null 2>&1; then
+  ufw allow 80/tcp >/dev/null
+  ufw allow 443/tcp >/dev/null || true
+fi
 
 sleep 1
 curl -fsS http://127.0.0.1:3000/api/health
