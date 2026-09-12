@@ -162,6 +162,24 @@ describe("PactProvider", () => {
     expect(result.current.unreadNotices).toBe(0);
   });
 
+  it("lets the current desk heat a public mark and post a take", async () => {
+    const { result } = renderHook(() => usePact(), {
+      wrapper: PactProvider,
+    });
+
+    await act(async () => {
+      await result.current.reactToMark("ev-gym-won", "🔥");
+    });
+    expect(result.current.reactions.some((row) => row.eventId === "ev-gym-won" && row.userId === "you")).toBe(
+      true,
+    );
+
+    await act(async () => {
+      await result.current.commentOnMark("ev-gym-won", "Book stands.");
+    });
+    expect(result.current.comments.some((row) => row.body === "Book stands.")).toBe(true);
+  });
+
   it("persists state to localStorage", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,

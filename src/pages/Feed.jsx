@@ -8,6 +8,7 @@ import Notices from "../components/Notices.jsx";
 import { approachingDeadline } from "../lib/reminders.js";
 import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
+import TapeTalk from "../components/TapeTalk.jsx";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
 
@@ -78,20 +79,23 @@ export default function Feed() {
             const pact = pacts.find((p) => p.id === ev.pactId);
             const actor = userById(ev.actorId);
             return (
-              <Link className={`tape-row type-${ev.type}`} key={ev.id} to={`/pact/${ev.pactId}`}>
-                <time>{formatClock(ev.at)}</time>
-                <span className={`badge type-${ev.type}`}>{ev.type}</span>
-                <div className="tape-body">
-                  <div className="tape-title">{pact?.title ?? "Slip"}</div>
-                  <div className="meta">
-                    {actor?.handle} · {ev.note} · {pactVisibility(pact)}
+              <article className={`tape-card type-${ev.type}`} key={ev.id}>
+                <Link className={`tape-row type-${ev.type}`} to={`/pact/${ev.pactId}`}>
+                  <time>{formatClock(ev.at)}</time>
+                  <span className={`badge type-${ev.type}`}>{ev.type}</span>
+                  <div className="tape-body">
+                    <div className="tape-title">{pact?.title ?? "Slip"}</div>
+                    <div className="meta">
+                      {actor?.handle} · {ev.note} · {pactVisibility(pact)}
+                    </div>
                   </div>
-                </div>
-                <div className="stake">
-                  <b>{sol(pact?.stake ?? 0)}</b>
-                  <span className="hint">SOL each</span>
-                </div>
-              </Link>
+                  <div className="stake">
+                    <b>{sol(pact?.stake ?? 0)}</b>
+                    <span className="hint">SOL each</span>
+                  </div>
+                </Link>
+                <TapeTalk eventId={ev.id} compact />
+              </article>
             );
           })}
         </div>
