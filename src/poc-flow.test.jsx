@@ -1,11 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetDesk } from "./api/local.js";
 import App from "./App.jsx";
 import { PactProvider } from "./store.jsx";
 
 function renderPactApp(path = "/") {
-  localStorage.clear();
   return render(
     <MemoryRouter initialEntries={[path]}>
       <PactProvider>
@@ -16,48 +16,52 @@ function renderPactApp(path = "/") {
 }
 
 describe("local Pact proof of concept", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetDesk();
+  });
+
   it("supports the documented create, accept, evidence, and referee flow", async () => {
-    vi.useFakeTimers();
     renderPactApp();
 
-    fireEvent.click(screen.getByRole("link", { name: "Open a pact" }));
+    fireEvent.click(screen.getByRole("link", { name: "Write a slip" }));
     expect(screen.getByRole("heading", { name: "Write the pact" })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Challenge"), {
+    fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Run a 5k" },
     });
-    fireEvent.change(screen.getByLabelText(/Stake each/), { target: { value: "3.5" } });
+    fireEvent.change(screen.getByLabelText(/Virtual SOL stake/), { target: { value: "3.5" } });
     fireEvent.click(screen.getByRole("button", { name: "Post to the board" }));
 
-    expect(screen.getByRole("heading", { name: "Run a 5k" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 2, name: "Run a 5k" })).toBeInTheDocument();
+      expect(screen.getByText("SOL pot")).toBeInTheDocument();
+    });
     expect(screen.getByText("7.00")).toBeInTheDocument();
-    expect(screen.getByText("SOL pot")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Friend" }));
+    fireEvent.click(screen.getByRole("button", { name: /Friend/ }));
     fireEvent.click(screen.getByRole("button", { name: "Accept · 3.50 SOL" }));
-    expect(screen.getByText(/Live\. ISAAC owes a photo/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "You" }));
-    const evidence = new File(["proof"], "run.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText("Upload photo"), { target: { files: [evidence] } });
-    expect(screen.getByRole("img", { name: "run.png" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Send to referee" }));
-    expect(screen.getByText(/Referee reviewing/)).toBeInTheDocument();
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1400);
+    await waitFor(() => {
+      expect(screen.getByText(/Live\. ISAAC owes a photo/)).toBeInTheDocument();
     });
 
-    expect(screen.getByText("pass")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^You/ }));
+    const evidence = new File(["proof"], "run.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Upload photo"), { target: { files: [evidence] } });
+
+    await waitFor(() => {
+      expect(screen.getByRole("img", { name: "run.png" })).toBeInTheDocument();
+      expect(screen.getByText("pass")).toBeInTheDocument();
+    });
     expect(screen.getByText(/ISAAC takes the pot · 7.00 SOL/)).toBeInTheDocument();
-    vi.useRealTimers();
   });
 
   it("keeps the main navigation available from every application route", () => {
     renderPactApp("/feed");
 
     expect(screen.getByRole("link", { name: "PACT" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Write slip" })).toHaveAttribute("href", "/create");
-    expect(screen.getByRole("link", { name: "Board" })).toHaveAttribute("href", "/feed");
+    expect(screen.getByRole("link", { name: "Write" })).toHaveAttribute("href", "/create");
+    expect(screen.getByRole("link", { name: "Tape" })).toHaveAttribute("href", "/feed");
+    expect(screen.getByRole("link", { name: "Pact app" })).toHaveAttribute("href", "/app");
   });
 });

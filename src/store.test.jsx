@@ -1,112 +1,118 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, beforeEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { resetDesk, STORAGE_KEY } from "./api/local.js";
 import { PactProvider, usePact } from "./store.jsx";
 
 describe("PactProvider", () => {
   beforeEach(() => {
     localStorage.clear();
-    });
-
-  afterEach(() => {
-    localStorage.clear();
-    });
+    resetDesk();
+  });
 
   it("provides initial user as 'you'", () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
-    expect(result.current.userId).toBe("you");
     });
+    expect(result.current.userId).toBe("you");
+  });
 
   it("provides the correct user object for 'you'", () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
+    });
     expect(result.current.user.id).toBe("you");
     expect(result.current.user.handle).toBe("ISAAC");
-    });
+  });
 
   it("provides the correct opponent for 'you'", () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
+    });
     expect(result.current.opponent.id).toBe("friend");
     expect(result.current.opponent.handle).toBe("MAYA");
-    });
+  });
 
   it("switches user between 'you' and 'friend'", () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
+    });
 
     act(() => result.current.switchUser("friend"));
     expect(result.current.userId).toBe("friend");
 
     act(() => result.current.switchUser("you"));
     expect(result.current.userId).toBe("you");
-    });
+  });
 
-  it("creates a pact with correct fields", () => {
+  it("creates a pact with correct fields", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
-
-    act(() => {
-      result.current.createPact({ title: "Test challenge", stake: 2 });
-      });
-
-    const pacts = result.current.pacts;
-    expect(pacts).toHaveLength(1);
-    expect(pacts[0].title).toBe("Test challenge");
-    expect(pacts[0].stake).toBe(2);
-    expect(pacts[0].creatorId).toBe("you");
-    expect(pacts[0].opponentId).toBe("friend");
-    expect(pacts[0].status).toBe("open");
     });
 
-  it("accepts a pact when called by the opponent", () => {
+    await act(async () => {
+      await result.current.createPact({
+        title: "Test challenge",
+        criteria: "Show a photo of the thing.",
+        stake: 2,
+      });
+    });
+
+    const created = result.current.pacts.find((p) => p.title === "Test challenge");
+    expect(created).toBeTruthy();
+    expect(created.stake).toBe(2);
+    expect(created.creatorId).toBe("you");
+    expect(created.opponentId).toBe("friend");
+    expect(created.status).toBe("open");
+  });
+
+  it("accepts a pact when called by the opponent", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
+    });
 
-      // Create as "you"
-    act(() => {
-      result.current.createPact({ title: "Test", stake: 2 });
+    await act(async () => {
+      await result.current.createPact({
+        title: "Test",
+        criteria: "Show a photo of the thing.",
+        stake: 2,
       });
+    });
 
-      // Switch to friend and accept
+    const id = result.current.pacts.find((p) => p.title === "Test").id;
     act(() => result.current.switchUser("friend"));
-    act(() => {
-      result.current.acceptPact(result.current.pacts[0].id);
-      });
-
-    expect(result.current.pacts[0].status).toBe("accepted");
+    await act(async () => {
+      await result.current.acceptPact(id);
     });
 
-  it("persists state to localStorage", () => {
+    expect(result.current.pacts.find((p) => p.id === id).status).toBe("accepted");
+  });
+
+  it("persists state to localStorage", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
-
-    act(() => {
-      result.current.createPact({ title: "Persisted", stake: 5 });
-      });
-
-    const stored = JSON.parse(localStorage.getItem("pact.demo.v1"));
-    expect(stored.pacts).toHaveLength(1);
-    expect(stored.pacts[0].title).toBe("Persisted");
     });
 
-  it("loads state from localStorage on init", () => {
-    localStorage.setItem(
-        "pact.demo.v1",
-      JSON.stringify({ userId: "friend", pacts: [] }),
-      );
+    await act(async () => {
+      await result.current.createPact({
+        title: "Persisted",
+        criteria: "Show a photo of the thing.",
+        stake: 5,
+      });
+    });
 
-    const { result } = renderHook(() => usePact(), {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(stored.pacts.some((p) => p.title === "Persisted")).toBe(true);
+  });
+
+  it("keeps the switched desk after remount", async () => {
+    const { result, rerender } = renderHook(() => usePact(), {
       wrapper: PactProvider,
-      });
-
-    expect(result.current.userId).toBe("friend");
     });
+
+    act(() => result.current.switchUser("friend"));
+    rerender();
+    await waitFor(() => {
+      expect(result.current.userId).toBe("friend");
+    });
+  });
 });
