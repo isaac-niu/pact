@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { STARTING_BALANCE_LAMPORTS } from "./constants.js";
+import { withIdentity } from "./userIdentity.js";
 
 function now() {
   return Date.now();
@@ -27,30 +28,51 @@ export function createMongoStore(db) {
     },
 
     async getUserByAuthSub(authSub) {
-      return withoutMongoId(await users.findOne({ $or: [{ authSub }, { id: authSub }] }));
+      return withoutMongoId(
+        await users.findOne({ $or: [{ authSub }, { sub: authSub }, { id: authSub }] }),
+      );
     },
 
     async upsertUserFromAuth(profile) {
-      const authSub = profile.sub;
-      const existing = await users.findOne({ $or: [{ authSub }, { id: authSub }] });
+      const ident = withIdentity(profile);
+      const existing = await users.findOne({
+        $or: [{ authSub: ident.authSub }, { sub: ident.sub }, { id: ident.id }],
+      });
       if (existing) {
-        const updates = { lastLoginAt: now() };
+        const updates = {
+          lastLoginAt: now(),
+          sub: ident.sub,
+          authSub: ident.authSub,
+        };
         if (profile.email) updates.email = profile.email;
         if (profile.name || profile.nickname) updates.name = displayName(profile);
         await users.updateOne({ id: existing.id }, { $set: updates });
         return withoutMongoId({ ...existing, ...updates });
       }
 
-      const user = {
-        id: authSub,
-        authSub,
-        name: displayName(profile),
-        email: profile.email ?? null,
-        balanceLamports: STARTING_BALANCE_LAMPORTS,
-        createdAt: now(),
-        lastLoginAt: now(),
-      };
-      await users.insertOne(user);
+      const user = withIdentity(
+        {
+          name: displayName(profile),
+          email: profile.email ?? null,
+          balanceLamports: STARTING_BALANCE_LAMPORTS,
+          createdAt: now(),
+          lastLoginAt: now(),
+          friendIds: [],
+          incomingFriendIds: [],
+          outgoingFriendIds: [],
+        },
+        ident,
+      );
+      try {
+        await users.insertOne(user);
+      } catch (error) {
+        if (error?.code !== 11000) throw error;
+        const raced = await users.findOne({
+          $or: [{ authSub: ident.authSub }, { sub: ident.sub }, { id: ident.id }],
+        });
+        if (raced) return withoutMongoId(raced);
+        throw error;
+      }
       return withoutMongoId(user);
     },
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPersonBApi } from "../server/authGateway.js";
+import { bootAuthApi, isPersonBApi, resetAuthApiForTests } from "../server/authGateway.js";
 
 describe("isPersonBApi", () => {
   it("routes Auth0 health and user routes", () => {
@@ -28,5 +28,16 @@ describe("isPersonBApi", () => {
     ).toBe(false);
     expect(isPersonBApi({ url: "/api/health", headers: {} })).toBe(false);
     expect(isPersonBApi({ url: "/api/desk", headers: {} })).toBe(false);
+  });
+});
+
+describe("bootAuthApi", () => {
+  it("does not fall back to mock when live Auth0 env is incomplete", async () => {
+    resetAuthApiForTests();
+    const handler = await bootAuthApi({
+      AUTH0_DOMAIN: "",
+      MONGODB_URI: "",
+    });
+    expect(handler).toBeNull();
   });
 });

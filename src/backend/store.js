@@ -79,15 +79,21 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
     },
 
     async getUserByAuthSub(authSub) {
-      const user = [...users.values()].find((entry) => entry.authSub === authSub || entry.id === authSub);
+      const user = [...users.values()].find(
+        (entry) => entry.authSub === authSub || entry.sub === authSub || entry.id === authSub,
+      );
       return user ? clone(user) : null;
     },
 
     async upsertUserFromAuth(profile) {
       const authSub = profile.sub;
-      const existing = [...users.values()].find((entry) => entry.authSub === authSub || entry.id === authSub);
+      const existing = [...users.values()].find(
+        (entry) => entry.authSub === authSub || entry.sub === authSub || entry.id === authSub,
+      );
       if (existing) {
         existing.lastLoginAt = now();
+        existing.sub = authSub;
+        existing.authSub = existing.authSub || authSub;
         if (profile.email) existing.email = profile.email;
         if (profile.name || profile.nickname) existing.name = displayName(profile);
         users.set(existing.id, existing);
@@ -96,6 +102,7 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
 
       const user = {
         id: authSub,
+        sub: authSub,
         authSub,
         name: displayName(profile),
         email: profile.email ?? null,

@@ -72,6 +72,8 @@ describe("mongo store", () => {
     await store.addTransaction({ pactId: pact.id, type: "lock", amountLamports: 10 });
 
     expect((await store.getUserByAuthSub("auth0|alice")).name).toBe("ALICE");
+    expect(alice.sub).toBe("auth0|alice");
+    expect(bob.sub).toBe("auth0|bob");
     expect(await store.listPactsForUser(alice.id)).toHaveLength(1);
     expect(await store.listPactsForUser("auth0|stranger")).toHaveLength(0);
     expect(await store.listTransactionsForUser(bob.id)).toHaveLength(1);

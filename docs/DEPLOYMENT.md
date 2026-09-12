@@ -57,10 +57,13 @@ ELEVENLABS_API_KEY=
 AUTH0_DOMAIN=
 AUTH0_CLIENT_ID=
 AUTH0_CLIENT_SECRET=
-AUTH0_AUDIENCE=
+AUTH0_AUDIENCE=https://localhost
+AUTH0_SECRET=
 MONGODB_URI=
 MONGO_DB_NAME=pact
+MONGODB_DB_NAME=pact
 PUBLIC_URL=https://YOUR_PUBLIC_IP
+# Do not set PACT_MOCK_AUTH=1 on Vultr — People will 401 Auth0 tokens.
 EOF
 # NODE_ENV=production is set by systemd — do not put it in .env (Vite will warn).
 systemctl restart pact

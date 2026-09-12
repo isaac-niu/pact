@@ -12,6 +12,7 @@ fi
 
 # Public Auth0 client ids for the SPA. Vite only inlines VITE_* (not AUTH0_SECRET).
 if [[ -f "$APP/.env" ]]; then
+  python3 "$APP/deploy/ensure-live-auth-env.py" "$APP/.env"
   set -a
   # shellcheck disable=SC1091
   . "$APP/.env"

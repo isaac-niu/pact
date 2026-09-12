@@ -14,8 +14,9 @@
 # must match that Identifier exactly.
 #
 # Invalid (common footgun): https//localhost   ← missing ':' after https
-# Invalid:                  https://localhost  ← this is not an API identifier
-# Valid example:            https://pact-api
+# If the Auth0 API Identifier is already https://localhost, set AUTH0_AUDIENCE
+# to that exact string so SPA tokens are accepted. New tenants can use
+# https://pact-api instead.
 
 AUTH0_DOMAIN=your-tenant.us.auth0.com
 AUTH0_CLIENT_ID=your-spa-client-id

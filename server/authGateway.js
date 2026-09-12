@@ -1,6 +1,6 @@
 import { createPactRequestHandler } from "../src/backend/server.js";
 import { createMongoStore } from "../src/backend/mongo-store.js";
-import { connectMongo, pingMongo } from "../src/backend/mongo.js";
+import { connectMongo, pingMongo, redactSecrets } from "../src/backend/mongo.js";
 import { isMockAuth, validateServerEnv } from "../src/env.js";
 
 let handler = null;
@@ -46,13 +46,18 @@ export async function bootAuthApi(environment = process.env) {
     });
     console.log("auth api: live Auth0 mounted");
     return handler;
-  } catch {
-    handler = createPactRequestHandler({ mode: "mock" });
-    console.log("auth api: mock mode fallback");
+  } catch (error) {
+    handler = null;
+    console.error("auth api: live boot failed:", redactSecrets(error?.message || error));
     return handler;
   }
 }
 
 export function getAuthApiHandler() {
   return handler;
+}
+
+export function resetAuthApiForTests() {
+  handler = null;
+  booted = false;
 }
