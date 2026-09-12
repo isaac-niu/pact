@@ -10,6 +10,27 @@ if [[ ! -f package.json ]]; then
   exit 1
 fi
 
+# Public Auth0 client ids for the SPA. Vite only inlines VITE_* (not AUTH0_SECRET).
+if [[ -f "$APP/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$APP/.env"
+  set +a
+fi
+export MONGODB_DB_NAME="${MONGODB_DB_NAME:-${MONGO_DB_NAME:-pact}}"
+export VITE_AUTH0_DOMAIN="${VITE_AUTH0_DOMAIN:-${AUTH0_DOMAIN:-}}"
+export VITE_AUTH0_CLIENT_ID="${VITE_AUTH0_CLIENT_ID:-${AUTH0_CLIENT_ID:-}}"
+export VITE_AUTH0_AUDIENCE="${VITE_AUTH0_AUDIENCE:-${AUTH0_AUDIENCE:-}}"
+if [[ -n "${PUBLIC_URL:-}" ]]; then
+  public="${PUBLIC_URL%/}"
+  export VITE_AUTH0_CALLBACK_URL="${VITE_AUTH0_CALLBACK_URL:-${public}/callback}"
+  export VITE_API_URL="${VITE_API_URL:-${public}}"
+fi
+if [[ -f "$APP/.env" ]] && ! grep -q '^MONGODB_DB_NAME=' "$APP/.env"; then
+  umask 077
+  printf '\nMONGODB_DB_NAME=%s\n' "$MONGODB_DB_NAME" >> "$APP/.env"
+fi
+
 # vite lives in devDependencies — do not let NODE_ENV=production skip it.
 NPM_CONFIG_PRODUCTION=false npm ci
 npm run build
