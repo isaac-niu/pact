@@ -10,9 +10,11 @@ if [[ ! -f package.json ]]; then
   exit 1
 fi
 
-export NODE_ENV=production
-npm ci
+# vite lives in devDependencies — install them for the build, then prune.
+npm ci --include=dev
 npm run build
+npm prune --omit=dev
+export NODE_ENV=production
 
 install -m 644 "$APP/deploy/pact.service" /etc/systemd/system/pact.service
 install -m 644 "$APP/deploy/nginx.conf" /etc/nginx/sites-available/pact

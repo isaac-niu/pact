@@ -36,7 +36,7 @@ chmod +x deploy/push.sh deploy/bootstrap.sh
 ./deploy/push.sh
 ```
 
-That rsyncs the repo to `/opt/pact` (excluding `.env` and `node_modules`), installs nginx, builds, enables systemd + nginx.
+That copies the repo to `/opt/pact` (excluding `.env` and `node_modules`), installs nginx, runs `npm ci` **including devDependencies** so Vite can build, prunes them, enables systemd + nginx.
 
 Create the env file **once** (SSH, do not paste into git):
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# From a laptop / this agent: rsync the repo to Vultr and bootstrap.
+# From a laptop / this agent: copy the repo to Vultr and bootstrap.
+# Prefers rsync; falls back to tar+ssh if rsync is missing locally.
 # Requires: VULTR_HOST, VULTR_USER, and an SSH identity file.
 set -euo pipefail
 
