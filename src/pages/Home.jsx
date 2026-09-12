@@ -37,9 +37,11 @@ export default function Home() {
 
       <p className="lede">
         Social media for accountability, not attention. You post a pact, a
-        friend matches the stake, you prove it with a photo, a referee stands
-        or fades the slip. Winner takes the pot. This branch is local only —
-        no wallet, no auth, no chain.
+        friend matches the stake, you prove it with a photo, Gemini Flash
+        stands or fades the slip. ≥0.8 auto-resolves. &lt;0.4 the friend
+        wins. Middle band is one friend button, not a committee. Winner
+        takes the pot. This branch is local only — no wallet, no auth, no
+        chain.
       </p>
 
       <div className="cta-row">

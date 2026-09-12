@@ -2,11 +2,11 @@
  * Person C referee client.
  *
  * Tries POST /api/referee (Vite plugin, Gemini Flash on the server).
- * If the plugin is down or the key is missing, the server already
- * mock-passes a real file so Person A can still click through.
+ * If the plugin is down, the same filename mock the server uses still
+ * lets Person A click through. Live Gemini never reads the filename.
  *
  * Contract: { title, criteria, fileName, dataUrl } →
- *   { result: "pass"|"fail"|"review", confidence, rationale, source, auto }
+ *   { result, confidence, rationale, source, auto, band, fallbackReason, model }
  */
 
 export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...extra }) {
@@ -28,6 +28,9 @@ export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...ext
       rationale: "No frame landed on the slip. Referee cannot stand the pact.",
       source: "mock",
       auto: true,
+      band: "middle",
+      fallbackReason: "desk_offline",
+      model: null,
     };
   }
   const name = String(fileName).toLowerCase();
@@ -38,6 +41,9 @@ export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...ext
       rationale: "Frame is too ambiguous for an auto call. Friend verifies.",
       source: "mock",
       auto: false,
+      band: "middle",
+      fallbackReason: "desk_offline",
+      model: null,
     };
   }
   if (/\b(cat|dog|meme)\b/.test(name)) {
@@ -47,6 +53,9 @@ export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...ext
       rationale: `This frame does not match the written goal (${fileName}).`,
       source: "mock",
       auto: true,
+      band: "high",
+      fallbackReason: "desk_offline",
+      model: null,
     };
   }
   const goal = criteria?.trim()
@@ -58,5 +67,8 @@ export async function judgeEvidence({ title, criteria, fileName, dataUrl, ...ext
     rationale: `Evidence matches the written goal. ${goal}`,
     source: "mock",
     auto: true,
+    band: "high",
+    fallbackReason: "desk_offline",
+    model: null,
   };
 }

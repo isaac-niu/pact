@@ -733,6 +733,165 @@ textarea {
   margin: 12px 0;
 }
 
+.dropzone {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 18px 16px;
+  border: 1px dashed var(--lime-dim);
+  background: rgb(200 245 66 / 4%);
+  cursor: pointer;
+}
+
+.dropzone strong {
+  font-family: "Anton", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dropzone span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.dropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dropzone.over {
+  border-color: var(--lime);
+  background: rgb(200 245 66 / 10%);
+}
+
+.dropzone.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.call-card {
+  min-height: 280px;
+}
+
+.call-board {
+  border: 1px solid var(--line);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 11px,
+      rgb(200 245 66 / 3%) 11px 12px
+    ),
+    #0c0e09;
+  margin-top: 14px;
+  padding: 16px 16px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.call-kicker {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.call-word {
+  font-family: "Anton", sans-serif;
+  font-size: 56px;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+}
+
+.call-board.pass .call-word,
+.call-board.pass .result {
+  color: var(--lime);
+}
+
+.call-board.fail .call-word,
+.call-board.fail .result {
+  color: var(--red);
+}
+
+.call-board.review .call-word,
+.call-board.review .result {
+  color: var(--amber);
+}
+
+.conf-meter {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.conf-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40% 40% 20%;
+  height: 10px;
+  background: #1a1d14;
+  border: 1px solid var(--line);
+}
+
+.conf-zone.low {
+  background: rgb(255 77 58 / 35%);
+}
+
+.conf-zone.mid {
+  background: rgb(245 185 66 / 28%);
+}
+
+.conf-zone.high {
+  background: rgb(200 245 66 / 38%);
+}
+
+.conf-needle {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 18px;
+  background: var(--text);
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px #070806;
+}
+
+.conf-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.desk-note {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.desk-tape {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lime);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 18px;
+  background: #0b0d09;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .verdict {
   border-top: 1px solid var(--line);
   margin-top: 18px;
@@ -906,5 +1065,19 @@ textarea {
 
   .top-tools {
     flex-wrap: wrap;
+  }
+
+  .call-word {
+    font-size: 40px;
+  }
+
+  .conf-legend {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .desk-tape {
+    letter-spacing: 0.06em;
+    font-size: 10px;
   }
 }

@@ -1,6 +1,7 @@
 import { STARTING_BANK, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
+import { prepareProof } from "../lib/proof.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -210,15 +211,6 @@ export function resetDesk() {
   persist(emptyDemoState());
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Could not read that file"));
-    reader.readAsDataURL(file);
-  });
-}
-
 function requireUser(actorId) {
   const user = userById(actorId);
   if (!user) throw new Error("Unknown demo user");
@@ -373,7 +365,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
   }
   if (!file) throw new Error("Add a photo first");
 
-  const evidenceUrl = await readFileAsDataUrl(file);
+  const evidenceUrl = await prepareProof(file);
   const evidenceName = file.name || "proof.jpg";
   const provedAt = Date.now();
 
@@ -415,6 +407,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     ...latest,
     evidenceUrl: verdict.evidenceUrl || latest.evidenceUrl,
     evidenceGridFsId: verdict.evidenceGridFsId || null,
+    evidenceHash: verdict.evidenceHash || null,
   };
 
   if (verdict.auto === false || verdict.result === "review") {
@@ -452,10 +445,14 @@ export async function verifyPact(pactId, pass, ctx = {}) {
     result: pass ? "pass" : "fail",
     confidence: pact.verdict?.confidence ?? 0.5,
     rationale: pass
-      ? "Friend verified the proof. Desk stands the slip."
-      : "Friend rejected the proof. Stake goes to the counterparty.",
+      ? "Friend stood the proof. Challenger takes the pot."
+      : "Friend faded the proof. Stake goes to the counterparty.",
     source: "friend",
     auto: true,
+    band: pact.verdict?.band ?? "middle",
+    model: pact.verdict?.model ?? null,
+    fallbackReason: null,
+    evidenceHash: pact.verdict?.evidenceHash ?? null,
   });
 
   fetch("/api/pacts/verify", {

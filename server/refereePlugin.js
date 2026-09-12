@@ -1,5 +1,5 @@
 import { loadEnvFile } from "./loadEnv.js";
-import { geminiEnabled, judgeEvidence } from "./gemini.js";
+import { DEFAULT_MODEL, geminiEnabled, geminiStatus, judgeEvidence } from "./gemini.js";
 import { mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import path from "node:path";
@@ -69,11 +69,15 @@ export function refereePlugin(rootDir) {
         try {
           if (url === "/api/config" && req.method === "GET") {
             const mongo = await mongoReady();
+            const desk = geminiStatus();
             send(res, 200, {
               ok: true,
               service: "pact",
               features: {
                 gemini: geminiEnabled(),
+                geminiLive: Boolean(desk.lastLiveAt),
+                geminiError: desk.lastError?.code || null,
+                geminiModel: desk.lastModel || process.env.GEMINI_MODEL || DEFAULT_MODEL,
                 mongo: mongoConfigured() && mongo,
                 mongoError: mongo ? null : mongoError(),
               },
@@ -108,6 +112,7 @@ export function refereePlugin(rootDir) {
               evidenceUrl: payload.evidenceUrl,
               evidenceName: payload.evidenceName,
               evidenceGridFsId: payload.evidenceGridFsId,
+              evidenceHash: payload.verdict?.evidenceHash || payload.evidenceHash || null,
               verdict: payload.verdict,
               winnerId: payload.winnerId,
             });
@@ -160,6 +165,7 @@ export function refereePlugin(rootDir) {
               evidenceUrl,
               evidenceName: payload.fileName,
               evidenceGridFsId,
+              evidenceHash: verdict.evidenceHash || null,
               verdict,
               winnerId,
             });

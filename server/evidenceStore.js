@@ -74,6 +74,7 @@ export async function persistPactProof({
   evidenceUrl,
   evidenceName,
   evidenceGridFsId,
+  evidenceHash,
   verdict,
   winnerId,
 }) {
@@ -91,6 +92,7 @@ export async function persistPactProof({
     evidenceUrl: evidenceUrl || null,
     evidenceName: evidenceName || null,
     evidenceGridFsId: evidenceGridFsId || null,
+    evidenceHash: evidenceHash || verdict?.evidenceHash || null,
     verdict: verdict || null,
     winnerId: winnerId || null,
     updatedAt: now,

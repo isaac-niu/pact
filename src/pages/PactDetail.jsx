@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
+import { validateProofFile } from "../lib/proof.js";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -13,9 +14,60 @@ const STAMPS = {
 };
 
 function sourceLabel(verdict) {
-  if (verdict?.source === "gemini") return "Gemini Flash";
-  if (verdict?.source === "friend") return "friend verify";
-  return "mocked";
+  if (verdict?.source === "gemini") {
+    return verdict.model ? `Gemini · ${verdict.model}` : "Gemini Flash";
+  }
+  if (verdict?.source === "friend") return "friend on the floor";
+  return "mocked desk";
+}
+
+function callWord(result) {
+  if (result === "pass") return "STANDS";
+  if (result === "fail") return "FADES";
+  return "NO CALL";
+}
+
+function mockBanner(verdict) {
+  if (!verdict || verdict.source === "gemini" || verdict.source === "friend") return null;
+  if (verdict.fallbackReason === "credits_depleted") {
+    return "Gemini credits are depleted. This call used the filename mock so the demo still moves.";
+  }
+  if (verdict.fallbackReason === "no_key") {
+    return "No Gemini key on the server. Filename mock is running so A can still click through.";
+  }
+  if (verdict.fallbackReason === "unauthorized") {
+    return "Gemini rejected the key. Filename mock is covering the desk.";
+  }
+  if (verdict.fallbackReason === "desk_offline") {
+    return "Referee plugin was unreachable. Local mock covered the call.";
+  }
+  return "Gemini did not return a live call. Filename mock covered the desk.";
+}
+
+function ConfidenceMeter({ confidence, result }) {
+  const pct = Math.round(Math.min(1, Math.max(0, Number(confidence) || 0)) * 100);
+  return (
+    <div
+      className="conf-meter"
+      role="meter"
+      aria-label="Referee confidence"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+    >
+      <div className="conf-track">
+        <span className="conf-zone low" />
+        <span className="conf-zone mid" />
+        <span className="conf-zone high" />
+        <span className={`conf-needle ${result || ""}`} style={{ left: `${pct}%` }} />
+      </div>
+      <div className="conf-legend">
+        <span>&lt;0.4 friend wins</span>
+        <span>friend-verify</span>
+        <span>≥0.8 auto</span>
+      </div>
+    </div>
+  );
 }
 
 export default function PactDetail() {
@@ -24,7 +76,13 @@ export default function PactDetail() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const pact = pacts.find((p) => p.id === id);
+
+  useEffect(() => {
+    setError("");
+    setCopied(false);
+  }, [id]);
 
   if (!pact) {
     return (
@@ -45,6 +103,7 @@ export default function PactDetail() {
   const canVerify = pact.status === "review" && userId === pact.opponentId;
   const marks = events.filter((e) => e.pactId === pact.id).sort((a, b) => a.at - b.at);
   const tone = deadlineTone(pact.deadline);
+  const honesty = mockBanner(pact.verdict);
 
   async function onAccept() {
     setError("");
@@ -70,18 +129,30 @@ export default function PactDetail() {
     }
   }
 
-  async function onFile(e) {
-    const file = e.target.files?.[0];
+  async function sendProof(file) {
     if (!file) return;
     setError("");
     setBusy(true);
     try {
+      validateProofFile(file);
       await submitEvidence(pact.id, file);
     } catch (err) {
       setError(err.message || "Could not send proof");
     } finally {
       setBusy(false);
     }
+  }
+
+  function onFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    sendProof(file);
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    sendProof(e.dataTransfer.files?.[0]);
   }
 
   async function copyShare() {
@@ -150,12 +221,27 @@ export default function PactDetail() {
           {pact.evidenceUrl ? (
             <img className="preview" src={pact.evidenceUrl} alt={pact.evidenceName || "Evidence"} />
           ) : (
-            <p className="hint">No photo yet. Challenger drops a frame for Gemini Flash.</p>
+            <p className="hint">No photo yet. Challenger drops a frame for the referee.</p>
           )}
           {canUpload ? (
-            <label className="file">
-              Upload photo
-              <input type="file" accept="image/*" onChange={onFile} disabled={busy} />
+            <label
+              className={`dropzone ${dragOver ? "over" : ""} ${busy ? "busy" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+            >
+              <strong>{busy ? "Sending the frame…" : "Drop a photo or tap to shoot"}</strong>
+              <span>Phone camera or a file. JPEG/PNG/WebP, under 8 MB. We shrink it to 1280 before Gemini sees it.</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={onFile}
+                disabled={busy}
+              />
             </label>
           ) : null}
           {pact.status === "open" && userId === pact.creatorId ? (
@@ -166,8 +252,8 @@ export default function PactDetail() {
           ) : null}
         </div>
 
-        <div className="card">
-          <div className="kicker">Desk</div>
+        <div className="card call-card">
+          <div className="kicker">The call</div>
           {canAccept ? (
             <>
               <p className="hint">
@@ -186,32 +272,40 @@ export default function PactDetail() {
           ) : null}
           {pact.status === "review" ? (
             <p className="hint">
-              Gemini is in the middle band. {opponent.handle} verifies the frame — one button, not a
-              committee.
+              Gemini landed in the middle band. {opponent.handle} is the floor — one button, not a
+              committee. STAND pays the challenger. FADE pays the friend.
             </p>
           ) : null}
           {canVerify ? (
             <div className="verify-row">
               <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
-                Friend: pass
+                STAND
               </button>
               <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => onVerify(false)}>
-                Friend: fail
+                FADE
               </button>
             </div>
           ) : null}
           {pact.status === "review" && !canVerify ? (
-            <p className="hint">Switch to {opponent.handle} in the top-right to stand or scratch this slip.</p>
+            <p className="hint">
+              Switch to {opponent.handle} in the top-right to stand or fade this slip.
+            </p>
           ) : null}
           {error ? <p className="err">{error}</p> : null}
 
           {pact.verdict ? (
-            <div className={`verdict ${pact.verdict.result}`}>
+            <div className={`call-board ${pact.verdict.result}`}>
+              <div className="call-kicker">Official call</div>
+              <div className="call-word">{callWord(pact.verdict.result)}</div>
               <div className="result">{pact.verdict.result}</div>
+              <ConfidenceMeter confidence={pact.verdict.confidence} result={pact.verdict.result} />
               <div className="hint">
-                Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
+                {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
+                {pact.verdict.band ? ` · ${pact.verdict.band} band` : ""}
+                {pact.verdict.evidenceHash ? ` · ${pact.verdict.evidenceHash.slice(0, 12)}` : ""}
               </div>
               <p>{pact.verdict.rationale}</p>
+              {honesty ? <p className="desk-note">{honesty}</p> : null}
               {pact.status === "resolved" && winner ? (
                 <>
                   <div className="payout">
@@ -224,7 +318,9 @@ export default function PactDetail() {
                 </>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            <p className="hint">No call yet. Proof hits the desk, then Gemini stands or fades.</p>
+          )}
         </div>
       </div>
 
