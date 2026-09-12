@@ -1,6 +1,8 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
 import { sol } from "./lib/format.js";
+import { AUTH0_LOGOUT_URL, clientEnvReady } from "./env.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -9,23 +11,34 @@ import Profile from "./pages/Profile.jsx";
 import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 
-function Switcher() {
-  const { userId, switchUser, users } = usePact();
+function Auth0Account() {
+  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
+
+  if (isLoading) return <span className="account-status">Checking account…</span>;
+  if (!isAuthenticated) {
+    return <button className="account-login" type="button" onClick={() => loginWithRedirect()}>Sign in</button>;
+  }
+
+  const name = user?.name || user?.nickname || user?.email || "Signed-in user";
   return (
-    <div className="switcher" role="group" aria-label="Demo user">
-      {users.map((u) => (
-        <button
-          key={u.id}
-          type="button"
-          className={userId === u.id ? "on" : ""}
-          onClick={() => switchUser(u.id)}
-        >
-          <span className="switcher-pill">{u.pill}</span>
-          <span className="switcher-handle">{u.handle}</span>
-        </button>
-      ))}
+    <div className="account-control" aria-label="Signed-in account">
+      <span className="account-name" title={name}>{name}</span>
+      <button
+        className="account-logout"
+        type="button"
+        onClick={() => logout({ logoutParams: { returnTo: AUTH0_LOGOUT_URL } })}
+      >
+        Sign out
+      </button>
     </div>
   );
+}
+
+export function AccountControl() {
+  if (!clientEnvReady().ready) {
+    return <NavLink className="account-login" to="/app">Sign in</NavLink>;
+  }
+  return <Auth0Account />;
 }
 
 function Shell({ children }) {
@@ -54,7 +67,7 @@ function Shell({ children }) {
             <b>{sol(bank)}</b>
             <span>SOL</span>
           </NavLink>
-          <Switcher />
+          <AccountControl />
         </div>
       </header>
       {children}

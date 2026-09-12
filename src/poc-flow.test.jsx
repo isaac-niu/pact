@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetDesk } from "./api/local.js";
@@ -21,7 +21,7 @@ describe("local Pact proof of concept", () => {
     resetDesk();
   });
 
-  it("supports the documented create, accept, evidence, and referee flow", async () => {
+  it("creates a slip without exposing a local identity switcher", async () => {
     renderPactApp();
 
     fireEvent.click(screen.getByRole("link", { name: "Write a slip" }));
@@ -39,21 +39,9 @@ describe("local Pact proof of concept", () => {
     });
     expect(screen.getByText("7.00")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Friend/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Accept · 3.50 SOL" }));
-    await waitFor(() => {
-      expect(screen.getByText(/Live\. ISAAC owes a photo/)).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: /^You/ }));
-    const evidence = new File(["proof"], "run.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText("Upload photo"), { target: { files: [evidence] } });
-
-    await waitFor(() => {
-      expect(screen.getByRole("img", { name: "run.png" })).toBeInTheDocument();
-      expect(screen.getByText("pass")).toBeInTheDocument();
-    });
-    expect(screen.getByText(/ISAAC takes the pot · 7.00 SOL/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/app");
+    expect(screen.queryByRole("button", { name: /Friend/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^You/ })).not.toBeInTheDocument();
   });
 
   it("keeps the main navigation available from every application route", () => {
