@@ -13,7 +13,7 @@ export function groupsInDirectory(groups, query = "") {
 
 export function yourCrews(groups, userId) {
   return (groups || []).filter(
-    (group) => !group.archivedAt && (group.creatorId === userId || group.memberIds?.includes(userId)),
+    (group) => group.creatorId === userId || (!group.archivedAt && group.memberIds?.includes(userId)),
   );
 }
 

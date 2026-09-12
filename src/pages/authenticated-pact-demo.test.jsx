@@ -64,6 +64,9 @@ describe("AuthenticatedPactDemo", () => {
       if (path === "/api/pacts" && (!options.method || options.method === "GET")) return [];
       if (path === "/api/ledger") return { balanceLamports: 10_000_000_000, transactions: [] };
       if (path === "/api/users") return people;
+      if (path.startsWith("/api/groups/directory")) {
+        return groups.filter((group) => group.discoverable && !group.archivedAt);
+      }
       if (path === "/api/groups" && (!options.method || options.method === "GET")) return groups;
       if (path === "/api/groups" && options.method === "POST") {
         const created = {
@@ -138,7 +141,7 @@ describe("AuthenticatedPactDemo", () => {
     const directoryCheck = screen.getByRole("checkbox", { name: /list in the directory/i });
     expect(directoryCheck.closest("label").classList.contains("check")).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add friend" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add friend" }));
     expect(await screen.findByText("Friend added.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Friend added" })).toBeDisabled();
 

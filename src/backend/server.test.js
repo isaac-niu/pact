@@ -293,7 +293,7 @@ describe("Pact API authorization", () => {
   });
 
   it("lists discoverable crews on the directory board", async () => {
-    const { carol } = await startLive();
+    const { carol: _carol } = await startLive();
     await api("/api/groups", {
       method: "POST",
       headers: auth("alice", { "content-type": "application/json" }),
@@ -311,6 +311,68 @@ describe("Pact API authorization", () => {
     const searched = await api("/api/groups/directory?q=iron", { headers: auth("carol") });
     expect(searched.body.map((group) => group.id)).toEqual([listed.body.id]);
     expect((await api("/api/groups/directory?q=secret", { headers: auth("carol") })).body).toEqual([]);
+  });
+
+  it("lets the admin cut a member, hand the book, and scratch the crew", async () => {
+    const { alice, bob, carol } = await startLive();
+    const created = await api("/api/groups", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ name: "Admin desk", visibility: "public", discoverable: true }),
+    });
+    await api(`/api/groups/${created.body.id}/join`, { method: "POST", headers: auth("bob") });
+    await api(`/api/groups/${created.body.id}/approve`, {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: bob.id }),
+    });
+    const cut = await api(`/api/groups/${created.body.id}/remove`, {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: bob.id }),
+    });
+    expect(cut.status).toBe(200);
+    expect(cut.body.memberIds).not.toContain(bob.id);
+    expect(
+      (
+        await api(`/api/groups/${created.body.id}/remove`, {
+          method: "POST",
+          headers: auth("bob", { "content-type": "application/json" }),
+          body: JSON.stringify({ userId: alice.id }),
+        })
+      ).status,
+    ).toBe(403);
+
+    await api(`/api/groups/${created.body.id}/join`, { method: "POST", headers: auth("carol") });
+    await api(`/api/groups/${created.body.id}/approve`, {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: carol.id }),
+    });
+    const handed = await api(`/api/groups/${created.body.id}/transfer`, {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: carol.id }),
+    });
+    expect(handed.body.creatorId).toBe(carol.id);
+
+    const scratched = await api(`/api/groups/${created.body.id}/archive`, {
+      method: "POST",
+      headers: auth("carol"),
+    });
+    expect(scratched.body.archivedAt).toBeTypeOf("number");
+    expect((await api("/api/groups/directory", { headers: auth("bob") })).body.map((g) => g.id)).not.toContain(
+      created.body.id,
+    );
+    expect((await api("/api/groups", { headers: auth("carol") })).body.map((g) => g.id)).toContain(created.body.id);
+    expect((await api("/api/groups", { headers: auth("bob") })).body.map((g) => g.id)).not.toContain(created.body.id);
+
+    const deleted = await api(`/api/groups/${created.body.id}`, {
+      method: "DELETE",
+      headers: auth("carol"),
+    });
+    expect(deleted.status).toBe(200);
+    expect(deleted.body.deleted).toBe(true);
   });
 
   it("lets signed-in users request and accept friends", async () => {

@@ -23,7 +23,7 @@ export function createSocialActions({
       const data = new FormData(form);
       const name = String(data.get("groupName") || "").trim();
       const visibility = data.get("visibility") === "private" ? "private" : "public";
-      const discoverable = data.get("discoverable") === "on";
+      const discoverable = data.has("discoverable");
       await runSocialAction({
         setBusy,
         setStatus,
@@ -106,6 +106,98 @@ export function createSocialActions({
             current.map((group) => (group.id === id ? { ...group, ...result, requested: true } : group)),
           );
           setStatus({ tone: "ok", text: result.requested === false ? "Joined group." : "Requested." });
+          await refresh?.();
+        },
+      });
+    },
+
+    async removeMember(id, memberId) {
+      await runSocialAction({
+        setBusy,
+        setStatus,
+        key: `remove:${id}:${memberId}`,
+        work: async () => {
+          const group = await callOrFallback(
+            async () =>
+              api(`/api/groups/${id}/remove`, {
+                token: await token(),
+                method: "POST",
+                body: { userId: memberId },
+              }),
+            () => ({ id, memberIds: [] }),
+          );
+          setGroups((current) =>
+            current.map((entry) =>
+              entry.id === id
+                ? {
+                    ...entry,
+                    ...group,
+                    memberIds: (entry.memberIds || []).filter((member) => member !== memberId),
+                  }
+                : entry,
+            ),
+          );
+          setStatus({ tone: "ok", text: "Cut from the crew." });
+          await refresh?.();
+        },
+      });
+    },
+
+    async transferOwnership(id, memberId) {
+      await runSocialAction({
+        setBusy,
+        setStatus,
+        key: `transfer:${id}:${memberId}`,
+        work: async () => {
+          const group = await callOrFallback(
+            async () =>
+              api(`/api/groups/${id}/transfer`, {
+                token: await token(),
+                method: "POST",
+                body: { userId: memberId },
+              }),
+            () => ({ id, creatorId: memberId }),
+          );
+          setGroups((current) =>
+            current.map((entry) => (entry.id === id ? { ...entry, ...group, creatorId: memberId } : entry)),
+          );
+          setStatus({ tone: "ok", text: "Book handed off." });
+          await refresh?.();
+        },
+      });
+    },
+
+    async archiveGroup(id) {
+      await runSocialAction({
+        setBusy,
+        setStatus,
+        key: `archive:${id}`,
+        work: async () => {
+          const group = await callOrFallback(
+            async () => api(`/api/groups/${id}/archive`, { token: await token(), method: "POST" }),
+            () => ({ id, archivedAt: Date.now() }),
+          );
+          setGroups((current) =>
+            current.map((entry) => (entry.id === id ? { ...entry, ...group, archivedAt: group.archivedAt || Date.now() } : entry)),
+          );
+          setStatus({ tone: "ok", text: "Crew scratched from the directory." });
+          await refresh?.();
+        },
+      });
+    },
+
+    async deleteGroup(id) {
+      await runSocialAction({
+        setBusy,
+        setStatus,
+        key: `delete:${id}`,
+        work: async () => {
+          await callOrFallback(
+            async () => api(`/api/groups/${id}`, { token: await token(), method: "DELETE" }),
+            () => ({ deleted: true, id }),
+          );
+          setGroups((current) => current.filter((entry) => entry.id !== id));
+          setStatus({ tone: "ok", text: "Crew deleted." });
           await refresh?.();
         },
       });

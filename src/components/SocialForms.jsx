@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 export function ActionStatus({ status }) {
   if (!status?.text) return null;
   return (
@@ -8,8 +10,15 @@ export function ActionStatus({ status }) {
 }
 
 export function CreateGroupForm({ onSubmit, busy, embedded = false }) {
+  const [listed, setListed] = useState(false);
   return (
-    <form className={embedded ? "form" : "card form"} onSubmit={onSubmit}>
+    <form
+      className={embedded ? "form" : "card form"}
+      onSubmit={(event) => {
+        onSubmit(event);
+        setListed(false);
+      }}
+    >
       <label>
         New group
         <input name="groupName" required placeholder="Training crew" disabled={Boolean(busy)} />
@@ -22,9 +31,17 @@ export function CreateGroupForm({ onSubmit, busy, embedded = false }) {
         </select>
       </label>
       <label className="check">
-        <input type="checkbox" name="discoverable" disabled={Boolean(busy)} />
+        <input
+          type="checkbox"
+          name="discoverable"
+          value="on"
+          checked={listed}
+          onChange={(event) => setListed(event.target.checked)}
+          disabled={Boolean(busy)}
+        />
         List in the directory
       </label>
+      {listed ? <p className="hint lime-hint">This crew will show on the directory board.</p> : null}
       <button className="btn btn-lime" type="submit" disabled={busy === "create-group"}>
         {busy === "create-group" ? "Creating…" : "Create group"}
       </button>
@@ -102,7 +119,124 @@ export function DirectoryBrowse({ groups, query, onQuery, userId, onJoin, busy }
   );
 }
 
-export function GroupList({ groups, userId, onJoin, onApprove, busy }) {
+export function GroupAdminTools({ group, userId, people = [], onRemove, onTransfer, onArchive, onDelete, busy }) {
+  const [confirm, setConfirm] = useState("");
+  const [nextAdmin, setNextAdmin] = useState("");
+  if (group.creatorId !== userId) return null;
+  const others = (group.memberIds || []).filter((id) => id !== userId);
+  const deskName = (id) => people.find((person) => person.id === id)?.name || id;
+
+  return (
+    <div className="group-admin">
+      <div className="kicker">Admin desk</div>
+      {group.archivedAt ? <p className="hint">Scratched from the directory.</p> : null}
+      {others.map((memberId) => (
+        <div className="people-row" key={memberId}>
+          <div>
+            <b>{deskName(memberId)}</b>
+            <div className="hint">Member</div>
+          </div>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            disabled={busy === `remove:${group.id}:${memberId}`}
+            onClick={() => {
+              const key = `remove:${group.id}:${memberId}`;
+              if (confirm !== key) {
+                setConfirm(key);
+                return;
+              }
+              setConfirm("");
+              onRemove(group.id, memberId);
+            }}
+          >
+            {confirm === `remove:${group.id}:${memberId}` ? "Confirm cut" : "Cut from crew"}
+          </button>
+        </div>
+      ))}
+      {others.length ? (
+        <label>
+          Hand the book
+          <select value={nextAdmin} onChange={(event) => setNextAdmin(event.target.value)} aria-label={`Hand the book for ${group.name}`}>
+            <option value="">Pick a member</option>
+            {others.map((memberId) => (
+              <option key={memberId} value={memberId}>
+                {deskName(memberId)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {nextAdmin ? (
+        <button
+          className="btn btn-ghost"
+          type="button"
+          disabled={busy === `transfer:${group.id}:${nextAdmin}`}
+          onClick={() => {
+            const key = `transfer:${group.id}:${nextAdmin}`;
+            if (confirm !== key) {
+              setConfirm(key);
+              return;
+            }
+            setConfirm("");
+            onTransfer(group.id, nextAdmin);
+          }}
+        >
+          {confirm === `transfer:${group.id}:${nextAdmin}` ? "Confirm hand-off" : "Hand the book"}
+        </button>
+      ) : null}
+      <div className="pact-actions">
+        {!group.archivedAt ? (
+          <button
+            className="btn btn-ghost"
+            type="button"
+            disabled={busy === `archive:${group.id}`}
+            onClick={() => {
+              const key = `archive:${group.id}`;
+              if (confirm !== key) {
+                setConfirm(key);
+                return;
+              }
+              setConfirm("");
+              onArchive(group.id);
+            }}
+          >
+            {confirm === `archive:${group.id}` ? "Confirm scratch" : "Scratch from directory"}
+          </button>
+        ) : null}
+        <button
+          className="btn btn-ghost"
+          type="button"
+          disabled={busy === `delete:${group.id}`}
+          onClick={() => {
+            const key = `delete:${group.id}`;
+            if (confirm !== key) {
+              setConfirm(key);
+              return;
+            }
+            setConfirm("");
+            onDelete(group.id);
+          }}
+        >
+          {confirm === `delete:${group.id}` ? "Confirm delete" : "Delete crew"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function GroupList({
+  groups,
+  userId,
+  people = [],
+  onJoin,
+  onApprove,
+  onRemove,
+  onTransfer,
+  onArchive,
+  onDelete,
+  busy,
+}) {
   if (!groups.length) return <p className="hint">No groups yet. Create one or request to join.</p>;
   return groups.map((group) => {
     const member = group.memberIds?.includes(userId);
@@ -112,7 +246,8 @@ export function GroupList({ groups, userId, onJoin, onApprove, busy }) {
         <div>
           <b className="slip-title">{group.name}</b>
           <p className="meta">
-            {group.visibility} · {group.discoverable ? "listed" : "code only"} · {group.memberIds.length}{" "}
+            {group.visibility} · {group.discoverable ? "listed" : "code only"}
+            {group.archivedAt ? " · scratched" : ""} · {group.memberIds.length}{" "}
             member{group.memberIds.length === 1 ? "" : "s"}
           </p>
           {group.joinCode ? (
@@ -142,6 +277,18 @@ export function GroupList({ groups, userId, onJoin, onApprove, busy }) {
                 {busy === `approve:${group.id}:${memberId}` ? "Approving…" : "Approve member"}
               </button>
             ))}
+          {onRemove || onTransfer || onArchive || onDelete ? (
+            <GroupAdminTools
+              group={group}
+              userId={userId}
+              people={people}
+              onRemove={onRemove}
+              onTransfer={onTransfer}
+              onArchive={onArchive}
+              onDelete={onDelete}
+              busy={busy}
+            />
+          ) : null}
         </div>
       </article>
     );
