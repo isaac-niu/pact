@@ -1,12 +1,17 @@
 import { Auth0Provider } from "@auth0/auth0-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AUTH0_CALLBACK_URL, clientEnvReady, env } from "../env.js";
+
+function needsAuth0(pathname) {
+  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+}
 
 export default function AuthGate({ children }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const ready = clientEnvReady();
 
-  if (!ready.ready) {
+  if (!ready.ready || !needsAuth0(pathname)) {
     return children;
   }
 
@@ -20,7 +25,7 @@ export default function AuthGate({ children }) {
         scope: "openid profile email",
       }}
       cacheLocation="localstorage"
-      useRefreshTokens
+      useRefreshTokens={false}
       onRedirectCallback={(appState) => {
         navigate(appState?.returnTo || "/app", { replace: true });
       }}

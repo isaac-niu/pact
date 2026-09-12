@@ -63,6 +63,7 @@ describe("PactProvider", () => {
     expect(created.creatorId).toBe("you");
     expect(created.opponentId).toBe("friend");
     expect(created.status).toBe("open");
+    expect(created.visibility).toBe("public");
   });
 
   it("accepts a pact when called by the opponent", async () => {

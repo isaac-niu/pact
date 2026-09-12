@@ -50,6 +50,14 @@ describe("Pact API (mock auth)", () => {
     expect(health.body.auth.callbackUrl).toBe("http://localhost:5173/callback");
   });
 
+  it("exposes the same payload at /api/auth/health", async () => {
+    await start();
+    const health = await api("/api/auth/health");
+    expect(health.status).toBe(200);
+    expect(health.body.auth.mode).toBe("mock");
+    expect(health.body.status).toBe("ok");
+  });
+
   it("creates, accepts, and settles a pact exactly once with integer lamports", async () => {
     await start();
     const isaac = await login("isaac");

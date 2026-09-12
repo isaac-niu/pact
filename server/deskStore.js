@@ -2,6 +2,7 @@ import { featureFlags } from "./env.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
 import { judgeEvidence } from "./gemini.js";
+import { ensureDeskIndexes, syncDeskUsers, usersFromState } from "./deskUsers.js";
 
 const desk = createDeskLogic(judgeEvidence);
 
@@ -31,14 +32,21 @@ async function loadState() {
   const col = getDb().collection("desk");
   const doc = await col.findOne({ _id: "main" });
   if (doc?.state) return { state: doc.state, version: doc.version || 0 };
-  const state = seededState();
+  const seeded = seededState();
   await col.updateOne(
     { _id: "main" },
-    { $setOnInsert: { state, version: 1, seededAt: Date.now() } },
+    { $setOnInsert: { state: seeded, version: 1, seededAt: Date.now() } },
     { upsert: true },
   );
   const again = await col.findOne({ _id: "main" });
-  return { state: again.state, version: again.version || 1 };
+  const state = again?.state || seeded;
+  try {
+    await ensureDeskIndexes();
+    await syncDeskUsers(state);
+  } catch (err) {
+    console.warn("desk user sync on load", err?.message || err);
+  }
+  return { state, version: again?.version || 1 };
 }
 
 async function saveState(expectedVersion, next) {
@@ -58,6 +66,11 @@ async function mutate(fn) {
       await saveState(version, out.state);
       const pactId = out.result?.id || out.settledId;
       const fresh = (await loadState()).state;
+      try {
+        await syncDeskUsers(fresh);
+      } catch (err) {
+        console.warn("desk user sync", err?.message || err);
+      }
       return {
         result: pactId ? fresh.pacts.find((p) => p.id === pactId) : out.result,
         state: publicState(fresh),
@@ -77,6 +90,7 @@ function publicState(state, actorId = "you") {
     pacts: state.pacts,
     events: state.events,
     ledger: state.ledger,
+    users: usersFromState(state),
     backend: "mongo",
   };
 }
@@ -85,6 +99,11 @@ export { bankOf, recordOf, connectMongo };
 
 export async function getDesk(actorId) {
   const { state } = await loadState();
+  try {
+    await syncDeskUsers(state, { force: false });
+  } catch (err) {
+    console.warn("desk user sync on read", err?.message || err);
+  }
   return publicState(state, actorId);
 }
 

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { usePact } from "../store.jsx";
 import { sol } from "../lib/format.js";
+import Glossary from "../components/Glossary.jsx";
+import { pactsOnTape } from "../lib/visibility.js";
 
 const STEPS = [
   { n: "01", label: "Say it" },
@@ -10,9 +12,11 @@ const STEPS = [
 ];
 
 export default function Home() {
-  const { pacts, events } = usePact();
-  const live = pacts.filter((p) => p.status !== "resolved").length;
-  const last = events[0];
+  const { pacts, events, userId } = usePact();
+  const publicBoard = pactsOnTape(pacts, "public", userId);
+  const live = publicBoard.filter((p) => p.status !== "resolved").length;
+  const publicMarks = events.filter((e) => publicBoard.some((p) => p.id === e.pactId));
+  const last = publicMarks[0];
 
   return (
     <section className="hero">
@@ -36,11 +40,12 @@ export default function Home() {
       </ol>
 
       <p className="lede">
-        Social media for accountability, not attention. You post a pact, a
-        friend matches the stake, you prove it with a photo, a referee stands
-        or fades the slip. Winner takes the pot. This branch is local only —
-        no wallet, no auth, no chain.
+        Social media for accountability, not attention. You write a slip, a friend
+        matches the stake, you prove it with a photo, the referee stands or fades it,
+        and the winner takes the pot. Post to the public tape or keep the group on a
+        private tape.
       </p>
+      <Glossary />
 
       <div className="cta-row">
         <Link className="btn btn-lime" to="/create">
@@ -86,7 +91,7 @@ export default function Home() {
           </div>
           <div className="stat">
             <div className="odds-label">Tape marks</div>
-            <div className="odds-value">{events.length}</div>
+            <div className="odds-value">{publicMarks.length}</div>
           </div>
           <div className="stat">
             <div className="odds-label">Last mark</div>
