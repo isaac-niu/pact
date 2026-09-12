@@ -28,7 +28,9 @@ function callWord(result) {
 }
 
 function mockBanner(verdict) {
-  if (!verdict || verdict.source === "gemini" || verdict.source === "friend") return null;
+  if (!verdict) return null;
+  if (verdict.source === "gemini" || verdict.source === "friend") return null;
+  if (verdict.source !== "mock" && !verdict.fallbackReason) return null;
   if (verdict.fallbackReason === "credits_depleted") {
     return "Gemini credits are depleted. This call used the filename mock so the demo still moves.";
   }
