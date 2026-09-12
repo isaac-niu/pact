@@ -731,7 +731,10 @@ textarea {
 }
 
 .badge.type-review,
-.badge.type-deadline {
+.badge.type-deadline,
+.badge.type-appeal,
+.badge.type-flagged,
+.badge.type-graded {
   color: var(--amber);
   border-color: var(--amber);
 }
@@ -755,6 +758,23 @@ textarea {
 
 .ticket-detail .deadline-banners {
   margin: 16px 0 0;
+}
+
+.appeal-note,
+.appeal-field {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.appeal-note {
+  border: 1px solid #5a4720;
+  background: #1a160c;
+  padding: 12px 14px;
+}
+
+.appeal-field textarea {
+  min-height: 72px;
 }
 
 .badge.type-lost {

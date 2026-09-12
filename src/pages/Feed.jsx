@@ -16,6 +16,7 @@ const PACT_LABELS = {
   evidence: "Evidence",
   judging: "Desk",
   review: "Review",
+  appeal: "Appeal",
   resolved: "Settled",
 };
 

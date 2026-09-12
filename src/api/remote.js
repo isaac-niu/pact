@@ -155,7 +155,17 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   actorId = ctx.actorId || actorId;
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/verify`, {
     method: "POST",
-    body: JSON.stringify({ actorId, pass }),
+    body: JSON.stringify({ actorId, pass, reason: ctx.reason }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function flagAppeal(pactId, note, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/flag`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, note }),
   });
   apply(out.state);
   return out.result;

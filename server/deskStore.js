@@ -120,8 +120,12 @@ export function submitEvidence(pactId, file, actorId) {
   return mutate((state) => desk.submitEvidence(state, pactId, file, actorId));
 }
 
-export function verifyPact(pactId, pass, actorId) {
-  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId));
+export function verifyPact(pactId, pass, actorId, reason) {
+  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId, reason));
+}
+
+export function flagAppeal(pactId, note, actorId) {
+  return mutate((state) => desk.flagAppeal(state, pactId, note, actorId));
 }
 
 export function markNoticeRead(noticeId, actorId) {
