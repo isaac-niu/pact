@@ -1,6 +1,8 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
+import { api } from "./api.js";
 import { sol } from "./lib/format.js";
 import { AUTH0_LOGOUT_URL, clientEnvReady } from "./env.js";
 import Home from "./pages/Home.jsx";
@@ -10,6 +12,8 @@ import PactDetail from "./pages/PactDetail.jsx";
 import Profile from "./pages/Profile.jsx";
 import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
+
+const LAMPORTS_PER_SOL = 1_000_000_000;
 
 function Auth0Account() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
@@ -41,6 +45,56 @@ export function AccountControl() {
   return <Auth0Account />;
 }
 
+function Auth0Balance() {
+  const { getAccessTokenSilently, isAuthenticated, isLoading, user } = useAuth0();
+  const [balanceLamports, setBalanceLamports] = useState(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setBalanceLamports(null);
+      return undefined;
+    }
+
+    let active = true;
+    getAccessTokenSilently()
+      .then((token) => api("/api/ledger", { token }))
+      .then((ledger) => {
+        if (active) setBalanceLamports(ledger.balanceLamports);
+      })
+      .catch(() => {
+        if (active) setBalanceLamports(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [getAccessTokenSilently, isAuthenticated]);
+
+  const name = user?.name || user?.nickname || user?.email || "Account";
+  const balance = balanceLamports === null ? "—" : sol(balanceLamports / LAMPORTS_PER_SOL);
+  return (
+    <NavLink to="/app" className="bank-chip" title="Your authenticated virtual SOL ledger">
+      <span className="bank-who">{isLoading ? "Account" : name}</span>
+      <b>{balance}</b>
+      <span>SOL</span>
+    </NavLink>
+  );
+}
+
+function LocalBalance({ user, bank }) {
+  return (
+    <NavLink to="/me" className="bank-chip" title="Local demo virtual SOL ledger">
+      <span className="bank-who">{user.handle}</span>
+      <b>{sol(bank)}</b>
+      <span>SOL</span>
+    </NavLink>
+  );
+}
+
+export function BalanceControl({ user, bank }) {
+  if (!clientEnvReady().ready) return <LocalBalance user={user} bank={bank} />;
+  return <Auth0Balance />;
+}
+
 function Shell({ children }) {
   const { user, bank, backend } = usePact();
   return (
@@ -62,11 +116,7 @@ function Shell({ children }) {
           <NavLink to="/app">Pact app</NavLink>
         </nav>
         <div className="top-tools">
-          <NavLink to="/me" className="bank-chip" title="Virtual SOL ledger">
-            <span className="bank-who">{user.handle}</span>
-            <b>{sol(bank)}</b>
-            <span>SOL</span>
-          </NavLink>
+          <BalanceControl user={user} bank={bank} />
           <AccountControl />
         </div>
       </header>
