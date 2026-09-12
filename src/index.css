@@ -1525,6 +1525,42 @@ label .hint {
   letter-spacing: 0.04em;
 }
 
+.board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 14px 18px;
+}
+
+.board-rank {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 22px;
+  color: var(--lime);
+  min-width: 1.5em;
+}
+
+.board-handle {
+  font-family: "Anton", "Barlow Condensed", "Barlow", sans-serif;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.board-handle:hover {
+  color: var(--lime);
+}
+
 .wallet-chip {
   display: inline-flex;
   align-items: baseline;

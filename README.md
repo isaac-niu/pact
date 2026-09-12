@@ -51,6 +51,7 @@ npm start
 | `/pact/:id` | Ticket, evidence, verdict |
 | `/me` | Profile, rate, virtual SOL bank |
 | `/u/:handle` | Public ticket — win rate, record, public pact history |
+| `/board` | Daily ranks: win rate, hot streak, pot taken |
 | `/app` | Authenticated Auth0 / mock ISAAC-MAYA desk |
 | `/callback` | Auth0 return route |
 

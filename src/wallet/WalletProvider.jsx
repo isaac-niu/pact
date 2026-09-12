@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { env } from "../env.js";
 import { clusterFromEnv, rpcFromEnv } from "../lib/solanaEscrow.js";
-import { sendEscrowMemo } from "../lib/solanaChain.js";
 import {
   clearDemoSecret,
   connectDemoWallet,
@@ -74,8 +73,9 @@ export function WalletProvider({ children }) {
   }, [wallet]);
 
   const sendEscrow = useCallback(
-    (args) =>
-      sendEscrowMemo({
+    async (args) => {
+      const { sendEscrowMemo } = await import("../lib/solanaChain.js");
+      return sendEscrowMemo({
         ...args,
         wallet,
         env: {
@@ -83,7 +83,8 @@ export function WalletProvider({ children }) {
           SOLANA_RPC: env.SOLANA_RPC,
           SOLANA_ALLOW_MAINNET: env.SOLANA_ALLOW_MAINNET,
         },
-      }),
+      });
+    },
     [wallet],
   );
 
