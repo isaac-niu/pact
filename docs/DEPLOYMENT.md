@@ -46,7 +46,6 @@ umask 077
 cat >/opt/pact/.env <<'EOF'
 PORT=3000
 BIND_HOST=127.0.0.1
-NODE_ENV=production
 DEMO_SEED=false
 GEMINI_API_KEY=
 ELEVENLABS_API_KEY=
@@ -57,6 +56,7 @@ AUTH0_AUDIENCE=
 MONGODB_URI=
 PUBLIC_URL=http://YOUR_PUBLIC_IP
 EOF
+# NODE_ENV=production is set by systemd — do not put it in .env (Vite will warn).
 systemctl restart pact
 ```
 
