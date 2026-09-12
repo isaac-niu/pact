@@ -40,6 +40,9 @@ export function markNoticeReadForUser(...args) {
 export function markAllNoticesReadForUser(...args) {
   return impl.markAllNoticesReadForUser(...args);
 }
+export function tickReminders(...args) {
+  return impl.tickReminders(...args);
+}
 export function getSnapshot() {
   return impl.getSnapshot();
 }
@@ -74,4 +77,5 @@ export const pactApi = {
   verifyPact,
   markNoticeReadForUser,
   markAllNoticesReadForUser,
+  tickReminders,
 };

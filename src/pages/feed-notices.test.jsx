@@ -28,6 +28,8 @@ describe("desk notices on tape", () => {
     expect(screen.getByRole("heading", { name: "Desk notices" })).toBeInTheDocument();
     expect(screen.getByText("Your turn to verify")).toBeInTheDocument();
     expect(screen.getByText(/REVIEW on “Show today's standup notes”/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Approaching deadlines")).toBeInTheDocument();
+    expect(screen.getByText(/hours left — MAYA still owes proof/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Clear the board" }));
     await waitFor(() => {

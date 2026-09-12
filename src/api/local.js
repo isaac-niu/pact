@@ -10,6 +10,7 @@ import {
   provedNotice,
   reviewNotice,
 } from "../lib/notifications.js";
+import { applyDeadlineReminders } from "../lib/reminders.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -515,4 +516,10 @@ export async function markAllNoticesReadForUser(ctx = {}) {
     notifications: markAllNoticesRead(state.notifications, actorId),
   });
   return { ok: true };
+}
+
+export async function tickReminders(now = Date.now()) {
+  const out = applyDeadlineReminders(state, now);
+  if (out.created.length) persist(out.state);
+  return { created: out.created.length };
 }

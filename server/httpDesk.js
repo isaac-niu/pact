@@ -7,6 +7,7 @@ import {
   verifyPact,
   markNoticeRead,
   markAllNoticesRead,
+  tickReminders,
 } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
@@ -74,6 +75,17 @@ export async function handleDeskApi(req, res, { send, readBody }) {
   if (url === "/api/pacts" && req.method === "POST") {
     const payload = await jsonBody(req, readBody, 32_000);
     const out = await createPact(payload, actorOf(req, payload));
+    send(res, 200, out);
+    return true;
+  }
+
+  if (url === "/api/desk/remind" && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await tickReminders(payload.now);
     send(res, 200, out);
     return true;
   }

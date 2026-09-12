@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import Announcer from "../components/Announcer.jsx";
+import DeadlineBanner from "../components/DeadlineBanner.jsx";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 
@@ -164,6 +165,7 @@ export default function PactDetail() {
             <dd className={`tone-${tone}`}>{formatWhen(pact.deadline)}</dd>
           </div>
         </dl>
+        <DeadlineBanner pactId={pact.id} />
       </article>
 
       <div className="detail-grid">

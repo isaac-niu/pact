@@ -180,3 +180,12 @@ export async function markAllNoticesReadForUser(ctx = {}) {
   apply(out.state);
   return out.result;
 }
+
+export async function tickReminders(now = Date.now()) {
+  const out = await req("/api/desk/remind", {
+    method: "POST",
+    body: JSON.stringify({ now }),
+  });
+  apply(out.state);
+  return out.result;
+}

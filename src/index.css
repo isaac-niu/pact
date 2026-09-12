@@ -730,9 +730,31 @@ textarea {
   border-color: #3d4a18;
 }
 
-.badge.type-review {
+.badge.type-review,
+.badge.type-deadline {
   color: var(--amber);
   border-color: var(--amber);
+}
+
+.deadline-banners {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.deadline-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: #1a160c;
+  border: 1px solid #5a4720;
+  padding: 12px 16px;
+  color: var(--amber);
+}
+
+.ticket-detail .deadline-banners {
+  margin: 16px 0 0;
 }
 
 .badge.type-lost {

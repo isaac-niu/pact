@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import { formatClock, sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
+import DeadlineBanner from "../components/DeadlineBanner.jsx";
 import Notices from "../components/Notices.jsx";
+import { approachingDeadline } from "../lib/reminders.js";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
@@ -38,6 +40,7 @@ export default function Feed() {
         </Link>
       </div>
       <Glossary />
+      <DeadlineBanner />
       <Notices />
       <div className="filters" role="tablist" aria-label="Tape">
         <button type="button" className={tape === "public" ? "on" : ""} onClick={() => setTape("public")}>
@@ -113,6 +116,12 @@ export default function Feed() {
                   <div className="meta">
                     {creator?.handle} vs {userById(p.opponentId)?.handle} ·{" "}
                     <span className={`badge ${badgeClass}`}>{PACT_LABELS[p.status]}</span>
+                    {approachingDeadline(p) ? (
+                      <>
+                        {" · "}
+                        <span className="badge type-deadline">clock</span>
+                      </>
+                    ) : null}
                     {" · "}
                     {pactVisibility(p)}
                   </div>
