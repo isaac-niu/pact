@@ -31,11 +31,13 @@ Put these in `/opt/pact/.env` on the server (mode `600`). Never commit them.
 
 ## First-time Vultr (Debian 12)
 
-Box already has Git, Node 22, npm. From a machine that has `VULTR_HOST`, `VULTR_USER`, and the deploy SSH key at `~/.ssh/vultr_deploy`:
+Box already has Git, Node 22, npm. From a machine that has `VULTR_HOST`, `VULTR_USER`, and either `VULTR_SSH_PRIVATE_KEY` or `~/.ssh/vultr_deploy`:
 
 ```bash
-chmod +x deploy/push.sh deploy/bootstrap.sh
+chmod +x deploy/push.sh deploy/bootstrap.sh deploy/write-server-env.sh
 ./deploy/push.sh
+# copies keys already in this shell onto the box (never git):
+./deploy/write-server-env.sh
 ```
 
 That copies the repo to `/opt/pact` (excluding `.env` and `node_modules`), installs nginx, runs `npm ci` **including devDependencies** so Vite can build, prunes them, enables systemd + nginx.
