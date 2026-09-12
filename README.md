@@ -73,6 +73,8 @@ npm start
 - **< 0.4** — friend wins
 - **middle** — friend-verify fallback
 
+A working `GEMINI_API_KEY` returns `source: "gemini"`. If the key is set but Flash errors (credits, HTTP, parse, network), the desk returns `source: "gemini-error"` — not the dummy 0.91 pass. `GET /api/config` exposes `features.lastGeminiError` (kind + status only; never the key). No key / no image still uses the mock so a laptop demo can click through.
+
 If `MONGODB_URI` is set, proof lands in **GridFS** (`evidence` bucket) and the verdict is upserted on `pacts`. Atlas down → keep the in-browser data URL.
 
 ## Person B Auth0 + Atlas

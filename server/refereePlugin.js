@@ -1,6 +1,6 @@
 import { loadEnvFile } from "./loadEnv.js";
 import { featureFlags } from "./env.js";
-import { geminiEnabled, judgeEvidence } from "./gemini.js";
+import { geminiEnabled, getLastGeminiError, judgeEvidence } from "./gemini.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import path from "node:path";
@@ -76,6 +76,7 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       announcer: elevenlabs,
       features: {
         gemini: geminiEnabled(),
+        lastGeminiError: getLastGeminiError(),
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
         elevenlabs,

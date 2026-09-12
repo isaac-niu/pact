@@ -7,12 +7,18 @@
  *   < 0.4  friend wins
  *   else   friend-verify fallback (a button, not a committee)
  *
- * Missing key / bad image / API error → mock so Person A can still demo.
+ * Mock stays for the no-key / no-image demo path only.
+ * A configured key that then fails (credits / HTTP / parse / network)
+ * returns source "gemini-error" — never the dummy 0.91 pass.
  */
 
 export const DEFAULT_MODEL = "gemini-3.6-flash";
 const FLASH_PATH = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+const GEMINI_TIMEOUT_MS = 20_000;
+
+/** Last Flash failure for GET /api/config. Never stores secrets. */
+let lastGeminiError = null;
 
 export function mockVerdict({ title, criteria, fileName } = {}) {
   if (!fileName) {
@@ -118,6 +124,66 @@ export function geminiEnabled(env = process.env) {
   return Boolean(env.GEMINI_API_KEY);
 }
 
+export function getLastGeminiError() {
+  return lastGeminiError ? { ...lastGeminiError } : null;
+}
+
+export function resetLastGeminiError() {
+  lastGeminiError = null;
+}
+
+function rememberGeminiError(kind, status = null) {
+  lastGeminiError = {
+    kind,
+    status: Number.isFinite(status) ? Number(status) : null,
+    at: Date.now(),
+  };
+  return { ...lastGeminiError };
+}
+
+function classifyGeminiFailure(status, bodyText, err) {
+  const body = String(bodyText || "");
+  if (status === 429 || /RESOURCE_EXHAUSTED|quota|credit/i.test(body)) return "credits";
+  if (status) return "http";
+  const msg = String(err?.message || err?.name || "");
+  if (
+    err?.name === "TimeoutError" ||
+    err?.name === "AbortError" ||
+    /timeout|aborted/i.test(msg)
+  ) {
+    return "network";
+  }
+  if (msg === "no_json" || err instanceof SyntaxError || /json|parse/i.test(msg)) {
+    return "parse";
+  }
+  return "network";
+}
+
+function errorRationale(kind, status) {
+  if (kind === "credits") {
+    return status
+      ? `Gemini referee failed: credits (HTTP ${status}).`
+      : "Gemini referee failed: credits.";
+  }
+  if (kind === "http") {
+    return status ? `Gemini referee failed: HTTP ${status}.` : "Gemini referee failed: HTTP error.";
+  }
+  if (kind === "parse") return "Gemini referee failed: parse.";
+  return "Gemini referee failed: network.";
+}
+
+function geminiErrorVerdict(kind, status = null) {
+  const error = rememberGeminiError(kind, status);
+  return {
+    result: "fail",
+    confidence: 0,
+    rationale: errorRationale(kind, error.status),
+    source: "gemini-error",
+    auto: false,
+    error,
+  };
+}
+
 export async function judgeEvidence(input, env = process.env) {
   const key = env.GEMINI_API_KEY;
   const parsed = parseDataUrl(input.dataUrl);
@@ -156,20 +222,24 @@ Do not reward self-harm, illegal activity, or eating-disorder content; fail thos
         "x-goog-api-key": key,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(Number(env.GEMINI_TIMEOUT_MS) || GEMINI_TIMEOUT_MS),
     });
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       console.warn("gemini http", res.status, errText.slice(0, 240));
-      return mockVerdict(input);
+      const kind = classifyGeminiFailure(res.status, errText);
+      return geminiErrorVerdict(kind, res.status);
     }
     const body = await res.json();
     const parsedJson = extractJson(candidateText(body));
     const pass = Boolean(parsedJson.pass);
     const confidence = Number(parsedJson.confidence);
     const rationale = String(parsedJson.rationale || "Gemini returned a verdict.");
+    resetLastGeminiError();
     return band(pass, confidence, rationale, "gemini");
   } catch (err) {
     console.warn("gemini failed", err?.message || err);
-    return mockVerdict(input);
+    const kind = classifyGeminiFailure(null, "", err);
+    return geminiErrorVerdict(kind);
   }
 }

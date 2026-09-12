@@ -1,7 +1,7 @@
 import { featureFlags } from "./env.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
-import { judgeEvidence } from "./gemini.js";
+import { getLastGeminiError, judgeEvidence } from "./gemini.js";
 import { ensureDeskIndexes, syncDeskUsers, usersFromState } from "./deskUsers.js";
 
 const desk = createDeskLogic(judgeEvidence);
@@ -17,6 +17,7 @@ export function liveConfig(env = process.env) {
       mongo: mongoConfigured(env) && mongoReady(),
       mongoConfigured: mongoConfigured(env),
       mongoError: mongoReady() ? null : mongoError(),
+      lastGeminiError: getLastGeminiError(),
     },
     auth0: flags.auth0
       ? {

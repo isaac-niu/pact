@@ -1,9 +1,10 @@
 /**
  * Person C referee client.
  *
- * Tries POST /api/referee (Vite plugin, Gemini Flash on the server).
- * If the plugin is down or the key is missing, the server already
- * mock-passes a real file so Person A can still click through.
+ * Tries POST /api/referee (Vite plugin / Node desk, Gemini Flash on the server).
+ * The server mocks only when no key or no image is present. A configured key
+ * that then fails Flash comes back as source "gemini-error", not a dummy pass.
+ * This local mock is only for when /api/referee itself is unreachable.
  *
  * Contract: { title, criteria, fileName, dataUrl } →
  *   { result: "pass"|"fail"|"review", confidence, rationale, source, auto }
