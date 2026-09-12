@@ -117,11 +117,11 @@ export const env = {
  * Check whether the client-side env is fully configured for live Auth0.
  * Returns a human-readable message when something is missing.
  */
-export function clientEnvReady() {
+export function clientEnvReady(clientEnvironment = env) {
   const missing = [];
-  if (!env.AUTH0_DOMAIN) missing.push("VITE_AUTH0_DOMAIN");
-  if (!env.AUTH0_CLIENT_ID) missing.push("VITE_AUTH0_CLIENT_ID");
-  if (!env.AUTH0_AUDIENCE) missing.push("VITE_AUTH0_AUDIENCE");
+  if (!clientEnvironment.AUTH0_DOMAIN) missing.push("VITE_AUTH0_DOMAIN");
+  if (!clientEnvironment.AUTH0_CLIENT_ID) missing.push("VITE_AUTH0_CLIENT_ID");
+  if (!clientEnvironment.AUTH0_AUDIENCE) missing.push("VITE_AUTH0_AUDIENCE");
 
   if (missing.length > 0) {
     return {

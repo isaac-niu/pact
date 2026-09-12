@@ -83,24 +83,44 @@ describe("validateServerEnv", () => {
 describe("clientEnvReady", () => {
   it("returns not ready when VITE_AUTH0_DOMAIN is missing", async () => {
     const { clientEnvReady } = await import("./env.js");
-    const { ready, message } = clientEnvReady();
+    const { ready, message } = clientEnvReady({
+      AUTH0_CLIENT_ID: "client-id",
+      AUTH0_AUDIENCE: "https://pact-api",
+    });
     expect(ready).toBe(false);
     expect(message).toContain("VITE_AUTH0_DOMAIN");
    });
 
   it("returns not ready when VITE_AUTH0_CLIENT_ID is missing", async () => {
     const { clientEnvReady } = await import("./env.js");
-    const { ready, message } = clientEnvReady();
+    const { ready, message } = clientEnvReady({
+      AUTH0_DOMAIN: "example.auth0.com",
+      AUTH0_AUDIENCE: "https://pact-api",
+    });
     expect(ready).toBe(false);
     expect(message).toContain("VITE_AUTH0_CLIENT_ID");
    });
 
   it("returns not ready when VITE_AUTH0_AUDIENCE is missing", async () => {
     const { clientEnvReady } = await import("./env.js");
-    const { ready, message } = clientEnvReady();
+    const { ready, message } = clientEnvReady({
+      AUTH0_DOMAIN: "example.auth0.com",
+      AUTH0_CLIENT_ID: "client-id",
+    });
     expect(ready).toBe(false);
     expect(message).toContain("VITE_AUTH0_AUDIENCE");
-   });
+  });
+
+  it("is ready when all browser-safe Auth0 values are present", async () => {
+    const { clientEnvReady } = await import("./env.js");
+    expect(
+      clientEnvReady({
+        AUTH0_DOMAIN: "example.auth0.com",
+        AUTH0_CLIENT_ID: "client-id",
+        AUTH0_AUDIENCE: "https://pact-api",
+      }),
+    ).toEqual({ ready: true, message: null });
+  });
 });
 
 describe("validateAuth0Audience", () => {
