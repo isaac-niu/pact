@@ -23,7 +23,7 @@ export function createSocialActions({
       const data = new FormData(form);
       const name = String(data.get("groupName") || "").trim();
       const visibility = data.get("visibility") === "private" ? "private" : "public";
-      const discoverable = data.get("discoverable") === "on";
+      const discoverable = data.has("discoverable");
       await runSocialAction({
         setBusy,
         setStatus,
