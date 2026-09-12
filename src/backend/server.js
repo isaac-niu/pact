@@ -4,6 +4,7 @@ import { config as loadDotenv } from "dotenv";
 import { getAuth0PublicUrls, isMockAuth, validateServerEnv } from "../env.js";
 import { createAuth0Authenticator, createMockAuthenticator, mockLoginUser } from "./auth.js";
 import { LAMPORTS_PER_SOL } from "./constants.js";
+import { parseDeposit, receiptCode } from "../lib/deposit.js";
 import { closeMongo, connectMongo, mongoConfigured, pingMongo } from "./mongo.js";
 import { createMongoStore } from "./mongo-store.js";
 import { createMemoryStore, publicDirectoryUser, publicPact, publicUser } from "./store.js";
@@ -133,8 +134,68 @@ export function createPactRequestHandler(options = {}) {
     if (req.method === "GET" && url.pathname === "/api/users") {
       const others = (await store.listUsers())
         .filter((entry) => entry.id !== user.id)
-        .map(publicDirectoryUser);
+        .filter((entry) => mode === "mock" || !String(entry.id).startsWith("auth0|demo-"))
+        .map((entry) => publicDirectoryUser(entry, user));
       return send(res, 200, others);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/friends") {
+      const people = await store.listUsers();
+      const byId = Object.fromEntries(people.map((entry) => [entry.id, entry]));
+      const pick = (ids = []) =>
+        ids
+          .map((id) => byId[id])
+          .filter(Boolean)
+          .map((entry) => publicDirectoryUser(entry, user));
+      return send(res, 200, {
+        friends: pick(user.friendIds),
+        incoming: pick(user.incomingFriendIds),
+        outgoing: pick(user.outgoingFriendIds),
+      });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/friends") {
+      const toId = (await bodyOf(req))?.userId;
+      if (!toId) return send(res, 400, { error: "userId is required" });
+      try {
+        return send(res, 200, await store.requestFriend(user.id, toId));
+      } catch (error) {
+        return send(res, 400, { error: error.message });
+      }
+    }
+
+    const friendAccept = url.pathname.match(/^\/api\/friends\/([^/]+)\/accept$/);
+    if (req.method === "POST" && friendAccept) {
+      try {
+        return send(res, 200, await store.acceptFriend(user.id, decodeURIComponent(friendAccept[1])));
+      } catch (error) {
+        return send(res, 400, { error: error.message });
+      }
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/messages") {
+      const otherId = url.searchParams.get("with");
+      if (otherId) return send(res, 200, await store.listMessages(user.id, otherId));
+      const threads = await store.listThreads(user.id);
+      const people = await store.listUsers();
+      const byId = Object.fromEntries(people.map((entry) => [entry.id, entry]));
+      return send(
+        res,
+        200,
+        threads.map((thread) => ({
+          ...thread,
+          other: publicDirectoryUser(byId[thread.otherId] || { id: thread.otherId, name: "Pact user" }, user),
+        })),
+      );
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/messages") {
+      const body = await bodyOf(req);
+      const text = String(body?.body || "").trim();
+      const toId = body?.toId;
+      if (!toId || !text || text.length > 2000) return send(res, 400, { error: "toId and a message body are required" });
+      if (!(await store.getUserById(toId))) return send(res, 404, { error: "User not found" });
+      return send(res, 201, await store.addMessage({ fromId: user.id, toId, body: text }));
     }
 
     if (req.method === "GET" && url.pathname === "/api/groups") {
@@ -292,6 +353,36 @@ export function createPactRequestHandler(options = {}) {
         balanceLamports: user.balanceLamports,
         transactions: await store.listTransactionsForUser(user.id),
       });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/ledger/deposit") {
+      const body = await bodyOf(req);
+      try {
+        const parsed = parseDeposit({ amount: body?.amount ?? body?.amountSol, processor: body?.processor });
+        const amountLamports = Math.round(parsed.amount * LAMPORTS_PER_SOL);
+        const receipt = body?.receipt || receiptCode();
+        user.balanceLamports += amountLamports;
+        await store.saveUser(user);
+        const transaction = await store.addTransaction({
+          userId: user.id,
+          type: "deposit",
+          processor: parsed.processor,
+          amountLamports,
+          receipt,
+          last4: body?.last4 || null,
+        });
+        return send(res, 200, {
+          demo: true,
+          receipt,
+          processor: parsed.processorName,
+          amountSol: parsed.amount,
+          usd: parsed.usd,
+          balanceLamports: user.balanceLamports,
+          transaction,
+        });
+      } catch (error) {
+        return send(res, 400, { error: error.message });
+      }
     }
 
     return send(res, 404, { error: "Not found" });

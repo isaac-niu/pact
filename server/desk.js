@@ -1,5 +1,6 @@
 import { STARTING_BANK, userById } from "../src/data/users.js";
 import { emptyDemoState } from "../src/data/seed.js";
+import { parseDeposit } from "../src/lib/deposit.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -173,6 +174,38 @@ export function createDeskLogic(judge) {
       };
       const next = settle(state, pactId, verdict);
       return { state: next, result: next.pacts.find((p) => p.id === pactId) };
+    },
+
+    async deposit(state, input, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      const parsed = parseDeposit(input);
+      const now = Date.now();
+      const receipt = input.receipt || uid("rcpt");
+      const next = {
+        ...state,
+        ledger: [
+          {
+            id: uid("ld"),
+            userId: actorId,
+            amount: parsed.amount,
+            kind: "deposit",
+            processor: parsed.processor,
+            receipt,
+            at: now,
+            note: `${parsed.processorName} · ${receipt}`,
+          },
+          ...state.ledger,
+        ],
+      };
+      return {
+        state: next,
+        result: {
+          amount: parsed.amount,
+          processor: parsed.processor,
+          receipt,
+          balance: bankOf(actorId, next),
+        },
+      };
     },
   };
 }

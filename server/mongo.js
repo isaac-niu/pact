@@ -44,6 +44,12 @@ export async function getMongo(env = process.env) {
       } catch {
         /* indexes are best-effort */
       }
+      try {
+        const { ensureIndexes } = await import("../src/backend/mongo.js");
+        await ensureIndexes(db);
+      } catch {
+        /* Auth0 user indexes are best-effort on the desk connection */
+      }
       ready = true;
       lastError = null;
       return client;

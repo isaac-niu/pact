@@ -30,6 +30,7 @@ describe("memory store", () => {
       email: "one@example.com",
     });
     expect(second.id).toBe(first.id);
+    expect(second.sub).toBe("auth0|one");
     expect(second.name).toBe("One Updated");
     expect(second.email).toBe("one@example.com");
   });

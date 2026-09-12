@@ -479,3 +479,29 @@ export async function verifyPact(pactId, pass, ctx = {}) {
 
   return resolved;
 }
+
+export async function depositFunds(input, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const { parseDeposit, receiptCode } = await import("../lib/deposit.js");
+  const parsed = parseDeposit(input);
+  const now = Date.now();
+  const receipt = input.receipt || receiptCode();
+  persist({
+    ...state,
+    ledger: [
+      {
+        id: uid("ld"),
+        userId: actorId,
+        amount: parsed.amount,
+        kind: "deposit",
+        processor: parsed.processor,
+        receipt,
+        at: now,
+        note: `${parsed.processorName} · ${receipt}`,
+      },
+      ...state.ledger,
+    ],
+  });
+  return { amount: parsed.amount, processor: parsed.processor, receipt, balance: bankOf(actorId) };
+}

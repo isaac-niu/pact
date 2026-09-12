@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { STARTING_BALANCE_LAMPORTS } from "./constants.js";
+import { withIdentity } from "./userIdentity.js";
 
 function now() {
   return Date.now();
@@ -19,7 +20,8 @@ export function createMongoStore(db) {
   const users = db.collection("users");
   const pacts = db.collection("pacts");
   const transactions = db.collection("transactions");
-  const groups = db.collection("groups") ?? null;
+  const groups = db.collection("groups");
+  const messages = db.collection("messages");
 
   return {
     async getUserById(id) {
@@ -27,36 +29,56 @@ export function createMongoStore(db) {
     },
 
     async getUserByAuthSub(authSub) {
-      return withoutMongoId(await users.findOne({ $or: [{ authSub }, { id: authSub }] }));
+      return withoutMongoId(
+        await users.findOne({ $or: [{ authSub }, { sub: authSub }, { id: authSub }] }),
+      );
     },
 
     async upsertUserFromAuth(profile) {
-      const authSub = profile.sub;
-      const existing = await users.findOne({ $or: [{ authSub }, { id: authSub }] });
+      const ident = withIdentity(profile);
+      const existing = await users.findOne({
+        $or: [{ authSub: ident.authSub }, { sub: ident.sub }, { id: ident.id }],
+      });
       if (existing) {
-        const updates = { lastLoginAt: now() };
+        const updates = {
+          lastLoginAt: now(),
+          sub: ident.sub,
+          authSub: ident.authSub,
+        };
         if (profile.email) updates.email = profile.email;
         if (profile.name || profile.nickname) updates.name = displayName(profile);
         await users.updateOne({ id: existing.id }, { $set: updates });
         return withoutMongoId({ ...existing, ...updates });
       }
 
-      const user = {
-        id: authSub,
-        authSub,
+      const user = withIdentity({
         name: displayName(profile),
         email: profile.email ?? null,
         balanceLamports: STARTING_BALANCE_LAMPORTS,
         createdAt: now(),
         lastLoginAt: now(),
-      };
-      await users.insertOne(user);
+        friendIds: [],
+        incomingFriendIds: [],
+        outgoingFriendIds: [],
+      }, ident);
+      try {
+        await users.insertOne(user);
+      } catch (error) {
+        if (error?.code !== 11000) throw error;
+        const raced = await users.findOne({
+          $or: [{ authSub: ident.authSub }, { sub: ident.sub }, { id: ident.id }],
+        });
+        if (raced) return withoutMongoId(raced);
+        throw error;
+      }
       return withoutMongoId(user);
     },
 
     async saveUser(user) {
-      await users.updateOne({ id: user.id }, { $set: user }, { upsert: true });
-      return withoutMongoId(await users.findOne({ id: user.id }));
+      const { _id: _ignored, ...rest } = user;
+      const next = withIdentity(rest);
+      await users.updateOne({ id: next.id }, { $set: next }, { upsert: true });
+      return withoutMongoId(await users.findOne({ id: next.id }));
     },
 
     async listUsers() {
@@ -141,8 +163,85 @@ export function createMongoStore(db) {
         .project({ id: 1 })
         .toArray();
       const pactIds = mine.map((pact) => pact.id);
-      if (pactIds.length === 0) return [];
-      return (await transactions.find({ pactId: { $in: pactIds } }).toArray()).map(withoutMongoId);
+      return (
+        await transactions
+          .find({
+            $or: [{ userId }, ...(pactIds.length ? [{ pactId: { $in: pactIds } }] : [])],
+          })
+          .toArray()
+      ).map(withoutMongoId);
+    },
+
+    async requestFriend(fromId, toId) {
+      if (fromId === toId) throw new Error("Cannot friend yourself");
+      const fromDoc = await users.findOne({ id: fromId });
+      const toDoc = await users.findOne({ id: toId });
+      if (!fromDoc || !toDoc) throw new Error("User not found");
+      const from = withIdentity(fromDoc);
+      const to = withIdentity(toDoc);
+      if (from.friendIds.includes(toId)) return { status: "friends" };
+      from.outgoingFriendIds = [...new Set([...from.outgoingFriendIds, toId])];
+      to.incomingFriendIds = [...new Set([...to.incomingFriendIds, fromId])];
+      await users.updateOne({ id: fromId }, { $set: { outgoingFriendIds: from.outgoingFriendIds } });
+      await users.updateOne({ id: toId }, { $set: { incomingFriendIds: to.incomingFriendIds } });
+      return { status: "requested" };
+    },
+
+    async acceptFriend(userId, fromId) {
+      const meDoc = await users.findOne({ id: userId });
+      const themDoc = await users.findOne({ id: fromId });
+      if (!meDoc || !themDoc) throw new Error("User not found");
+      const me = withIdentity(meDoc);
+      const them = withIdentity(themDoc);
+      if (!me.incomingFriendIds.includes(fromId)) throw new Error("No request");
+      me.incomingFriendIds = me.incomingFriendIds.filter((id) => id !== fromId);
+      them.outgoingFriendIds = (them.outgoingFriendIds || []).filter((id) => id !== userId);
+      me.friendIds = [...new Set([...me.friendIds, fromId])];
+      them.friendIds = [...new Set([...(them.friendIds || []), userId])];
+      await users.updateOne(
+        { id: userId },
+        { $set: { incomingFriendIds: me.incomingFriendIds, friendIds: me.friendIds } },
+      );
+      await users.updateOne(
+        { id: fromId },
+        { $set: { outgoingFriendIds: them.outgoingFriendIds, friendIds: them.friendIds } },
+      );
+      return { status: "friends" };
+    },
+
+    async addMessage({ fromId, toId, body }) {
+      const threadKey = [fromId, toId].sort().join(":");
+      const message = {
+        id: randomUUID(),
+        threadKey,
+        fromId,
+        toId,
+        body,
+        createdAt: now(),
+      };
+      await messages.insertOne(message);
+      return withoutMongoId(message);
+    },
+
+    async listMessages(userId, otherId) {
+      const threadKey = [userId, otherId].sort().join(":");
+      return (await messages.find({ threadKey }).sort({ createdAt: 1 }).toArray()).map(withoutMongoId);
+    },
+
+    async listThreads(userId) {
+      const rows = await messages
+        .find({ $or: [{ fromId: userId }, { toId: userId }] })
+        .sort({ createdAt: -1 })
+        .toArray();
+      const seen = new Set();
+      const threads = [];
+      for (const row of rows) {
+        const otherId = row.fromId === userId ? row.toId : row.fromId;
+        if (seen.has(otherId)) continue;
+        seen.add(otherId);
+        threads.push({ otherId, last: withoutMongoId(row) });
+      }
+      return threads;
     },
   };
 }

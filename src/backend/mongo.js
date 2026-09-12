@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb";
+import { USER_INDEXES } from "./userIdentity.js";
 
 export function redactSecrets(message) {
   return String(message ?? "").replace(/mongodb(\+srv)?:\/\/\S+/gi, "mongodb://***");
@@ -32,17 +33,44 @@ export async function connectMongo({
   }
 }
 
-export async function ensureIndexes(db) {
-  await db.collection("users").createIndexes([
-    { key: { id: 1 }, unique: true },
-    { key: { authSub: 1 }, unique: true },
+export async function repairUserIdentityDocs(db) {
+  const users = db.collection("users");
+  await users.updateMany({ $or: [{ sub: null }, { sub: "" }, { sub: { $exists: false } }] }, [
+    { $set: { sub: { $ifNull: ["$authSub", "$id"] } } },
   ]);
+  await users.updateMany(
+    { $or: [{ authSub: null }, { authSub: "" }, { authSub: { $exists: false } }] },
+    [{ $set: { authSub: { $ifNull: ["$sub", "$id"] } } }],
+  );
+}
+
+async function recreateIndex(collection, spec) {
+  try {
+    await collection.dropIndex(spec.name);
+  } catch {
+    /* index may not exist yet */
+  }
+  const options = { unique: spec.unique, name: spec.name };
+  if (spec.partialFilterExpression) options.partialFilterExpression = spec.partialFilterExpression;
+  await collection.createIndex(spec.key, options);
+}
+
+export async function ensureIndexes(db) {
+  await repairUserIdentityDocs(db);
+  const users = db.collection("users");
+  for (const spec of USER_INDEXES) {
+    await recreateIndex(users, spec);
+  }
   await db.collection("pacts").createIndexes([
     { key: { id: 1 }, unique: true },
     { key: { creatorId: 1 } },
     { key: { opponentId: 1 } },
   ]);
   await db.collection("transactions").createIndex({ pactId: 1 });
+  await db.collection("transactions").createIndex({ userId: 1, createdAt: -1 });
+  await db.collection("groups").createIndex({ id: 1 }, { unique: true });
+  await db.collection("groups").createIndex({ joinCode: 1 }, { unique: true });
+  await db.collection("messages").createIndex({ threadKey: 1, createdAt: -1 });
 }
 
 export async function pingMongo(client) {

@@ -291,4 +291,58 @@ describe("Pact API authorization", () => {
     expect(accepted.body.status).toBe("accepted");
     expect(accepted.body.opponentId).toBe(bob.id);
   });
+
+  it("lets two live accounts friend each other and top up SOL", async () => {
+    const { alice, bob } = await startLive();
+    const people = await api("/api/users", { headers: auth("alice") });
+    expect(people.body.map((row) => row.id)).toContain(bob.id);
+
+    expect(
+      (await api("/api/friends", {
+        method: "POST",
+        headers: auth("alice", { "content-type": "application/json" }),
+        body: JSON.stringify({ userId: bob.id }),
+      })).body.status,
+    ).toBe("requested");
+    expect(
+      (await api(`/api/friends/${encodeURIComponent(alice.id)}/accept`, {
+        method: "POST",
+        headers: auth("bob"),
+      })).body.status,
+    ).toBe("friends");
+
+    const note = await api("/api/messages", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ toId: bob.id, body: "Gym tomorrow?" }),
+    });
+    expect(note.status).toBe(201);
+
+    const funded = await api("/api/ledger/deposit", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ amount: 5, processor: "card" }),
+    });
+    expect(funded.status).toBe(200);
+    expect(funded.body.balanceLamports).toBe(alice.balanceLamports + 5 * LAMPORTS_PER_SOL);
+  });
+
+  it("hides ISAAC/MAYA demo desks from the live people directory", async () => {
+    const store = createMemoryStore({ seedDemoUsers: true });
+    await start({
+      mode: "live",
+      store,
+      authenticate: createAuth0Authenticator({
+        store,
+        verifyAccessToken: async (token) =>
+          token === "alice" ? { sub: "auth0|alice", name: "ALICE" } : null,
+        fetchUserInfo: async () => null,
+      }),
+      mongoHealth: async () => ({ configured: true, mode: "atlas", connected: true }),
+    });
+    const people = await api("/api/users", { headers: auth("alice") });
+    expect(people.status).toBe(200);
+    expect(people.body.map((row) => row.id)).not.toContain("auth0|demo-maya");
+    expect(people.body.map((row) => row.id)).not.toContain("auth0|demo-isaac");
+  });
 });

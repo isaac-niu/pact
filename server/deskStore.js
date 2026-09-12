@@ -122,3 +122,7 @@ export function submitEvidence(pactId, file, actorId) {
 export function verifyPact(pactId, pass, actorId) {
   return mutate((state) => desk.verifyPact(state, pactId, pass, actorId));
 }
+
+export function depositFunds(input, actorId) {
+  return mutate((state) => desk.deposit(state, input, actorId));
+}
