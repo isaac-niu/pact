@@ -22,6 +22,12 @@ describe("group directory", () => {
       { id: "2", name: "Dawn gym", discoverable: true, creatorId: "coach", memberIds: ["coach"] },
     ];
     expect(yourCrews(groups, "you").map((g) => g.id)).toEqual(["1"]);
+    expect(
+      yourCrews(
+        [{ id: "3", name: "Old", creatorId: "you", memberIds: ["you"], archivedAt: 1 }],
+        "you",
+      ).map((g) => g.id),
+    ).toEqual(["3"]);
     expect(groupsInDirectory(groups).map((g) => g.id)).toEqual(["2"]);
   });
 });

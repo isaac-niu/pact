@@ -7,6 +7,12 @@ import { LAMPORTS_PER_SOL } from "./constants.js";
 import { closeMongo, connectMongo, mongoConfigured, pingMongo } from "./mongo.js";
 import { createMongoStore } from "./mongo-store.js";
 import { createMemoryStore, publicDirectoryUser, publicPact, publicUser } from "./store.js";
+import {
+  applyArchiveGroup,
+  applyDeleteGroup,
+  applyRemoveMember,
+  applyTransferOwnership,
+} from "../lib/groupAdmin.js";
 
 export { LAMPORTS_PER_SOL };
 
@@ -19,7 +25,7 @@ const send = (res, status, body) => {
     "content-type": "application/json",
     "access-control-allow-origin": corsOrigin(),
     "access-control-allow-headers": "authorization, content-type",
-    "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
   });
   res.end(JSON.stringify(body));
 };
@@ -89,7 +95,7 @@ export function createPactRequestHandler(options = {}) {
       res.writeHead(204, {
         "access-control-allow-origin": urls.origin,
         "access-control-allow-headers": "authorization, content-type",
-        "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+        "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
       });
       return res.end();
     }
@@ -176,7 +182,17 @@ export function createPactRequestHandler(options = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/groups") {
       const groups = await store.listGroupsForUser(user.id);
-      return send(res, 200, groups.filter((group) => !group.archivedAt && (group.discoverable || isGroupMember(group, user) || group.creatorId === user.id)).map((group) => publicGroup(group, user)));
+      return send(
+        res,
+        200,
+        groups
+          .filter((group) => {
+            const admin = group.creatorId === user.id;
+            if (group.archivedAt) return admin;
+            return group.discoverable || isGroupMember(group, user) || admin;
+          })
+          .map((group) => publicGroup(group, user)),
+      );
     }
 
     if (req.method === "GET" && url.pathname === "/api/groups/directory") {
@@ -207,21 +223,51 @@ export function createPactRequestHandler(options = {}) {
       return send(res, result.status, publicGroup(result.group, user));
     }
 
-    const groupMatch = url.pathname.match(/^\/api\/groups\/([^/]+)\/(join|approve)$/);
+    const groupMatch = url.pathname.match(/^\/api\/groups\/([^/]+)\/(join|approve|remove|transfer|archive)$/);
     if (req.method === "POST" && groupMatch) {
       const group = await store.getGroup(groupMatch[1]);
       if (!group) return send(res, 404, { error: "Group not found" });
-      if (groupMatch[2] === "join") {
+      const action = groupMatch[2];
+      if (action === "join") {
         if (!group.discoverable && !isGroupMember(group, user) && group.creatorId !== user.id) return send(res, 403, { error: "Use this group's join code" });
         const result = await requestToJoinGroup(store, group, user);
         return send(res, result.status, publicGroup(result.group, user));
       }
-      if (group.creatorId !== user.id) return send(res, 403, { error: "Only the group admin can approve members" });
-      const memberId = (await bodyOf(req))?.userId;
-      if (!group.pendingMemberIds.includes(memberId)) return send(res, 404, { error: "Join request not found" });
-      group.pendingMemberIds = group.pendingMemberIds.filter((id) => id !== memberId);
-      group.memberIds.push(memberId);
-      return send(res, 200, publicGroup(await store.saveGroup(group), user));
+      if (action === "approve") {
+        if (group.creatorId !== user.id) return send(res, 403, { error: "Only the group admin can approve members" });
+        const memberId = (await bodyOf(req))?.userId;
+        if (!group.pendingMemberIds.includes(memberId)) return send(res, 404, { error: "Join request not found" });
+        group.pendingMemberIds = group.pendingMemberIds.filter((id) => id !== memberId);
+        group.memberIds.push(memberId);
+        return send(res, 200, publicGroup(await store.saveGroup(group), user));
+      }
+      try {
+        if (action === "remove") {
+          const memberId = (await bodyOf(req))?.userId;
+          return send(res, 200, publicGroup(await store.saveGroup(applyRemoveMember(group, user.id, memberId)), user));
+        }
+        if (action === "transfer") {
+          const nextAdminId = (await bodyOf(req))?.userId;
+          return send(res, 200, publicGroup(await store.saveGroup(applyTransferOwnership(group, user.id, nextAdminId)), user));
+        }
+        return send(res, 200, publicGroup(await store.saveGroup(applyArchiveGroup(group, user.id)), user));
+      } catch (error) {
+        return send(res, 403, { error: error.message });
+      }
+    }
+
+    const groupDelete = url.pathname.match(/^\/api\/groups\/([^/]+)$/);
+    if (req.method === "DELETE" && groupDelete) {
+      const group = await store.getGroup(groupDelete[1]);
+      if (!group) return send(res, 404, { error: "Group not found" });
+      try {
+        applyDeleteGroup(group, user.id);
+        if (!store.deleteGroup) return send(res, 501, { error: "Groups cannot be deleted" });
+        await store.deleteGroup(group.id);
+        return send(res, 200, { deleted: true, id: group.id });
+      } catch (error) {
+        return send(res, 403, { error: error.message });
+      }
     }
 
     if (req.method === "GET" && url.pathname === "/api/pacts") {

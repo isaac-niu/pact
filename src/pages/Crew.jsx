@@ -71,8 +71,13 @@ export default function Crew() {
         <GroupList
           groups={mine}
           userId={userId}
+          people={live.people}
           onJoin={actions.joinGroup}
           onApprove={actions.approveMember}
+          onRemove={actions.removeMember}
+          onTransfer={actions.transferOwnership}
+          onArchive={actions.archiveGroup}
+          onDelete={actions.deleteGroup}
           busy={busy}
         />
       </div>

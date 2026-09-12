@@ -42,5 +42,17 @@ describe("crew directory", () => {
     await waitFor(() => {
       expect(screen.getAllByText("Westside iron").length).toBeGreaterThan(0);
     });
+
+    fireEvent.click(screen.getByRole("button", { name: "Scratch from directory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm scratch" }));
+    expect(await screen.findByText("Crew scratched from the directory.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Search listed crews"), { target: { value: "westside" } });
+    expect(screen.getByText(/no listed crews on this filter/i)).toBeInTheDocument();
+    expect(screen.getByText("Westside iron")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Search listed crews"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Delete crew" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+    expect(await screen.findByText("Crew deleted.")).toBeInTheDocument();
   });
 });

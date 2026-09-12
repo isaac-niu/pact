@@ -96,6 +96,7 @@ export function createMongoStore(db) {
     async getGroup(id) { return groups ? withoutMongoId(await groups.findOne({ id })) : null; },
     async getGroupByJoinCode(joinCode) { return groups ? withoutMongoId(await groups.findOne({ joinCode })) : null; },
     async saveGroup(group) { if (!groups) throw new Error("Groups collection is unavailable"); await groups.updateOne({ id: group.id }, { $set: group }, { upsert: true }); return withoutMongoId(group); },
+    async deleteGroup(id) { if (!groups) throw new Error("Groups collection is unavailable"); await groups.deleteOne({ id }); return { deleted: true, id }; },
 
     async getPact(id) {
       return withoutMongoId(await pacts.findOne({ id }));
