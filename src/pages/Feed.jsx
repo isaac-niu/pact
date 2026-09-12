@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import { formatClock, sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
+import DeadlineBanner from "../components/DeadlineBanner.jsx";
+import Notices from "../components/Notices.jsx";
+import { approachingDeadline } from "../lib/reminders.js";
+import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
@@ -13,6 +17,7 @@ const PACT_LABELS = {
   evidence: "Evidence",
   judging: "Desk",
   review: "Review",
+  appeal: "Appeal",
   resolved: "Settled",
 };
 
@@ -37,6 +42,8 @@ export default function Feed() {
         </Link>
       </div>
       <Glossary />
+      <DeadlineBanner />
+      <Notices />
       <div className="filters" role="tablist" aria-label="Tape">
         <button type="button" className={tape === "public" ? "on" : ""} onClick={() => setTape("public")}>
           Public tape
@@ -111,8 +118,17 @@ export default function Feed() {
                   <div className="meta">
                     {creator?.handle} vs {userById(p.opponentId)?.handle} ·{" "}
                     <span className={`badge ${badgeClass}`}>{PACT_LABELS[p.status]}</span>
+                    {approachingDeadline(p) ? (
+                      <>
+                        {" · "}
+                        <span className="badge type-deadline">clock</span>
+                      </>
+                    ) : null}
                     {" · "}
                     {pactVisibility(p)}
+                    {normalizeCadence(p.cadence) !== "none"
+                      ? ` · ${cadenceLabel(p.cadence)} · streak ${p.streak || 0}`
+                      : ""}
                   </div>
                 </div>
                 <div className="stake">

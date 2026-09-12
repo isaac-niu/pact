@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import Announcer from "../components/Announcer.jsx";
+import DeadlineBanner from "../components/DeadlineBanner.jsx";
+import { canFlagAppeal, canResolveAppeal } from "../lib/appeals.js";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
+import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 
 const STAMPS = {
@@ -11,23 +14,27 @@ const STAMPS = {
   evidence: { label: "PROOF", className: "stamp-live" },
   judging: { label: "DESK", className: "stamp-hot" },
   review: { label: "REVIEW", className: "stamp-hot" },
+  appeal: { label: "APPEAL", className: "stamp-hot" },
   resolved: { label: "GRADED", className: "stamp-done" },
 };
 
 function sourceLabel(verdict) {
   if (verdict?.source === "gemini") return "Gemini Flash";
-  if (verdict?.source === "friend") return "friend verify";
+  if (verdict?.source === "appeal") return "open appeal";
+  if (verdict?.source === "friend") return "friend grade";
   return "mocked";
 }
 
 export default function PactDetail() {
   const { id } = useParams();
-  const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, bankOf } = usePact();
+  const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, flagAppeal, bankOf } = usePact();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [localPreview, setLocalPreview] = useState("");
+  const [gradeReason, setGradeReason] = useState("");
+  const [flagNote, setFlagNote] = useState("");
   const pact = pacts.find((p) => p.id === id);
 
   if (!pact || !canSeePact(pact, userId)) {
@@ -47,7 +54,8 @@ export default function PactDetail() {
   const canAccept = pact.status === "open" && userId === pact.opponentId;
   const canUpload =
     (pact.status === "accepted" || pact.status === "evidence") && userId === pact.creatorId;
-  const canVerify = pact.status === "review" && userId === pact.opponentId;
+  const canVerify = canResolveAppeal(pact, userId);
+  const canFlag = canFlagAppeal(pact, userId);
   const marks = events.filter((e) => e.pactId === pact.id).sort((a, b) => a.at - b.at);
   const tone = deadlineTone(pact.deadline);
 
@@ -67,9 +75,21 @@ export default function PactDetail() {
     setError("");
     setBusy(true);
     try {
-      await verifyPact(pact.id, pass);
+      await verifyPact(pact.id, pass, gradeReason);
     } catch (err) {
       setError(err.message || "Could not verify");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onFlag() {
+    setError("");
+    setBusy(true);
+    try {
+      await flagAppeal(pact.id, flagNote);
+    } catch (err) {
+      setError(err.message || "Could not flag");
     } finally {
       setBusy(false);
     }
@@ -163,7 +183,16 @@ export default function PactDetail() {
             <dt>Deadline</dt>
             <dd className={`tone-${tone}`}>{formatWhen(pact.deadline)}</dd>
           </div>
+          {normalizeCadence(pact.cadence) !== "none" ? (
+            <div>
+              <dt>Series</dt>
+              <dd>
+                {cadenceLabel(pact.cadence)} · streak {pact.streak || 0} · slip {pact.occurrence || 1}
+              </dd>
+            </div>
+          ) : null}
         </dl>
+        <DeadlineBanner pactId={pact.id} />
       </article>
 
       <div className="detail-grid">
@@ -237,26 +266,22 @@ export default function PactDetail() {
           ) : null}
           {pact.status === "review" ? (
             <p className="hint">
-              Gemini is in the middle band. {opponent.handle} verifies the frame — one button, not a
-              committee.
+              Gemini is in the middle band. Both desks see the rationale. Either can flag the call;
+              a grade needs a written reason on the tape.
             </p>
           ) : null}
-          {canVerify ? (
-            <div className="announcer-row">
-              <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
-                Friend: pass
-              </button>
-              <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => onVerify(false)}>
-                Friend: fail
-              </button>
+          {pact.status === "appeal" ? (
+            <p className="hint">
+              Open appeal. {userById(pact.appeal?.flaggedBy)?.handle || "A desk"} flagged this call
+              — resolve it in the open, not a silent pass/fail.
+            </p>
+          ) : null}
+          {pact.appeal?.note ? (
+            <div className="appeal-note">
+              <div className="kicker">Flag</div>
+              <p>{pact.appeal.note}</p>
             </div>
           ) : null}
-          {pact.status === "review" && !canVerify ? (
-            <p className="hint">
-              {opponent.handle} verifies this frame from their signed-in Pact app.
-            </p>
-          ) : null}
-          {error ? <p className="err">{error}</p> : null}
 
           {pact.verdict ? (
             <div className={`verdict ${pact.verdict.result}`}>
@@ -265,6 +290,12 @@ export default function PactDetail() {
                 Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
               </div>
               <p>{pact.verdict.rationale}</p>
+              {pact.appeal?.resolution?.reason ? (
+                <p className="hint">
+                  Open grade · {userById(pact.appeal.resolution.actorId)?.handle}:{" "}
+                  {pact.appeal.resolution.reason}
+                </p>
+              ) : null}
               {pact.status === "resolved" && winner ? (
                 <>
                   <div className="payout">
@@ -279,6 +310,47 @@ export default function PactDetail() {
               ) : null}
             </div>
           ) : null}
+
+          {canFlag ? (
+            <label className="appeal-field">
+              Flag this call
+              <textarea
+                value={flagNote}
+                onChange={(e) => setFlagNote(e.target.value)}
+                placeholder="What’s wrong with the referee rationale?"
+              />
+              <button className="btn btn-ghost" type="button" disabled={busy} onClick={onFlag}>
+                Flag / dispute
+              </button>
+            </label>
+          ) : null}
+          {canVerify ? (
+            <>
+              <label className="appeal-field">
+                Visible grade
+                <textarea
+                  value={gradeReason}
+                  onChange={(e) => setGradeReason(e.target.value)}
+                  placeholder="Write why this frame stands or fades."
+                  required
+                />
+              </label>
+              <div className="announcer-row">
+                <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
+                  Stand the slip
+                </button>
+                <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => onVerify(false)}>
+                  Fade the slip
+                </button>
+              </div>
+            </>
+          ) : null}
+          {pact.status === "review" && !canVerify && !canFlag ? (
+            <p className="hint">
+              {opponent.handle} grades this frame from their signed-in Pact app.
+            </p>
+          ) : null}
+          {error ? <p className="err">{error}</p> : null}
         </div>
       </div>
 

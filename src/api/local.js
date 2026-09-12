@@ -1,6 +1,24 @@
 import { STARTING_BANK, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
+import {
+  acceptedNotice,
+  markAllNoticesRead,
+  markNoticeRead,
+  mergeNotices,
+  noticesFromLifecycle,
+  provedNotice,
+  reviewNotice,
+} from "../lib/notifications.js";
+import { applyDeadlineReminders } from "../lib/reminders.js";
+import { applyRecurringSpawns, seriesFields, withNextSpawn } from "../lib/recurring.js";
+import {
+  appealNotice,
+  canFlagAppeal,
+  canResolveAppeal,
+  gradedNotice,
+  requireGradeReason,
+} from "../lib/appeals.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -36,6 +54,13 @@ function upgradePact(p) {
     acceptedAt: p.status === "open" ? null : (p.createdAt ?? Date.now()),
     provedAt: p.evidenceUrl || p.evidenceName ? (p.createdAt ?? Date.now()) : null,
     resolvedAt: p.status === "resolved" ? Date.now() : null,
+    cadence: "none",
+    seriesId: null,
+    occurrence: 1,
+    streak: 0,
+    seriesUntil: null,
+    parentPactId: null,
+    nextSpawnAt: null,
     ...p,
   };
 }
@@ -160,13 +185,18 @@ function loadState() {
 
 function normalize(parsed) {
   const pacts = Array.isArray(parsed.pacts) ? parsed.pacts.map(upgradePact) : [];
+  const events = Array.isArray(parsed.events) ? parsed.events : eventsFromLegacy(pacts);
+  const notifications = Array.isArray(parsed.notifications)
+    ? parsed.notifications
+    : noticesFromLifecycle(pacts, events);
   return {
     userId: parsed.userId === "friend" ? "friend" : "you",
     seedVersion: SEED_VERSION,
     startingBank: Number.isFinite(parsed.startingBank) ? parsed.startingBank : STARTING_BANK,
     pacts,
-    events: Array.isArray(parsed.events) ? parsed.events : eventsFromLegacy(pacts),
+    events,
     ledger: Array.isArray(parsed.ledger) ? parsed.ledger : ledgerFromLegacy(pacts),
+    notifications,
   };
 }
 
@@ -264,6 +294,7 @@ export async function createPact(input, ctx = {}) {
     acceptedAt: null,
     provedAt: null,
     resolvedAt: null,
+    ...seriesFields(input, now, () => uid("ser")),
   };
 
   persist({
@@ -316,6 +347,7 @@ export async function acceptPact(pactId, ctx = {}) {
       },
       ...state.ledger,
     ],
+    notifications: mergeNotices(state.notifications, [acceptedNotice(next, actorId, now)]),
   });
 
   return next;
@@ -326,13 +358,13 @@ function settle(latest, verdict) {
   const loserId = winnerId === latest.creatorId ? latest.opponentId : latest.creatorId;
   const resolvedAt = Date.now();
   const pot = latest.stake * 2;
-  const resolved = {
+  const resolved = withNextSpawn({
     ...latest,
     status: "resolved",
     verdict,
     winnerId,
     resolvedAt,
-  };
+  });
 
   persist({
     ...state,
@@ -397,6 +429,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
       { id: uid("ev"), pactId, type: "proved", actorId, at: provedAt, note: evidenceName },
       ...state.events,
     ],
+    notifications: mergeNotices(state.notifications, [provedNotice(pact, actorId, provedAt)]),
   });
 
   const verdict = await judgeEvidence({
@@ -434,6 +467,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
         },
         ...state.events,
       ],
+      notifications: mergeNotices(state.notifications, [reviewNotice(reviewed)]),
     });
     return reviewed;
   }
@@ -441,21 +475,66 @@ export async function submitEvidence(pactId, file, ctx = {}) {
   return settle(framed, verdict);
 }
 
+export async function flagAppeal(pactId, note, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const pact = state.pacts.find((p) => p.id === pactId);
+  if (!pact) throw new Error("Slip not on the board");
+  if (!canFlagAppeal(pact, actorId)) throw new Error("This slip cannot be flagged");
+  const now = Date.now();
+  const appeal = {
+    status: "open",
+    flaggedBy: actorId,
+    note: String(note ?? "").trim() || "Flagged the Gemini call.",
+    at: now,
+    resolution: null,
+  };
+  const next = { ...pact, status: "appeal", appeal };
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? next : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "flagged", actorId, at: now, note: appeal.note },
+      ...state.events,
+    ],
+    notifications: mergeNotices(state.notifications, [appealNotice(next, actorId, now)]),
+  });
+  return next;
+}
+
 export async function verifyPact(pactId, pass, ctx = {}) {
   const actorId = ctx.actorId ?? state.userId;
   requireUser(actorId);
   const pact = state.pacts.find((p) => p.id === pactId);
   if (!pact) throw new Error("Slip not on the board");
-  if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
-  if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
+  if (!canResolveAppeal(pact, actorId)) throw new Error("This slip is not waiting on a visible grade");
+  const reason = requireGradeReason(ctx.reason);
 
-  const resolved = settle(pact, {
+  const now = Date.now();
+  const appeal = {
+    status: "resolved",
+    flaggedBy: pact.appeal?.flaggedBy || actorId,
+    note: pact.appeal?.note || "Friend grade on the REVIEW call.",
+    at: pact.appeal?.at || now,
+    resolution: { actorId, pass: Boolean(pass), reason, at: now },
+  };
+  const framed = { ...pact, status: pact.status === "appeal" ? "appeal" : "review", appeal };
+
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? framed : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "graded", actorId, at: now, note: reason },
+      ...state.events,
+    ],
+    notifications: mergeNotices(state.notifications, [gradedNotice(framed, actorId, now)]),
+  });
+
+  const resolved = settle(framed, {
     result: pass ? "pass" : "fail",
     confidence: pact.verdict?.confidence ?? 0.5,
-    rationale: pass
-      ? "Friend verified the proof. Desk stands the slip."
-      : "Friend rejected the proof. Stake goes to the counterparty.",
-    source: "friend",
+    rationale: reason,
+    source: pact.status === "appeal" ? "appeal" : "friend",
     auto: true,
   });
 
@@ -478,4 +557,31 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   }).catch(() => {});
 
   return resolved;
+}
+
+export async function markNoticeReadForUser(noticeId, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  persist({
+    ...state,
+    notifications: markNoticeRead(state.notifications, noticeId, actorId),
+  });
+  return (state.notifications || []).find((n) => n.id === noticeId) || null;
+}
+
+export async function markAllNoticesReadForUser(ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  persist({
+    ...state,
+    notifications: markAllNoticesRead(state.notifications, actorId),
+  });
+  return { ok: true };
+}
+
+export async function tickReminders(now = Date.now()) {
+  const reminded = applyDeadlineReminders(state, now);
+  const spawned = applyRecurringSpawns(reminded.state, { now, uid, bankOf });
+  if (reminded.created.length || spawned.created.length) persist(spawned.state);
+  return { created: reminded.created.length, spawned: spawned.created.length };
 }

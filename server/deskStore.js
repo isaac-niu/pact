@@ -90,6 +90,7 @@ function publicState(state, actorId = "you") {
     pacts: state.pacts,
     events: state.events,
     ledger: state.ledger,
+    notifications: state.notifications || [],
     users: usersFromState(state),
     backend: "mongo",
   };
@@ -119,6 +120,27 @@ export function submitEvidence(pactId, file, actorId) {
   return mutate((state) => desk.submitEvidence(state, pactId, file, actorId));
 }
 
-export function verifyPact(pactId, pass, actorId) {
-  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId));
+export function verifyPact(pactId, pass, actorId, reason) {
+  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId, reason));
+}
+
+export function flagAppeal(pactId, note, actorId) {
+  return mutate((state) => desk.flagAppeal(state, pactId, note, actorId));
+}
+
+export function markNoticeRead(noticeId, actorId) {
+  return mutate((state) => desk.markNoticeRead(state, noticeId, actorId));
+}
+
+export function markAllNoticesRead(actorId) {
+  return mutate((state) => desk.markAllNoticesRead(state, actorId));
+}
+
+export async function tickReminders(now) {
+  const { state } = await loadState();
+  const preview = await desk.tickReminders(structuredClone(state), now);
+  if (!preview.result?.created && !preview.result?.spawned) {
+    return { result: preview.result, state: publicState(state) };
+  }
+  return mutate((next) => desk.tickReminders(next, now));
 }

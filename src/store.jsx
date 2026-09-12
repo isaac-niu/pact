@@ -4,14 +4,19 @@ import {
   bankOf,
   createPact as apiCreate,
   getSnapshot,
+  markAllNoticesReadForUser as apiMarkAllRead,
+  markNoticeReadForUser as apiMarkRead,
   recordOf,
   resetDesk,
+  flagAppeal as apiFlag,
   submitEvidence as apiSubmit,
+  tickReminders as apiTickReminders,
   verifyPact as apiVerify,
   subscribe,
   switchUser as apiSwitch,
 } from "./api/pact.js";
 import { USERS, otherUserId, userById } from "./data/users.js";
+import { noticesForUser, unreadCount } from "./lib/notifications.js";
 
 const PactContext = createContext(null);
 
@@ -19,6 +24,14 @@ export function PactProvider({ children }) {
   const [snap, setSnap] = useState(() => getSnapshot());
 
   useEffect(() => subscribe(setSnap), []);
+
+  useEffect(() => {
+    apiTickReminders().catch(() => {});
+    const timer = setInterval(() => {
+      apiTickReminders().catch(() => {});
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const user = userById(snap.userId);
   const opponent = userById(otherUserId(snap.userId));
@@ -33,6 +46,9 @@ export function PactProvider({ children }) {
       pacts: snap.pacts,
       events: snap.events,
       ledger: snap.ledger,
+      notifications: snap.notifications || [],
+      notices: noticesForUser(snap.notifications, snap.userId),
+      unreadNotices: unreadCount(snap.notifications, snap.userId),
       bank,
       record,
       users: USERS,
@@ -43,7 +59,11 @@ export function PactProvider({ children }) {
       createPact: (input) => apiCreate(input, { actorId: snap.userId }),
       acceptPact: (id) => apiAccept(id, { actorId: snap.userId }),
       submitEvidence: (id, file) => apiSubmit(id, file, { actorId: snap.userId }),
-      verifyPact: (id, pass) => apiVerify(id, pass, { actorId: snap.userId }),
+      verifyPact: (id, pass, reason) => apiVerify(id, pass, { actorId: snap.userId, reason }),
+      flagAppeal: (id, note) => apiFlag(id, note, { actorId: snap.userId }),
+      markNoticeRead: (id) => apiMarkRead(id, { actorId: snap.userId }),
+      markAllNoticesRead: () => apiMarkAllRead({ actorId: snap.userId }),
+      tickReminders: () => apiTickReminders(),
       backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],

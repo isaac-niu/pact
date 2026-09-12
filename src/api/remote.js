@@ -39,6 +39,7 @@ function apply(snap) {
     pacts: snap.pacts || [],
     events: snap.events || [],
     ledger: snap.ledger || [],
+    notifications: snap.notifications || [],
     users: snap.users || [],
   };
   notify();
@@ -154,7 +155,46 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   actorId = ctx.actorId || actorId;
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/verify`, {
     method: "POST",
-    body: JSON.stringify({ actorId, pass }),
+    body: JSON.stringify({ actorId, pass, reason: ctx.reason }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function flagAppeal(pactId, note, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/flag`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, note }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function markNoticeReadForUser(noticeId, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/notices/${encodeURIComponent(noticeId)}/read`, {
+    method: "POST",
+    body: JSON.stringify({ actorId }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function markAllNoticesReadForUser(ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req("/api/notices/read-all", {
+    method: "POST",
+    body: JSON.stringify({ actorId }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function tickReminders(now = Date.now()) {
+  const out = await req("/api/desk/remind", {
+    method: "POST",
+    body: JSON.stringify({ now }),
   });
   apply(out.state);
   return out.result;

@@ -34,6 +34,18 @@ export function submitEvidence(...args) {
 export function verifyPact(...args) {
   return impl.verifyPact(...args);
 }
+export function flagAppeal(...args) {
+  return impl.flagAppeal(...args);
+}
+export function markNoticeReadForUser(...args) {
+  return impl.markNoticeReadForUser(...args);
+}
+export function markAllNoticesReadForUser(...args) {
+  return impl.markAllNoticesReadForUser(...args);
+}
+export function tickReminders(...args) {
+  return impl.tickReminders(...args);
+}
 export function getSnapshot() {
   return impl.getSnapshot();
 }
@@ -61,4 +73,13 @@ export function recordOf(...args) {
   return impl.recordOf(...args);
 }
 
-export const pactApi = { createPact, acceptPact, submitEvidence, verifyPact };
+export const pactApi = {
+  createPact,
+  acceptPact,
+  submitEvidence,
+  verifyPact,
+  flagAppeal,
+  markNoticeReadForUser,
+  markAllNoticesReadForUser,
+  tickReminders,
+};

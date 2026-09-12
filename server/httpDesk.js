@@ -1,4 +1,15 @@
-import { liveConfig, getDesk, createPact, acceptPact, submitEvidence, verifyPact } from "./deskStore.js";
+import {
+  liveConfig,
+  getDesk,
+  createPact,
+  acceptPact,
+  submitEvidence,
+  verifyPact,
+  flagAppeal,
+  markNoticeRead,
+  markAllNoticesRead,
+  tickReminders,
+} from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
 
@@ -69,7 +80,41 @@ export async function handleDeskApi(req, res, { send, readBody }) {
     return true;
   }
 
-  const pactMatch = url.match(/^\/api\/pacts\/([^/]+)\/(accept|evidence|verify)$/);
+  if (url === "/api/desk/remind" && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await tickReminders(payload.now);
+    send(res, 200, out);
+    return true;
+  }
+
+  if (url === "/api/notices/read-all" && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await markAllNoticesRead(actorOf(req, payload));
+    send(res, 200, out);
+    return true;
+  }
+
+  const noticeMatch = url.match(/^\/api\/notices\/([^/]+)\/read$/);
+  if (noticeMatch && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await markNoticeRead(decodeURIComponent(noticeMatch[1]), actorOf(req, payload));
+    send(res, 200, out);
+    return true;
+  }
+
+  const pactMatch = url.match(/^\/api\/pacts\/([^/]+)\/(accept|evidence|verify|flag)$/);
   if (pactMatch && req.method === "POST") {
     const pactId = decodeURIComponent(pactMatch[1]);
     const action = pactMatch[2];
@@ -89,7 +134,12 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       send(res, 200, out);
       return true;
     }
-    const out = await verifyPact(pactId, payload.pass !== false, actorOf(req, payload));
+    if (action === "flag") {
+      const out = await flagAppeal(pactId, payload.note, actorOf(req, payload));
+      send(res, 200, out);
+      return true;
+    }
+    const out = await verifyPact(pactId, payload.pass !== false, actorOf(req, payload), payload.reason);
     send(res, 200, out);
     return true;
   }

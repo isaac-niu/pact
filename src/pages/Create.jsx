@@ -5,6 +5,7 @@ import { usePact } from "../store.jsx";
 import { api } from "../api.js";
 import { clientEnvReady, env } from "../env.js";
 import { defaultDeadline, localInputValue, sol } from "../lib/format.js";
+import { cadenceLabel, defaultSeriesUntil } from "../lib/recurring.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -25,6 +26,8 @@ export default function Create() {
   );
   const [stake, setStake] = useState("2");
   const [deadline, setDeadline] = useState(localInputValue(defaultDeadline()));
+  const [cadence, setCadence] = useState("none");
+  const [seriesUntil, setSeriesUntil] = useState(localInputValue(defaultSeriesUntil()));
   const [visibility, setVisibility] = useState("public");
   const [destination, setDestination] = useState("desk"); // "desk" | "group"
   const [groups, setGroups] = useState([]);
@@ -98,6 +101,8 @@ export default function Create() {
         deadline: new Date(deadline).getTime(),
         opponentId,
         visibility,
+        cadence,
+        seriesUntil: cadence === "none" ? null : new Date(seriesUntil).getTime(),
       });
       navigate(`/pact/${pact.id}`);
     } catch (err) {
@@ -157,6 +162,31 @@ export default function Create() {
                 onChange={(e) => setDeadline(e.target.value)}
                 required
                 disabled={destination === "group"}
+              />
+            </label>
+          </div>
+          <div className="form-row">
+            <label>
+              Cadence
+              <select
+                value={cadence}
+                onChange={(e) => setCadence(e.target.value)}
+                disabled={destination === "group"}
+              >
+                <option value="none">One-off</option>
+                <option value="daily">Daily</option>
+                <option value="3x-week">3× / week</option>
+                <option value="weekly">Weekly</option>
+              </select>
+              <span className="hint">Next slip posts on schedule after this one settles.</span>
+            </label>
+            <label>
+              Series until
+              <input
+                type="datetime-local"
+                value={seriesUntil}
+                onChange={(e) => setSeriesUntil(e.target.value)}
+                disabled={destination === "group" || cadence === "none"}
               />
             </label>
           </div>
@@ -290,7 +320,13 @@ export default function Create() {
         <header className="ticket-head">
           <span>Preview</span>
           <span className="stamp">
-            {destination === "group" ? "GROUP" : visibility === "private" ? "PRIVATE" : "PUBLIC"}
+            {destination === "group"
+              ? "GROUP"
+              : cadence !== "none"
+                ? cadenceLabel(cadence).toUpperCase()
+                : visibility === "private"
+                  ? "PRIVATE"
+                  : "PUBLIC"}
           </span>
         </header>
         <h3>{title.trim() || "Untitled pact"}</h3>
