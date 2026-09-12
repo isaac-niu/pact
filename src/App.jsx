@@ -4,6 +4,7 @@ import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
 import PactDetail from "./pages/PactDetail.jsx";
+import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 
 function Switcher() {
   const { userId, switchUser } = usePact();
@@ -35,6 +36,7 @@ function Shell({ children }) {
           </NavLink>
           <NavLink to="/create">Write slip</NavLink>
           <NavLink to="/feed">Board</NavLink>
+          <NavLink to="/app">Pact app</NavLink>
         </nav>
         <Switcher />
       </header>
@@ -51,6 +53,7 @@ export default function App() {
         <Route path="/create" element={<Create />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/pact/:id" element={<PactDetail />} />
+        <Route path="/app" element={<AuthenticatedPactDemo />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>
