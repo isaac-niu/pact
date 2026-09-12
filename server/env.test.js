@@ -9,6 +9,7 @@ test("feature flags stay false when secrets are missing", () => {
   assert.equal(flags.mongo, false);
   assert.equal(flags.gemini, false);
   assert.equal(flags.elevenlabs, false);
+  assert.equal(flags.ifm, false);
 });
 
 test("feature flags detect configured services without exposing values", () => {
@@ -18,12 +19,14 @@ test("feature flags detect configured services without exposing values", () => {
     MONGODB_URI: "mongodb+srv://example",
     GEMINI_API_KEY: "secret",
     ELEVENLABS_API_KEY: "secret",
+    HF_TOKEN: "secret",
   });
   assert.deepEqual(flags, {
     auth0: true,
     mongo: true,
     gemini: true,
     elevenlabs: true,
+    ifm: true,
   });
   const json = JSON.stringify(publicConfig({ ELEVENLABS_API_KEY: "secret" }));
   assert.equal(json.includes("secret"), false);

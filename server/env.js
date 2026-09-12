@@ -6,6 +6,7 @@ export function featureFlags(env = process.env) {
     mongo: Boolean(env.MONGODB_URI),
     gemini: Boolean(env.GEMINI_API_KEY),
     elevenlabs: Boolean(env.ELEVENLABS_API_KEY),
+    ifm: Boolean(env.HF_TOKEN),
   };
 }
 

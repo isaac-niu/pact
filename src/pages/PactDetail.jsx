@@ -291,6 +291,14 @@ export default function PactDetail() {
                 Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
               </div>
               <p>{pact.verdict.rationale}</p>
+              {pact.verdict.sidekick?.text ? (
+                <p className="sidekick-line">
+                  <span className="kicker">
+                    {pact.verdict.sidekick.source === "ifm" ? "IFM sidekick" : "sidekick"}
+                  </span>{" "}
+                  {pact.verdict.sidekick.text}
+                </p>
+              ) : null}
               {pact.appeal?.resolution?.reason ? (
                 <p className="hint">
                   Open grade · {userById(pact.appeal.resolution.actorId)?.handle}:{" "}

@@ -1,6 +1,7 @@
 import { loadEnvFile } from "./loadEnv.js";
 import { featureFlags } from "./env.js";
 import { geminiEnabled, getLastGeminiError, judgeEvidence } from "./gemini.js";
+import { getSidekickLine, ifmEnabled } from "./ifmSidekick.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import path from "node:path";
@@ -80,6 +81,7 @@ export async function handleRefereeApi(req, res, helpers = {}) {
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
         elevenlabs,
+        ifm: ifmEnabled(),
       },
     });
     return true;
@@ -138,6 +140,15 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       criteria: payload.criteria,
       fileName: payload.fileName,
       dataUrl: payload.dataUrl,
+    });
+    // Sidekick only reacts to the call already made above — it can't change
+    // pass/fail/review, and a failure here falls back to a canned line
+    // rather than ever blocking the actual verdict.
+    verdict.sidekick = await getSidekickLine({
+      title: payload.title,
+      result: verdict.result,
+      confidence: verdict.confidence,
+      rationale: verdict.rationale,
     });
 
     let evidenceUrl = payload.dataUrl || null;

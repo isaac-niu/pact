@@ -44,3 +44,10 @@ PORT=3001
 # --- Solana wallet (/wallet page only, real devnet, no wallet required) ---
 # Optional custom RPC endpoint. Leave unset to use the public devnet cluster.
 # VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# --- IFM sidekick (optional) ---
+# A short color-commentator line reacting to the referee's verdict, via
+# Hugging Face's router to an IFM K2 Horizon model (https://ifm.ai). Leave
+# unset to fall back to canned commentary lines.
+# HF_TOKEN=hf_xxx
+# IFM_SIDEKICK_MODEL=IFM/K2-Horizon-0.9B
