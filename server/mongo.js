@@ -1,7 +1,9 @@
 import { MongoClient, GridFSBucket, ObjectId } from "mongodb";
 
 let client = null;
+let db = null;
 let connecting = null;
+let ready = false;
 let lastError = null;
 
 export function mongoUri(env = process.env) {
@@ -9,15 +11,20 @@ export function mongoUri(env = process.env) {
 }
 
 export function mongoDbName(env = process.env) {
-  return env.MONGODB_DB_NAME || env.MONGO_DB_NAME || "pact";
+  return env.MONGODB_DB_NAME || env.MONGO_DB_NAME || env.MONGODB_DB || "pact";
 }
 
 export function mongoConfigured(env = process.env) {
   return Boolean(mongoUri(env));
 }
 
+/** Sync flag used by the Person D desk server. */
+export function mongoReady() {
+  return ready;
+}
+
 export async function getMongo(env = process.env) {
-  if (client) return { client, db: client.db(mongoDbName(env)) };
+  if (client && ready) return { client, db: db || client.db(mongoDbName(env)) };
   if (!mongoConfigured(env)) {
     throw new Error("mongo_unconfigured");
   }
@@ -25,40 +32,56 @@ export async function getMongo(env = process.env) {
     connecting = (async () => {
       const next = new MongoClient(mongoUri(env), {
         maxPoolSize: 5,
-        serverSelectionTimeoutMS: 4000,
+        serverSelectionTimeoutMS: 8000,
       });
       await next.connect();
       client = next;
+      db = next.db(mongoDbName(env));
+      ready = true;
       lastError = null;
       return client;
     })().catch((err) => {
       connecting = null;
-      lastError = err?.message || String(err);
+      ready = false;
+      lastError = err?.name || err?.message || String(err);
       throw err;
     });
   }
-  const ready = await connecting;
-  return { client: ready, db: ready.db(mongoDbName(env)) };
+  const connected = await connecting;
+  return { client: connected, db: db || connected.db(mongoDbName(env)) };
 }
 
-export async function mongoReady() {
-  if (!mongoConfigured()) return false;
-  try {
-    const { db } = await getMongo();
-    await db.command({ ping: 1 });
-    return true;
-  } catch (err) {
-    lastError = err?.message || String(err);
-    return false;
+export async function connectMongo(env = process.env) {
+  if (!mongoConfigured(env)) {
+    ready = false;
+    return null;
   }
+  try {
+    const got = await getMongo(env);
+    ready = true;
+    db = got.db;
+    lastError = null;
+    console.log("mongo connected");
+    return db;
+  } catch (err) {
+    ready = false;
+    lastError = err.name || err.message;
+    console.error("mongo connect failed", lastError);
+    return null;
+  }
+}
+
+export function getDb() {
+  if (!ready || !db) throw new Error("mongo_unavailable");
+  return db;
 }
 
 export function mongoError() {
   return lastError;
 }
 
-export function evidenceBucket(db) {
-  return new GridFSBucket(db, { bucketName: "evidence" });
+export function evidenceBucket(database) {
+  return new GridFSBucket(database, { bucketName: "evidence" });
 }
 
 export { ObjectId };

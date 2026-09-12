@@ -29,7 +29,7 @@ function Switcher() {
 }
 
 function Shell({ children }) {
-  const { user, bank } = usePact();
+  const { user, bank, backend } = usePact();
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -37,7 +37,7 @@ function Shell({ children }) {
           <NavLink to="/" className="brand-mark">
             PACT
           </NavLink>
-          <span className="brand-sub">Gemini desk</span>
+          <span className="brand-sub">{backend === "mongo" ? "Live desk" : "Local desk"}</span>
         </div>
         <nav className="nav">
           <NavLink to="/" end>

@@ -22,8 +22,15 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
+      "/healthz": "http://127.0.0.1:3000",
+      "/api/announce": "http://127.0.0.1:3000",
+      "/api/desk": "http://127.0.0.1:3000",
+      "/api/auth": "http://localhost:3001",
+      "/api/users": "http://localhost:3001",
+      "/api/ledger": "http://localhost:3001",
+      "/api/health": "http://localhost:3001",
       "/api": {
-        target: "http://localhost:3001",
+        target: "http://127.0.0.1:3000",
         bypass(req) {
           if (isRefereeApi(req.url)) return req.url;
         },
@@ -32,6 +39,6 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    port: 43128,
+    port: 4173,
   },
 });

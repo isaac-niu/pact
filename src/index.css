@@ -867,6 +867,16 @@ select {
   font-size: 13px;
 }
 
+.announcer {
+  margin-top: 14px;
+}
+
+.announcer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .lime-hint {
   color: var(--lime);
 }

@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "node server/index.js",
     "test": "node scripts/run-tests.mjs && node --test server/*.test.js",
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "server": "node src/backend/server.js"
+    "server": "node src/backend/server.js",
+    "smoke": "node scripts/smoke.mjs",
+    "seed": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.24.1",

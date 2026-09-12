@@ -4,16 +4,19 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import AuthGate from "./auth/AuthGate.jsx";
 import { PactProvider } from "./store.jsx";
+import { boot } from "./api/pact.js";
 import "./index.css";
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <BrowserRouter>
-      <AuthGate>
-        <PactProvider>
-          <App />
-        </PactProvider>
-      </AuthGate>
-    </BrowserRouter>
-  </StrictMode>,
-);
+boot().finally(() => {
+  createRoot(document.getElementById("root")).render(
+    <StrictMode>
+      <BrowserRouter>
+        <AuthGate>
+          <PactProvider>
+            <App />
+          </PactProvider>
+        </AuthGate>
+      </BrowserRouter>
+    </StrictMode>,
+  );
+});

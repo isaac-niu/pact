@@ -1,0 +1,55 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createDeskLogic, bankOf } from "./desk.js";
+import { emptyDemoState } from "../src/data/seed.js";
+
+test("create then accept locks both virtual SOL stakes", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "pass",
+    confidence: 0.9,
+    rationale: "ok",
+    source: "mock",
+    auto: true,
+  }));
+  let state = emptyDemoState();
+  const startYou = bankOf("you", state);
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  assert.equal(bankOf("you", state), startYou - 2);
+  const accepted = await desk.acceptPact(state, created.result.id, "friend");
+  state = accepted.state;
+  assert.equal(accepted.result.status, "accepted");
+  assert.equal(bankOf("friend", state), bankOf("friend", emptyDemoState()) - 2);
+});
+
+test("high-confidence pass pays the challenger", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "pass",
+    confidence: 0.92,
+    rationale: "gym",
+    source: "test",
+    auto: true,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const before = bankOf("you", state);
+  const out = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { dataUrl: "data:image/jpeg;base64,aa", name: "gym.jpg" },
+    "you",
+  );
+  assert.equal(out.result.status, "resolved");
+  assert.equal(out.result.winnerId, "you");
+  assert.equal(bankOf("you", out.state), before + 4);
+});

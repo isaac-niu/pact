@@ -6,16 +6,31 @@ Social media for accountability, not attention.
 
 Person A owns the sportsbook desk UI. Person B owns Auth0 + Mongo API. Person C owns the Gemini referee and GridFS proof. Person D owns Vultr deploy and ElevenLabs.
 
-## Quick start (desk + mock referee)
+If Mongo or Gemini env vars are missing, the desk still boots on `localStorage` and the mock referee.
+
+## Quick start (laptop)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. No `.env` required. State lives in `localStorage`. Photos stay in the browser. Missing `GEMINI_API_KEY` falls back to the mock referee so the desk still boots.
+Open `http://localhost:5173`. No `.env` required for the local desk. Switch **You (ISAAC)** / **Friend (MAYA)** in the top-right.
 
-Two hardcoded desks live in the top-right pill: **You (ISAAC)** and **Friend (MAYA)**.
+Optional second terminal for the Person D Node desk (Vite proxies `/api/desk` and `/healthz`):
+
+```bash
+npm run dev:server
+npm run dev
+```
+
+Production-style (what Vultr runs):
+
+```bash
+npm run build
+npm start
+# http://127.0.0.1:3000
+```
 
 ## 60-second click-through
 
@@ -41,13 +56,14 @@ Two hardcoded desks live in the top-right pill: **You (ISAAC)** and **Friend (MA
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Vite on `localhost:5173` (Gemini referee middleware in-process) |
+| `npm run dev:server` | Person D desk + announcer on port 3000 |
+| `npm start` | Production Node server (static `dist` + API) |
 | `npm run build` | Production client build |
 | `npm run preview` | Preview the production build |
-| `npm run test` | Vitest (jsdom) plus Person C server tests |
-| `npm run test:watch` | Vitest watch mode |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test` | Vitest (jsdom) plus server tests |
 | `npm run server` | Person B Auth0/Mongo API on port 3001 |
+| `npm run smoke` | Deploy smoke script |
+| `npm run seed` | Demo seed (`DEMO_SEED=true`) |
 
 ## Person C referee
 
@@ -59,11 +75,9 @@ Two hardcoded desks live in the top-right pill: **You (ISAAC)** and **Friend (MA
 
 If `MONGODB_URI` is set, proof lands in **GridFS** (`evidence` bucket) and the verdict is upserted on `pacts`. Atlas down → keep the in-browser data URL.
 
-`GET /api/config` → `{ features: { gemini, mongo } }`.
-
 ## Person B Auth0 + Atlas
 
-There is a second stack at `/app`:
+`/app` is the authenticated stack:
 
 | Mode | How to start the API | Browser sign-in | Persistence |
 |------|----------------------|-----------------|-------------|
@@ -72,6 +86,7 @@ There is a second stack at `/app`:
 
 Create `.env` from `.env.example` or `env-template.txt`. **Never commit real secrets.**
 
-Vite proxies leftover `/api` calls to `http://localhost:3001` so `/app` can talk to Person B’s API. Referee routes stay on the Vite middleware.
+## Person D deploy
 
-See `env-template.txt` for Auth0 audience shape, callback URLs, and live QA steps.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — nginx, systemd, Vultr, env names
+- [docs/DEMO.md](docs/DEMO.md) — 3-minute judging script + fallbacks

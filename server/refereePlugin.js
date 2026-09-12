@@ -1,6 +1,6 @@
 import { loadEnvFile } from "./loadEnv.js";
 import { geminiEnabled, judgeEvidence } from "./gemini.js";
-import { mongoConfigured, mongoError, mongoReady } from "./mongo.js";
+import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import path from "node:path";
 
@@ -57,6 +57,123 @@ async function persistSafe(fields) {
   }
 }
 
+/** Shared referee / GridFS routes for Vite and the Person D Node server. */
+export async function handleRefereeApi(req, res, helpers = {}) {
+  const write = helpers.send || send;
+  const parseBody = helpers.readJson || readJson;
+  const url = (req.url || "").split("?")[0];
+
+  if (url === "/api/config" && req.method === "GET") {
+    if (mongoConfigured() && !mongoReady()) {
+      await connectMongo();
+    }
+    const mongo = mongoReady();
+    write(res, 200, {
+      ok: true,
+      service: "pact",
+      features: {
+        gemini: geminiEnabled(),
+        mongo: mongoConfigured() && mongo,
+        mongoError: mongo ? null : mongoError(),
+      },
+    });
+    return true;
+  }
+
+  const evidenceMatch = url.match(/^\/api\/evidence\/([^/]+)$/);
+  if (evidenceMatch && req.method === "GET") {
+    const file = await readEvidence(decodeURIComponent(evidenceMatch[1]));
+    if (!file) {
+      write(res, 404, { error: "not_found" });
+      return true;
+    }
+    write(res, 200, file.buffer, {
+      "content-type": file.contentType,
+      "content-disposition": `inline; filename="${file.filename.replaceAll('"', "")}"`,
+    });
+    return true;
+  }
+
+  if (url === "/api/pacts/verify" && req.method === "POST") {
+    const payload = await parseBody(req, 32_000);
+    await persistSafe({
+      pactId: payload.pactId,
+      title: payload.title,
+      criteria: payload.criteria,
+      creatorId: payload.creatorId,
+      opponentId: payload.opponentId,
+      stake: payload.stake,
+      status: "resolved",
+      evidenceUrl: payload.evidenceUrl,
+      evidenceName: payload.evidenceName,
+      evidenceGridFsId: payload.evidenceGridFsId,
+      verdict: payload.verdict,
+      winnerId: payload.winnerId,
+    });
+    write(res, 200, { ok: true });
+    return true;
+  }
+
+  if (url === "/api/referee" && req.method === "POST") {
+    const payload = await parseBody(req);
+    const verdict = await judgeEvidence({
+      title: payload.title,
+      criteria: payload.criteria,
+      fileName: payload.fileName,
+      dataUrl: payload.dataUrl,
+    });
+
+    let evidenceUrl = payload.dataUrl || null;
+    let evidenceGridFsId = null;
+    try {
+      const stored = await storeEvidence({
+        pactId: payload.pactId,
+        fileName: payload.fileName,
+        dataUrl: payload.dataUrl,
+      });
+      if (stored.stored) {
+        evidenceUrl = stored.evidenceUrl;
+        evidenceGridFsId = stored.evidenceGridFsId;
+      }
+    } catch (err) {
+      console.warn("gridfs store failed", err?.message || err);
+    }
+
+    const status =
+      verdict.auto === false || verdict.result === "review" ? "review" : "resolved";
+    const winnerId =
+      status === "resolved"
+        ? verdict.result === "pass"
+          ? payload.creatorId
+          : payload.opponentId
+        : null;
+
+    await persistSafe({
+      pactId: payload.pactId,
+      title: payload.title,
+      criteria: payload.criteria,
+      creatorId: payload.creatorId,
+      opponentId: payload.opponentId,
+      stake: payload.stake,
+      status,
+      evidenceUrl,
+      evidenceName: payload.fileName,
+      evidenceGridFsId,
+      verdict,
+      winnerId,
+    });
+
+    write(res, 200, {
+      ...verdict,
+      evidenceUrl,
+      evidenceGridFsId,
+    });
+    return true;
+  }
+
+  return false;
+}
+
 /** Vite middleware: referee, GridFS evidence, config. Gemini key stays on the server. */
 export function refereePlugin(rootDir) {
   loadEnvFile(path.join(rootDir, ".env"));
@@ -65,112 +182,8 @@ export function refereePlugin(rootDir) {
     name: "pact-referee",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        const url = (req.url || "").split("?")[0];
         try {
-          if (url === "/api/config" && req.method === "GET") {
-            const mongo = await mongoReady();
-            send(res, 200, {
-              ok: true,
-              service: "pact",
-              features: {
-                gemini: geminiEnabled(),
-                mongo: mongoConfigured() && mongo,
-                mongoError: mongo ? null : mongoError(),
-              },
-            });
-            return;
-          }
-
-          const evidenceMatch = url.match(/^\/api\/evidence\/([^/]+)$/);
-          if (evidenceMatch && req.method === "GET") {
-            const file = await readEvidence(decodeURIComponent(evidenceMatch[1]));
-            if (!file) {
-              send(res, 404, { error: "not_found" });
-              return;
-            }
-            send(res, 200, file.buffer, {
-              "content-type": file.contentType,
-              "content-disposition": `inline; filename="${file.filename.replaceAll('"', "")}"`,
-            });
-            return;
-          }
-
-          if (url === "/api/pacts/verify" && req.method === "POST") {
-            const payload = await readJson(req, 32_000);
-            await persistSafe({
-              pactId: payload.pactId,
-              title: payload.title,
-              criteria: payload.criteria,
-              creatorId: payload.creatorId,
-              opponentId: payload.opponentId,
-              stake: payload.stake,
-              status: "resolved",
-              evidenceUrl: payload.evidenceUrl,
-              evidenceName: payload.evidenceName,
-              evidenceGridFsId: payload.evidenceGridFsId,
-              verdict: payload.verdict,
-              winnerId: payload.winnerId,
-            });
-            send(res, 200, { ok: true });
-            return;
-          }
-
-          if (url === "/api/referee" && req.method === "POST") {
-            const payload = await readJson(req);
-            const verdict = await judgeEvidence({
-              title: payload.title,
-              criteria: payload.criteria,
-              fileName: payload.fileName,
-              dataUrl: payload.dataUrl,
-            });
-
-            let evidenceUrl = payload.dataUrl || null;
-            let evidenceGridFsId = null;
-            try {
-              const stored = await storeEvidence({
-                pactId: payload.pactId,
-                fileName: payload.fileName,
-                dataUrl: payload.dataUrl,
-              });
-              if (stored.stored) {
-                evidenceUrl = stored.evidenceUrl;
-                evidenceGridFsId = stored.evidenceGridFsId;
-              }
-            } catch (err) {
-              console.warn("gridfs store failed", err?.message || err);
-            }
-
-            const status =
-              verdict.auto === false || verdict.result === "review" ? "review" : "resolved";
-            const winnerId =
-              status === "resolved"
-                ? verdict.result === "pass"
-                  ? payload.creatorId
-                  : payload.opponentId
-                : null;
-
-            await persistSafe({
-              pactId: payload.pactId,
-              title: payload.title,
-              criteria: payload.criteria,
-              creatorId: payload.creatorId,
-              opponentId: payload.opponentId,
-              stake: payload.stake,
-              status,
-              evidenceUrl,
-              evidenceName: payload.fileName,
-              evidenceGridFsId,
-              verdict,
-              winnerId,
-            });
-
-            send(res, 200, {
-              ...verdict,
-              evidenceUrl,
-              evidenceGridFsId,
-            });
-            return;
-          }
+          if (await handleRefereeApi(req, res)) return;
         } catch (err) {
           const msg = err.message || "referee_error";
           send(res, msg === "too_large" ? 413 : 400, { error: msg });

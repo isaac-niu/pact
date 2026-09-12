@@ -44,6 +44,7 @@ export function PactProvider({ children }) {
       acceptPact: (id) => apiAccept(id, { actorId: snap.userId }),
       submitEvidence: (id, file) => apiSubmit(id, file, { actorId: snap.userId }),
       verifyPact: (id, pass) => apiVerify(id, pass, { actorId: snap.userId }),
+      backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],
   );

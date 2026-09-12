@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
+import Announcer from "../components/Announcer.jsx";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
 
 const STAMPS = {
@@ -191,7 +192,7 @@ export default function PactDetail() {
             </p>
           ) : null}
           {canVerify ? (
-            <div className="verify-row">
+            <div className="announcer-row">
               <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
                 Friend: pass
               </button>
@@ -217,6 +218,7 @@ export default function PactDetail() {
                   <div className="payout">
                     {winner.handle} takes the pot · {sol(pot)} SOL
                   </div>
+                  <Announcer pact={pact} winnerHandle={winner.handle} />
                   <button className="btn btn-ghost" type="button" onClick={copyShare}>
                     {copied === "copied" ? "Copied the post" : "Share the ticket"}
                   </button>

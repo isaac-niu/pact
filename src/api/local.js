@@ -478,3 +478,47 @@ export async function verifyPact(pactId, pass, ctx = {}) {
 
   return resolved;
 }
+
+export async function verifyPact(pactId, pass, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const pact = state.pacts.find((p) => p.id === pactId);
+  if (!pact) throw new Error("Slip not on the board");
+  if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
+  if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
+
+  const winnerId = pass ? pact.creatorId : pact.opponentId;
+  const loserId = winnerId === pact.creatorId ? pact.opponentId : pact.creatorId;
+  const resolvedAt = Date.now();
+  const pot = pact.stake * 2;
+  const resolved = {
+    ...pact,
+    status: "resolved",
+    verdict: {
+      result: pass ? "pass" : "fail",
+      confidence: pact.verdict?.confidence ?? 0.5,
+      rationale: pass
+        ? "Friend verified the proof. Desk stands the slip."
+        : "Friend rejected the proof. Stake goes to the counterparty.",
+      source: "friend",
+    },
+    winnerId,
+    resolvedAt,
+  };
+
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? resolved : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
+      { id: uid("ev"), pactId, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
+      ...state.events,
+    ],
+    ledger: [
+      { id: uid("ld"), userId: winnerId, amount: pot, kind: "payout", pactId, at: resolvedAt, note: "Pot paid" },
+      ...state.ledger,
+    ],
+  });
+
+  return resolved;
+}
