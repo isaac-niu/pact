@@ -76,7 +76,7 @@ function Shell({ children }) {
         </nav>
         <div className="top-tools">
           <NavLink to="/me" className="bank-chip" title="Virtual SOL ledger">
-            <span className="bank-who">{user.handle}</span>
+            <span className="bank-who">{user?.handle ?? "ISAAC"}</span>
             <b>{sol(bank)}</b>
             <span>SOL</span>
           </NavLink>
