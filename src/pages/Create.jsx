@@ -147,6 +147,7 @@ export default function Create() {
                 onChange={(e) => setStake(e.target.value)}
                 required
               />
+              <span className="hint">Max {sol(bank)} SOL</span>
             </label>
             <label>
               Deadline

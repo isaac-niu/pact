@@ -1,22 +1,36 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchAnnouncementAudio, fetchDeskConfig, isMuted, setMuted as persistMuted } from "../announcer.js";
+import {
+  announcerEnabled,
+  fetchAnnouncementAudio,
+  fetchDeskConfig,
+  isMuted,
+  setMuted as persistMuted,
+} from "../announcer.js";
 
 export default function Announcer({ pact, winnerHandle }) {
   const [audioUrl, setAudioUrl] = useState(null);
   const [muted, setMuted] = useState(isMuted);
   const [status, setStatus] = useState("idle");
-  const [liveVoice, setLiveVoice] = useState(false);
+  const [liveVoice, setLiveVoice] = useState(null);
   const audioRef = useRef(null);
   const requested = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetchDeskConfig().then((cfg) => {
-      setLiveVoice(Boolean(cfg?.features?.elevenlabs || cfg?.announcer));
+      if (!cancelled) setLiveVoice(announcerEnabled(cfg));
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!pact?.verdict || requested.current === pact.id) return;
+    if (liveVoice !== true) {
+      if (liveVoice === false) setStatus("off");
+      return undefined;
+    }
+    if (!pact?.verdict || requested.current === pact.id) return undefined;
     requested.current = pact.id;
     let cancelled = false;
     setStatus("loading");
@@ -28,7 +42,7 @@ export default function Announcer({ pact, winnerHandle }) {
     return () => {
       cancelled = true;
     };
-  }, [pact, winnerHandle]);
+  }, [pact, winnerHandle, liveVoice]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -79,7 +93,7 @@ export default function Announcer({ pact, winnerHandle }) {
             ? muted
               ? "Desk is muted."
               : "Sportsbook call plays when the slip settles. Voice by ElevenLabs."
-            : liveVoice
+            : liveVoice === true
               ? "ElevenLabs is on the desk; this slip did not return a call."
               : "Settle stands on the ticket even if the desk is quiet."}
       </p>
