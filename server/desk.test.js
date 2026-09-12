@@ -346,6 +346,28 @@ test("spectators can heat a public mark and post a short take", async () => {
   assert.equal(talked.state.comments[0].eventId, "ev-gym-won");
 });
 
+test("attachEscrow marks a chain lock without moving the virtual book", async () => {
+  const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  const before = bankOf("you", state);
+  const locked = await desk.attachEscrow(
+    state,
+    created.result.id,
+    { rail: "solana", status: "locked", lockSig: "sig-lock", cluster: "devnet" },
+    "you",
+  );
+  assert.equal(locked.result.escrow.rail, "solana");
+  assert.equal(locked.result.escrow.status, "locked");
+  assert.equal(bankOf("you", locked.state), before);
+  assert.equal(locked.state.events[0].type, "escrow");
+});
+
 test("createPact stores public vs private tape", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const pub = await desk.createPact(

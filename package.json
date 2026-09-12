@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.24.1",
+    "@solana/web3.js": "^1.98.4",
+    "buffer": "^6.0.3",
     "dotenv": "^17.4.2",
     "jose": "^6.2.12",
     "mongodb": "^7.6.0",

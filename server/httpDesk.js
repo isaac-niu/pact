@@ -12,6 +12,7 @@ import {
   reactToMark,
   commentOnMark,
   placeSideStake,
+  attachEscrow,
 } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
@@ -133,6 +134,18 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       return true;
     }
     const out = await commentOnMark(eventId, payload.body, actor);
+    send(res, 200, out);
+    return true;
+  }
+
+  const escrowMatch = url.match(/^\/api\/pacts\/([^/]+)\/escrow$/);
+  if (escrowMatch && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await attachEscrow(decodeURIComponent(escrowMatch[1]), payload.escrow, actorOf(req, payload));
     send(res, 200, out);
     return true;
   }

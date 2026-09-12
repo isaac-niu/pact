@@ -15,6 +15,7 @@ import {
   reactToMark as apiReact,
   commentOnMark as apiComment,
   placeSideStake as apiSideStake,
+  attachEscrow as apiEscrow,
   subscribe,
   switchUser as apiSwitch,
 } from "./api/pact.js";
@@ -74,6 +75,7 @@ export function PactProvider({ children }) {
       reactToMark: (eventId, emoji) => apiReact(eventId, emoji, { actorId: snap.userId }),
       commentOnMark: (eventId, body) => apiComment(eventId, body, { actorId: snap.userId }),
       placeSideStake: (id, input) => apiSideStake(id, input, { actorId: snap.userId }),
+      attachEscrow: (id, patch) => apiEscrow(id, patch, { actorId: snap.userId }),
       backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],

@@ -252,3 +252,13 @@ export async function placeSideStake(pactId, input, ctx = {}) {
   apply(out.state);
   return out.result;
 }
+
+export async function attachEscrow(pactId, patch, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/escrow`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, escrow: patch }),
+  });
+  apply(out.state);
+  return out.result;
+}

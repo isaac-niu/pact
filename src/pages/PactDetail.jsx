@@ -16,6 +16,9 @@ import ProofSignals from "../components/ProofSignals.jsx";
 import { isAllowedProofFile, requireProofFiles } from "../lib/proofMedia.js";
 import { ingestProofSignal, mockFitnessWorkout, mockGpsCheckin, normalizeSignal } from "../lib/proofSignals.js";
 import { pactChecklist } from "../lib/successCriteria.js";
+import { EscrowRail } from "../components/WalletRail.jsx";
+import { matchStake, normalizeEscrow } from "../lib/solanaEscrow.js";
+import { useWallet } from "../wallet/WalletProvider.jsx";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -36,7 +39,9 @@ function sourceLabel(verdict) {
 
 export default function PactDetail() {
   const { id } = useParams();
-  const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, flagAppeal, bankOf } = usePact();
+  const { pacts, events, userId, acceptPact, attachEscrow, submitEvidence, verifyPact, flagAppeal, bankOf } =
+    usePact();
+  const { connected, publicKey, sendEscrow } = useWallet();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -74,6 +79,15 @@ export default function PactDetail() {
     setBusy(true);
     try {
       await acceptPact(pact.id);
+      const rail = normalizeEscrow(pact.escrow);
+      if (connected && rail.rail === "solana") {
+        const out = await matchStake({
+          intent: { ...rail, pactId: pact.id, stakeSol: pact.stake },
+          wallet: { publicKey },
+          send: sendEscrow,
+        });
+        await attachEscrow(pact.id, out.escrow);
+      }
     } catch (err) {
       setError(err.message || "Could not accept");
     } finally {
@@ -261,6 +275,7 @@ export default function PactDetail() {
 
       {pactVisibility(pact) === "public" ? <RailBook pact={pact} /> : null}
       <TicketShare pact={pact} />
+      <EscrowRail escrow={pact.escrow} />
 
       <div className="detail-grid">
         <div className="card">

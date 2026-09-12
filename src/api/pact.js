@@ -55,6 +55,9 @@ export function commentOnMark(...args) {
 export function placeSideStake(...args) {
   return impl.placeSideStake(...args);
 }
+export function attachEscrow(...args) {
+  return impl.attachEscrow(...args);
+}
 export function getSnapshot() {
   return impl.getSnapshot();
 }
@@ -94,4 +97,5 @@ export const pactApi = {
   reactToMark,
   commentOnMark,
   placeSideStake,
+  attachEscrow,
 };

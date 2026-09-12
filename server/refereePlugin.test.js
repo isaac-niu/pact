@@ -79,6 +79,9 @@ test("config reports announcer disabled without ElevenLabs key", async () => {
     const body = JSON.parse(res.body);
     assert.equal(body.announcer, false);
     assert.equal(body.features.elevenlabs, false);
+    assert.equal(body.features.solanaEscrow, true);
+    assert.equal(body.solanaEscrow.cluster, "devnet");
+    assert.equal(body.solanaEscrow.virtualFallback, true);
   } finally {
     if (prev === undefined) delete process.env.ELEVENLABS_API_KEY;
     else process.env.ELEVENLABS_API_KEY = prev;
