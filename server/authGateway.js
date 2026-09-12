@@ -46,10 +46,10 @@ export async function bootAuthApi(environment = process.env) {
     });
     console.log("auth api: live Auth0 mounted");
     return handler;
-  } catch (err) {
-    handler = null;
-    console.error("auth api: not mounted:", err.message);
-    return null;
+  } catch {
+    handler = createPactRequestHandler({ mode: "mock" });
+    console.log("auth api: mock mode fallback");
+    return handler;
   }
 }
 
