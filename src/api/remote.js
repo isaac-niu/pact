@@ -39,6 +39,7 @@ function apply(snap) {
     pacts: snap.pacts || [],
     events: snap.events || [],
     ledger: snap.ledger || [],
+    users: snap.users || [],
   };
   notify();
 }

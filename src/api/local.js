@@ -259,6 +259,7 @@ export async function createPact(input, ctx = {}) {
     evidenceName: null,
     verdict: null,
     winnerId: null,
+    visibility: input.visibility === "private" ? "private" : "public",
     createdAt: now,
     acceptedAt: null,
     provedAt: null,

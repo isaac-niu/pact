@@ -1,5 +1,6 @@
 import { liveConfig, getDesk, createPact, acceptPact, submitEvidence, verifyPact } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
+import { listDeskUsers } from "./deskUsers.js";
 
 function actorOf(req, payload = {}) {
   const header = req.headers["x-pact-actor"];
@@ -49,6 +50,15 @@ export async function handleDeskApi(req, res, { send, readBody }) {
     }
     const snap = await getDesk(actorOf(req));
     send(res, 200, snap);
+    return true;
+  }
+
+  if (url === "/api/desk/users" && req.method === "GET") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    send(res, 200, { persist: true, users: await listDeskUsers() });
     return true;
   }
 

@@ -20,7 +20,7 @@ export default function Profile() {
         <div>
           <div className="kicker">{user.pill} · {user.tag}</div>
           <h2>{user.handle}</h2>
-          <p className="lede slim">{user.name} · demo desk, virtual SOL only</p>
+          <p className="lede slim">{user.name} · SOL bank lives in MongoDB on this desk</p>
         </div>
       </div>
 
@@ -82,7 +82,7 @@ export default function Profile() {
             </ul>
           )}
           {backend === "mongo" ? (
-            <p className="hint">Shared Atlas desk — browser reset is disabled so we do not wipe judges.</p>
+            <p className="hint">Atlas stores this desk’s users, SOL balances, and ledger. Browser reset is off so judges keep the book.</p>
           ) : (
             <>
               <button className="btn btn-ghost" type="button" onClick={onReset}>

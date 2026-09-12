@@ -50,6 +50,7 @@ export function createDeskLogic(judge) {
         evidenceName: null,
         verdict: null,
         winnerId: null,
+        visibility: input.visibility === "private" ? "private" : "public",
         createdAt: now,
         acceptedAt: null,
         provedAt: null,

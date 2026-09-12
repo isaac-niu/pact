@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import Announcer from "../components/Announcer.jsx";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
+import { canSeePact, pactVisibility } from "../lib/visibility.js";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -29,10 +30,11 @@ export default function PactDetail() {
   const [localPreview, setLocalPreview] = useState("");
   const pact = pacts.find((p) => p.id === id);
 
-  if (!pact) {
+  if (!pact || !canSeePact(pact, userId)) {
     return (
       <div className="empty">
-        Slip not found. <Link to="/feed">Back to the tape</Link>
+        {pact ? "This slip is on a private tape." : "Slip not found."}{" "}
+        <Link to="/feed">Back to the tape</Link>
       </div>
     );
   }
@@ -132,7 +134,7 @@ export default function PactDetail() {
       <article className="ticket ticket-detail">
         <div className="ticket-edge" aria-hidden="true" />
         <header className="ticket-head">
-          <span>1v1 desk</span>
+          <span>1v1 desk · {pactVisibility(pact)} tape</span>
           <span className={`stamp ${stamp.className}`}>{stamp.label}</span>
         </header>
 

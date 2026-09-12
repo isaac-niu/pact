@@ -12,6 +12,7 @@ export default function Create() {
   );
   const [stake, setStake] = useState("2");
   const [deadline, setDeadline] = useState(localInputValue(defaultDeadline()));
+  const [visibility, setVisibility] = useState("public");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -30,6 +31,7 @@ export default function Create() {
         stake: amount,
         deadline: new Date(deadline).getTime(),
         opponentId,
+        visibility,
       });
       navigate(`/pact/${pact.id}`);
     } catch (err) {
@@ -101,10 +103,41 @@ export default function Create() {
               </span>
             </div>
           </fieldset>
+          <fieldset className="opp-field">
+            <legend>Tape</legend>
+            <div className="tape-choice" role="radiogroup" aria-label="Public or private tape">
+              <label className={`opp-card ${visibility === "public" ? "on" : ""}`}>
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="public"
+                  checked={visibility === "public"}
+                  onChange={() => setVisibility("public")}
+                />
+                <span>
+                  <b>Public tape</b>
+                  <em>Anyone on the board can see this slip and its marks.</em>
+                </span>
+              </label>
+              <label className={`opp-card ${visibility === "private" ? "on" : ""}`}>
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  checked={visibility === "private"}
+                  onChange={() => setVisibility("private")}
+                />
+                <span>
+                  <b>Private tape</b>
+                  <em>Only you and {opponent.handle} see this group.</em>
+                </span>
+              </label>
+            </div>
+          </fieldset>
           {error ? <p className="err">{error}</p> : null}
           <p className="hint">
-            {user.handle} posts. {opponent.handle} must accept and match{" "}
-            {sol(amount || 0)} SOL. Bank {sol(bank)} SOL. Numbers only — no wallet.
+            {user.handle} posts a slip. {opponent.handle} must accept and match{" "}
+            {sol(amount || 0)} SOL. Bank {sol(bank)} SOL. Stakes are virtual SOL on this desk.
           </p>
           <button className="btn btn-lime" type="submit" disabled={busy}>
             Post to the board
@@ -116,7 +149,7 @@ export default function Create() {
         <div className="ticket-edge" aria-hidden="true" />
         <header className="ticket-head">
           <span>Preview</span>
-          <span className="stamp">UNPOSTED</span>
+          <span className="stamp">{visibility === "private" ? "PRIVATE" : "PUBLIC"}</span>
         </header>
         <h3>{title.trim() || "Untitled pact"}</h3>
         <p className="ticket-criteria">{criteria.trim() || "No criteria yet"}</p>

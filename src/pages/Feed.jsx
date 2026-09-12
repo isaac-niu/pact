@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import { formatClock, sol } from "../lib/format.js";
+import Glossary from "../components/Glossary.jsx";
+import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
 
@@ -15,20 +17,33 @@ const PACT_LABELS = {
 };
 
 export default function Feed() {
-  const { events, pacts } = usePact();
+  const { events, pacts, userId } = usePact();
+  const [tape, setTape] = useState("public");
   const [filter, setFilter] = useState("all");
-  const shown = events.filter((e) => filter === "all" || e.type === filter);
+  const board = pactsOnTape(pacts, tape, userId);
+  const marks = eventsOnTape(events, pacts, tape, userId).filter(
+    (e) => filter === "all" || e.type === filter,
+  );
 
   return (
     <div>
       <div className="page-head">
         <div>
           <div className="kicker">Active book</div>
-          <h2>The tape</h2>
+          <h2>{tape === "private" ? "Private tape" : "Public tape"}</h2>
         </div>
         <Link className="btn btn-lime" to="/create">
-          New pact
+          New slip
         </Link>
+      </div>
+      <Glossary />
+      <div className="filters" role="tablist" aria-label="Tape">
+        <button type="button" className={tape === "public" ? "on" : ""} onClick={() => setTape("public")}>
+          Public tape
+        </button>
+        <button type="button" className={tape === "private" ? "on" : ""} onClick={() => setTape("private")}>
+          Private tape
+        </button>
       </div>
 
       <div className="filters" role="tablist" aria-label="Event type">
@@ -44,11 +59,15 @@ export default function Feed() {
         ))}
       </div>
 
-      {shown.length === 0 ? (
-        <div className="empty">No marks on this filter. Write a slip.</div>
+      {marks.length === 0 ? (
+        <div className="empty">
+          {tape === "private"
+            ? "No private marks yet. Write a slip and keep it on the private tape."
+            : "No marks on this filter. Write a slip."}
+        </div>
       ) : (
         <div className="tape">
-          {shown.map((ev) => {
+          {marks.map((ev) => {
             const pact = pacts.find((p) => p.id === ev.pactId);
             const actor = userById(ev.actorId);
             return (
@@ -58,7 +77,7 @@ export default function Feed() {
                 <div className="tape-body">
                   <div className="tape-title">{pact?.title ?? "Slip"}</div>
                   <div className="meta">
-                    {actor?.handle} · {ev.note}
+                    {actor?.handle} · {ev.note} · {pactVisibility(pact)}
                   </div>
                 </div>
                 <div className="stake">
@@ -73,31 +92,37 @@ export default function Feed() {
 
       <div className="page-head tight">
         <div>
-          <div className="kicker">Open book</div>
+          <div className="kicker">{tape === "private" ? "Private group" : "Open book"}</div>
           <h3 className="subhead">Slips</h3>
         </div>
       </div>
       <div className="feed">
-        {pacts.map((p) => {
-          const creator = userById(p.creatorId);
-          const badgeClass =
-            p.status === "resolved" ? "done" : p.status === "open" ? "" : "live";
-          return (
-            <Link className="slip" key={p.id} to={`/pact/${p.id}`}>
-              <div>
-                <div className="slip-title">{p.title}</div>
-                <div className="meta">
-                  {creator?.handle} vs {userById(p.opponentId)?.handle} ·{" "}
-                  <span className={`badge ${badgeClass}`}>{PACT_LABELS[p.status]}</span>
+        {board.length === 0 ? (
+          <div className="empty">No slips on this tape.</div>
+        ) : (
+          board.map((p) => {
+            const creator = userById(p.creatorId);
+            const badgeClass =
+              p.status === "resolved" ? "done" : p.status === "open" ? "" : "live";
+            return (
+              <Link className="slip" key={p.id} to={`/pact/${p.id}`}>
+                <div>
+                  <div className="slip-title">{p.title}</div>
+                  <div className="meta">
+                    {creator?.handle} vs {userById(p.opponentId)?.handle} ·{" "}
+                    <span className={`badge ${badgeClass}`}>{PACT_LABELS[p.status]}</span>
+                    {" · "}
+                    {pactVisibility(p)}
+                  </div>
                 </div>
-              </div>
-              <div className="stake">
-                <b>{sol(p.stake)}</b>
-                <span className="hint">SOL each</span>
-              </div>
-            </Link>
-          );
-        })}
+                <div className="stake">
+                  <b>{sol(p.stake)}</b>
+                  <span className="hint">SOL each</span>
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

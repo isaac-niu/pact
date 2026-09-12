@@ -37,6 +37,13 @@ export async function getMongo(env = process.env) {
       await next.connect();
       client = next;
       db = next.db(mongoDbName(env));
+      try {
+        await db.collection("desk_users").createIndex({ id: 1 }, { unique: true });
+        await db.collection("desk_ledger").createIndex({ userId: 1, at: -1 });
+        await db.collection("desk_ledger").createIndex({ id: 1 }, { unique: true });
+      } catch {
+        /* indexes are best-effort */
+      }
       ready = true;
       lastError = null;
       return client;

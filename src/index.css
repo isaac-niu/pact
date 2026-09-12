@@ -454,6 +454,43 @@ textarea {
   font-size: 13px;
 }
 
+.tape-choice {
+  display: grid;
+  gap: 8px;
+}
+
+.tape-choice .opp-card {
+  cursor: pointer;
+}
+
+.glossary {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.glossary div {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.glossary dt {
+  font-family: "Anton", "Barlow Condensed", sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--lime);
+}
+
+.glossary dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .split {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
