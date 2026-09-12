@@ -1,13 +1,7 @@
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { config as loadDotenv } from "dotenv";
-import {
-  AUTH0_CALLBACK_URL,
-  AUTH0_LOGOUT_URL,
-  AUTH0_ORIGIN,
-  isMockAuth,
-  validateServerEnv,
-} from "../env.js";
+import { getAuth0PublicUrls, isMockAuth, validateServerEnv } from "../env.js";
 import { createAuth0Authenticator, createMockAuthenticator, mockLoginUser } from "./auth.js";
 import { LAMPORTS_PER_SOL } from "./constants.js";
 import { closeMongo, connectMongo, mongoConfigured, pingMongo } from "./mongo.js";
@@ -16,10 +10,14 @@ import { createMemoryStore, publicDirectoryUser, publicPact, publicUser } from "
 
 export { LAMPORTS_PER_SOL };
 
+function corsOrigin() {
+  return getAuth0PublicUrls().origin;
+}
+
 const send = (res, status, body) => {
   res.writeHead(status, {
     "content-type": "application/json",
-    "access-control-allow-origin": AUTH0_ORIGIN,
+    "access-control-allow-origin": corsOrigin(),
     "access-control-allow-headers": "authorization, content-type",
     "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
   });
@@ -45,7 +43,7 @@ function isParticipant(pact, user) {
   return pact.creatorId === user.id || pact.opponentId === user.id;
 }
 
-export function createPactServer(options = {}) {
+export function createPactRequestHandler(options = {}) {
   const mode = options.mode ?? "mock";
   const store = options.store ?? createMemoryStore({ seedDemoUsers: mode === "mock" });
   const authenticate =
@@ -66,26 +64,30 @@ export function createPactServer(options = {}) {
         ? { configured: mongoConfigured(), mode: "atlas", connected: false }
         : { configured: mongoConfigured(), mode: "memory", connected: false });
 
-  return createServer(async (req, res) => {
+  return async function handlePactApi(req, res) {
     const url = new URL(req.url, "http://localhost");
+    const urls = getAuth0PublicUrls();
 
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
-        "access-control-allow-origin": AUTH0_ORIGIN,
+        "access-control-allow-origin": urls.origin,
         "access-control-allow-headers": "authorization, content-type",
         "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
       });
       return res.end();
     }
 
-    if (req.method === "GET" && url.pathname === "/api/health") {
+    if (
+      req.method === "GET" &&
+      (url.pathname === "/api/health" || url.pathname === "/api/auth/health")
+    ) {
       return send(res, 200, {
         status: "ok",
         auth: {
           mode,
-          callbackUrl: AUTH0_CALLBACK_URL,
-          logoutUrl: AUTH0_LOGOUT_URL,
-          origin: AUTH0_ORIGIN,
+          callbackUrl: urls.callbackUrl,
+          logoutUrl: urls.logoutUrl,
+          origin: urls.origin,
         },
         mongo: await mongoHealth(),
       });
@@ -219,7 +221,11 @@ export function createPactServer(options = {}) {
     }
 
     return send(res, 404, { error: "Not found" });
-  });
+  };
+}
+
+export function createPactServer(options = {}) {
+  return createServer(createPactRequestHandler(options));
 }
 
 export async function startPactServer({

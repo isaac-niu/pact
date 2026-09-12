@@ -24,6 +24,7 @@ export VITE_AUTH0_AUDIENCE="${VITE_AUTH0_AUDIENCE:-${AUTH0_AUDIENCE:-}}"
 if [[ -n "${PUBLIC_URL:-}" ]]; then
   public="${PUBLIC_URL%/}"
   export VITE_AUTH0_CALLBACK_URL="${VITE_AUTH0_CALLBACK_URL:-${public}/callback}"
+  export VITE_AUTH0_LOGOUT_URL="${VITE_AUTH0_LOGOUT_URL:-${public}}"
   export VITE_API_URL="${VITE_API_URL:-${public}}"
 fi
 # Person B live API needs these; desk (Person D) uses MONGO_DB_NAME.
@@ -56,6 +57,8 @@ fi
 
 sleep 1
 curl -fsS http://127.0.0.1:3000/api/health
+echo
+curl -fsS http://127.0.0.1:3000/api/auth/health || echo "auth_health skipped"
 echo
 curl -fsS -o /dev/null -w "nginx_home %{http_code}\n" http://127.0.0.1/ 
 echo "deploy ok"

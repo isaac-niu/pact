@@ -60,6 +60,20 @@ try {
   if (!/PACT/i.test(spa.text)) fail("SPA fallback did not return index.html");
   checks.push("spa fallback");
 
+  const authHealth = await req("/api/auth/health");
+  if (authHealth.res.status === 200) {
+    const authBody = JSON.parse(authHealth.text);
+    if (authBody.auth?.mode !== "live" && authBody.auth?.mode !== "mock") {
+      fail("auth health missing mode");
+    }
+    if (JSON.stringify(authBody).toLowerCase().includes("secret")) fail("auth health leaked a secret");
+    checks.push(`auth api ${authBody.auth.mode}`);
+  } else if (authHealth.res.status === 503) {
+    checks.push("auth api not mounted");
+  } else {
+    fail(`GET /api/auth/health -> ${authHealth.res.status}`);
+  }
+
   console.log(`SMOKE OK @ ${base}`);
   for (const c of checks) console.log(" -", c);
   console.log("features", body.features);

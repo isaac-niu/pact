@@ -111,6 +111,15 @@ describe("clientEnvReady", () => {
     expect(message).toContain("VITE_AUTH0_AUDIENCE");
   });
 
+  it("uses PUBLIC_URL for Auth0 callback/logout/origin", async () => {
+    const { getAuth0PublicUrls } = await import("./env.js");
+    expect(getAuth0PublicUrls({ PUBLIC_URL: "http://203.0.113.10/" })).toEqual({
+      callbackUrl: "http://203.0.113.10/callback",
+      logoutUrl: "http://203.0.113.10",
+      origin: "http://203.0.113.10",
+    });
+  });
+
   it("is ready when all browser-safe Auth0 values are present", async () => {
     const { clientEnvReady } = await import("./env.js");
     expect(
@@ -127,6 +136,11 @@ describe("validateAuth0Audience", () => {
   it("accepts the documented https://pact-api identifier", async () => {
     const { validateAuth0Audience } = await import("./env.js");
     expect(validateAuth0Audience("https://pact-api")).toBe("https://pact-api");
+  });
+
+  it("accepts https://localhost as an Auth0 API identifier string", async () => {
+    const { validateAuth0Audience } = await import("./env.js");
+    expect(validateAuth0Audience("https://localhost")).toBe("https://localhost");
   });
 });
 

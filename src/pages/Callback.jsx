@@ -1,7 +1,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AUTH0_CALLBACK_URL, clientEnvReady } from "../env.js";
+import { AUTH0_CALLBACK_URL, clientEnvReady, env } from "../env.js";
 
 function Auth0Callback() {
   const { error, isLoading } = useAuth0();
@@ -28,7 +28,7 @@ function Auth0Callback() {
   return (
     <section className="card">
       <h2>Finishing sign-in</h2>
-      <p className="hint">Auth0 is returning you to {AUTH0_CALLBACK_URL}.</p>
+      <p className="hint">Auth0 is returning you to {env.AUTH0_CALLBACK_URL || AUTH0_CALLBACK_URL}.</p>
     </section>
   );
 }
