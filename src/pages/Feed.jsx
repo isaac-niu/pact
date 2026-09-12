@@ -12,6 +12,7 @@ import { liveActor, mergeLiveBoard } from "../lib/livePacts.js";
 import { pactVisibility, pactsOnTape } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
 import { railBook } from "../lib/sideStakes.js";
+import EmptyState from "../components/EmptyState.jsx";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
 
@@ -97,11 +98,21 @@ export default function Feed() {
       </div>
 
       {marks.length === 0 ? (
-        <div className="empty">
-          {tape === "private"
-            ? "No private marks yet. Write a slip and keep it on the private tape."
-            : "No marks on this filter. Write a slip."}
-        </div>
+        <EmptyState
+          art="ticket"
+          kicker={tape === "private" ? "Private tape" : "Public tape"}
+          title={tape === "private" ? "No private marks yet" : "No marks on this filter"}
+          lede={
+            tape === "private"
+              ? "Write a slip and keep it on the private tape."
+              : "Write a slip, or clear the event filter."
+          }
+          action={
+            <Link className="btn btn-lime" to="/create">
+              Write a slip
+            </Link>
+          }
+        />
       ) : (
         <div className="tape">
           {marks.map((ev) => {
@@ -138,7 +149,17 @@ export default function Feed() {
       </div>
       <div className="feed">
         {board.length === 0 ? (
-          <div className="empty">No slips on this tape.</div>
+          <EmptyState
+            art="ticket"
+            kicker={tape === "private" ? "Private group" : "Open book"}
+            title="No slips on this tape"
+            lede="Post a pact to put a ticket on this book."
+            action={
+              <Link className="btn btn-lime" to="/create">
+                Write a slip
+              </Link>
+            }
+          />
         ) : (
           board.map((p) => {
             const creator = actorOf(p.creatorId);

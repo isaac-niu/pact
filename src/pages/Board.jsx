@@ -5,6 +5,7 @@ import { formatRate } from "../lib/publicProfile.js";
 import { BOARD_METRICS, DESK_CREWS, boardCopy, crewById, rankDesks } from "../lib/leaderboard.js";
 import { sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 export default function Board() {
   const { pacts, ledger } = usePact();
@@ -55,7 +56,17 @@ export default function Board() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="empty">No desks on this crew board.</div>
+        <EmptyState
+          art="crew"
+          kicker="Board"
+          title="No desks on this crew board"
+          lede="This crew has no scored desks yet. Write a public slip, then check back tomorrow."
+          action={
+            <Link className="btn btn-lime" to="/create">
+              Write a slip
+            </Link>
+          }
+        />
       ) : (
         <ol className="board-list">
           {rows.map((row) => (
