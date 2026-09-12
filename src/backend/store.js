@@ -40,6 +40,8 @@ export function publicPact(pact) {
     stakeLamports: pact.stakeLamports,
     creatorId: pact.creatorId,
     opponentId: pact.opponentId,
+    groupId: pact.groupId ?? null,
+    sharedToGroupAt: pact.sharedToGroupAt ?? null,
     status: pact.status,
     winnerId: pact.winnerId ?? null,
     createdAt: pact.createdAt,
@@ -50,6 +52,7 @@ export function publicPact(pact) {
 export function createMemoryStore({ seedDemoUsers = true } = {}) {
   const users = new Map();
   const pacts = new Map();
+  const groups = new Map();
   const transactions = [];
 
   if (seedDemoUsers) {
@@ -104,22 +107,49 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
 
     async listPactsForUser(userId) {
       return [...pacts.values()]
-        .filter((pact) => pact.creatorId === userId || pact.opponentId === userId)
+        .filter((pact) => pact.creatorId === userId || pact.opponentId === userId || (pact.sharedToGroupAt && groups.get(pact.groupId)?.memberIds.includes(userId)))
         .map(clone);
     },
+
+    async createGroup({ name, visibility, discoverable = false, creatorId }) {
+      const group = {
+        id: randomUUID(),
+        name,
+        visibility,
+        discoverable,
+        joinCode: randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase(),
+        creatorId,
+        memberIds: [creatorId],
+        pendingMemberIds: [],
+        createdAt: now(),
+      };
+      groups.set(group.id, group);
+      return clone(group);
+    },
+    async listGroupsForUser(_userId) {
+      return [...groups.values()].map(clone);
+    },
+    async getGroup(id) { const group = groups.get(id); return group ? clone(group) : null; },
+    async getGroupByJoinCode(joinCode) {
+      const group = [...groups.values()].find((entry) => entry.joinCode === joinCode);
+      return group ? clone(group) : null;
+    },
+    async saveGroup(group) { groups.set(group.id, clone(group)); return clone(group); },
 
     async getPact(id) {
       const pact = pacts.get(id);
       return pact ? clone(pact) : null;
     },
 
-    async createPact({ title, stakeLamports, creatorId, opponentId }) {
+    async createPact({ title, stakeLamports, creatorId, opponentId = null, groupId = null }) {
       const pact = {
         id: randomUUID(),
         title,
         stakeLamports,
         creatorId,
         opponentId,
+        groupId,
+        sharedToGroupAt: null,
         status: "draft",
         winnerId: null,
         createdAt: now(),

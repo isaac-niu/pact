@@ -29,6 +29,16 @@ function PactDesk({
   pacts,
   ledger,
   users,
+  groups = [],
+  activeFeed = "mine",
+  onFeedChange,
+  selectedGroup,
+  onGroupChange,
+  onCreateGroup,
+  onJoinGroup,
+  onJoinWithCode,
+  onApprove,
+  onShare,
   selectedOpponent,
   onOpponentChange,
   titleValue,
@@ -84,6 +94,15 @@ function PactDesk({
             </select>
           </label>
         ) : null}
+        {onGroupChange ? (
+          <label>
+            Or send to a group
+            <select value={selectedGroup} onChange={(event) => onGroupChange(event.target.value)}>
+              <option value="">Direct counterparty</option>
+              {groups.filter((group) => group.memberIds.includes(userId)).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+            </select>
+          </label>
+        ) : null}
         <button className="btn btn-lime" type="submit">
           Create pact
         </button>
@@ -93,6 +112,28 @@ function PactDesk({
           {message}
         </p>
       ) : null}
+      {onFeedChange ? <div className="card">
+        <h3>Group feeds</h3>
+        <div className="pact-actions">
+          <button className="btn btn-ghost" type="button" onClick={() => onFeedChange("mine")}>My feed</button>
+          {groups.filter((group) => group.memberIds.includes(userId)).map((group) => <button className="btn btn-ghost" type="button" key={group.id} onClick={() => onFeedChange(group.id)}>{group.name}{activeFeed === group.id ? " · selected" : ""}</button>)}
+        </div>
+        <form className="form" onSubmit={onCreateGroup}>
+          <label>New group <input name="groupName" required placeholder="Training crew" /></label>
+          <label>Group type <select name="visibility"><option value="public">Public</option><option value="private">Private</option></select></label>
+          <label><input type="checkbox" name="discoverable" /> Show in the community group directory</label>
+          <button className="btn btn-lime" type="submit">Create group</button>
+        </form>
+        <form className="form" onSubmit={onJoinWithCode}>
+          <label>Join with code <input name="joinCode" required placeholder="8-character code" autoCapitalize="characters" /></label>
+          <button className="btn btn-ghost" type="submit">Request to join</button>
+        </form>
+        {groups.map((group) => <article className="slip" key={group.id}><b>{group.name}</b><p className="meta">{group.visibility} · {group.discoverable ? "listed" : "code only"} · {group.memberIds.length} member{group.memberIds.length === 1 ? "" : "s"}</p>
+          {!group.memberIds.includes(userId) ? <button className="btn btn-ghost" type="button" onClick={() => onJoinGroup(group.id)}>{group.requested ? "Request pending" : "Request to join"}</button> : null}
+          {group.creatorId === userId ? <p className="meta">Join code: <b>{group.joinCode}</b></p> : null}
+          {group.creatorId === userId && group.pendingMemberIds?.map((memberId) => <button className="btn btn-ghost" type="button" key={memberId} onClick={() => onApprove(group.id, memberId)}>Approve member</button>)}
+        </article>)}
+      </div> : null}
       <div className="card">
         <h3>My pacts</h3>
         {pacts.length === 0 ? <p className="hint">No pacts yet.</p> : null}
@@ -103,7 +144,7 @@ function PactDesk({
               <p className="meta">
                 {pact.stakeLamports / 1_000_000_000} SOL each · {pact.status}
               </p>
-              {pact.opponentId === userId && pact.status === "draft" ? (
+              {(pact.opponentId === userId || (pact.groupId && pact.sharedToGroupAt && pact.creatorId !== userId)) && pact.status === "draft" ? (
                 <div className="pact-actions">
                   <button className="btn btn-lime" type="button" onClick={() => onAccept(pact.id)}>
                     Accept
@@ -113,6 +154,8 @@ function PactDesk({
                   </button>
                 </div>
               ) : null}
+              {pact.groupId && pact.creatorId === userId && !pact.sharedToGroupAt ? <button className="btn btn-ghost" type="button" onClick={() => onShare(pact.id)}>Share with group</button> : null}
+              {pact.groupId ? <p className="meta">Group pact {pact.sharedToGroupAt ? "· shared" : "· private draft"}</p> : null}
             </div>
           </article>
         ))}
@@ -238,6 +281,9 @@ function LivePactDesk() {
   const [pacts, setPacts] = useState([]);
   const [ledger, setLedger] = useState(null);
   const [users, setUsers] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [activeFeed, setActiveFeed] = useState("mine");
+  const [groupId, setGroupId] = useState("");
   const [me, setMe] = useState(null);
   const [opponentId, setOpponentId] = useState("");
   const [title, setTitle] = useState("");
@@ -254,16 +300,18 @@ function LivePactDesk() {
 
   const refresh = useCallback(async () => {
     const token = await tokenOf();
-    const [identity, myPacts, myLedger, directory] = await Promise.all([
+    const [identity, myPacts, myLedger, directory, myGroups] = await Promise.all([
       api("/api/auth/me", { token }),
       api("/api/pacts", { token }),
       api("/api/ledger", { token }),
       api("/api/users", { token }),
+      api("/api/groups", { token }),
     ]);
     setMe(identity);
     setPacts(myPacts);
     setLedger(myLedger);
     setUsers(directory);
+    setGroups(myGroups);
     setOpponentId((current) => current || directory[0]?.id || "");
   }, [tokenOf]);
 
@@ -325,9 +373,28 @@ function LivePactDesk() {
           logoutParams: { returnTo: clientLogoutUrl() },
         })
       }
-      pacts={pacts}
+      pacts={activeFeed === "mine" ? pacts.filter((pact) => !pact.groupId || pact.creatorId === me?.id || pact.opponentId === me?.id) : pacts.filter((pact) => pact.groupId === activeFeed && pact.sharedToGroupAt)}
       ledger={ledger}
       users={users}
+      groups={groups}
+      activeFeed={activeFeed}
+      onFeedChange={setActiveFeed}
+      selectedGroup={groupId}
+      onGroupChange={setGroupId}
+      onCreateGroup={async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        try {
+          const token = await tokenOf();
+          await api("/api/groups", { token, method: "POST", body: { name: data.get("groupName"), visibility: data.get("visibility"), discoverable: data.get("discoverable") === "on" } });
+          event.currentTarget.reset();
+          await refresh();
+        } catch (error) { setMessage(error.message); }
+      }}
+      onJoinGroup={async (id) => { try { const token = await tokenOf(); const result = await api(`/api/groups/${id}/join`, { token, method: "POST" }); setMessage(result.requested ? "Join request sent." : "Joined group."); await refresh(); } catch (error) { setMessage(error.message); } }}
+      onJoinWithCode={async (event) => { event.preventDefault(); try { const token = await tokenOf(); const code = new FormData(event.currentTarget).get("joinCode"); await api("/api/groups/join", { token, method: "POST", body: { joinCode: code } }); event.currentTarget.reset(); setMessage("Join request sent."); await refresh(); } catch (error) { setMessage(error.message); } }}
+      onApprove={async (id, userId) => { try { const token = await tokenOf(); await api(`/api/groups/${id}/approve`, { token, method: "POST", body: { userId } }); await refresh(); } catch (error) { setMessage(error.message); } }}
+      onShare={async (id) => { try { const token = await tokenOf(); await api(`/api/pacts/${id}/share`, { token, method: "POST" }); setMessage("Shared with group."); await refresh(); } catch (error) { setMessage(error.message); } }}
       selectedOpponent={opponentId}
       onOpponentChange={setOpponentId}
       titleValue={title}
@@ -344,10 +411,11 @@ function LivePactDesk() {
             body: {
               title,
               stakeLamports: Number(stake) * 1_000_000_000,
-              opponentId,
+              ...(groupId ? { groupId } : { opponentId }),
             },
           });
           setTitle("");
+          setGroupId("");
           setMessage("Pact created.");
           await refresh();
         } catch (error) {

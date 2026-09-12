@@ -196,4 +196,99 @@ describe("Pact API authorization", () => {
     });
     expect(declined.status).toBe(403);
   });
+
+  it("uses join codes and creator approval before sharing a group pact with members", async () => {
+    const { bob, carol } = await startLive();
+    const createdGroup = await api("/api/groups", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ name: "Morning runners", visibility: "private" }),
+    });
+    expect(createdGroup.status).toBe(201);
+
+    const privateGroup = createdGroup.body;
+    expect(privateGroup.joinCode).toMatch(/^[A-Z0-9]{8}$/);
+    expect((await api("/api/groups", { headers: auth("carol") })).body).toEqual([]);
+
+    const listedGroup = await api("/api/groups", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ name: "Open runners", visibility: "public", discoverable: true }),
+    });
+    expect(listedGroup.body.joinCode).toMatch(/^[A-Z0-9]{8}$/);
+    expect((await api("/api/groups", { headers: auth("carol") })).body.map((group) => group.id)).toContain(listedGroup.body.id);
+    expect(
+      (
+        await api(`/api/groups/${listedGroup.body.id}/join`, {
+          method: "POST",
+          headers: auth("carol"),
+        })
+      ).status,
+    ).toBe(202);
+    expect(
+      (
+        await api(`/api/groups/${listedGroup.body.id}/approve`, {
+          method: "POST",
+          headers: auth("alice", { "content-type": "application/json" }),
+          body: JSON.stringify({ userId: carol.id }),
+        })
+      ).status,
+    ).toBe(200);
+
+    expect(
+      (
+        await api(`/api/groups/${privateGroup.id}/join`, {
+          method: "POST",
+          headers: auth("bob"),
+        })
+      ).status,
+    ).toBe(403);
+
+    const requested = await api("/api/groups/join", {
+      method: "POST",
+      headers: auth("bob", { "content-type": "application/json" }),
+      body: JSON.stringify({ joinCode: privateGroup.joinCode }),
+    });
+    expect(requested.status).toBe(202);
+    expect(requested.body.requested).toBe(true);
+
+    const approved = await api(`/api/groups/${privateGroup.id}/approve`, {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: bob.id }),
+    });
+    expect(approved.status).toBe(200);
+    expect(approved.body.memberIds).toContain(bob.id);
+
+    const groupPact = await api("/api/pacts", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({
+        title: "Run before work",
+        stakeLamports: LAMPORTS_PER_SOL,
+        groupId: privateGroup.id,
+      }),
+    });
+    expect(groupPact.status).toBe(201);
+    expect((await api("/api/pacts", { headers: auth("bob") })).body).toEqual([]);
+
+    const shared = await api(`/api/pacts/${groupPact.body.id}/share`, {
+      method: "POST",
+      headers: auth("alice"),
+    });
+    expect(shared.status).toBe(200);
+    expect(shared.body.sharedToGroupAt).toBeTypeOf("number");
+
+    const bobPacts = await api("/api/pacts", { headers: auth("bob") });
+    expect(bobPacts.body.map((pact) => pact.id)).toContain(groupPact.body.id);
+    expect((await api(`/api/pacts/${groupPact.body.id}`, { headers: auth("carol") })).status).toBe(403);
+
+    const accepted = await api(`/api/pacts/${groupPact.body.id}/accept`, {
+      method: "PATCH",
+      headers: auth("bob"),
+    });
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.status).toBe("accepted");
+    expect(accepted.body.opponentId).toBe(bob.id);
+  });
 });

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { refereePlugin } from "./server/refereePlugin.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const pactApiUrl = process.env.PACT_API_URL ?? "http://localhost:3001";
 
 function isRefereeApi(url = "") {
   const pathName = url.split("?")[0];
@@ -29,6 +30,13 @@ export default defineConfig({
       "/api/users": "http://localhost:3001",
       "/api/ledger": "http://localhost:3001",
       "/api/health": "http://localhost:3001",
+      "/api/groups": pactApiUrl,
+      "/api/pacts": {
+        target: pactApiUrl,
+        bypass(req) {
+          if (isRefereeApi(req.url)) return req.url;
+        },
+      },
       "/api": {
         target: "http://127.0.0.1:3000",
         bypass(req) {
