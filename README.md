@@ -71,7 +71,9 @@ A stub Express server lives in `src/backend/server.js`. Start it with:
 npm run server
 ```
 
-It provides a health check at `GET /api/health` and stub pact endpoints. Wire up Atlas and Auth0 when ready.
+For local deterministic QA, run `PACT_MOCK_AUTH=1 npm run server` in one terminal and `npm run dev` in another. Open `/app` and use the ISAAC/MAYA mock sign-in actions. The mock API keeps data in process memory and covers protected identity, create/list, accept/decline, one-time settlement, and integer-lamport balances.
+
+For live Auth0 + Atlas QA, create the `.env` from the template, configure `http://localhost:5173/callback` and `http://localhost:5173` in Auth0, start the server without `PACT_MOCK_AUTH`, and use two real authenticated identities. Capture the two-session create/accept/decline result before treating the browser-smoke YAML task as complete.
 
 ## Project structure
 
