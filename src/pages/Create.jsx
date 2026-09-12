@@ -139,7 +139,7 @@ export default function Create() {
           </div>
         </div>
         <WalletRail />
-        <form className="card form" onSubmit={onSubmit}>
+        <form className="card form" onSubmit={onSubmit} data-tour="write-slip">
           <label>
             Title
             <textarea
