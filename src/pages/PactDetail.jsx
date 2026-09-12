@@ -208,7 +208,9 @@ export default function PactDetail() {
             </label>
           ) : null}
           {pact.status === "open" && userId === pact.creatorId ? (
-            <p className="hint">Switch to Friend in the top-right, then accept this slip.</p>
+            <p className="hint">
+              Counterparty accepts this slip from their signed-in Pact app, or from the other desk.
+            </p>
           ) : null}
           {pact.status === "judging" ? (
             <p className="hint pulse">Referee reading the frame…</p>

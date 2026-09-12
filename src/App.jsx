@@ -19,25 +19,6 @@ function onAuthRoute(pathname) {
   return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
 }
 
-function Switcher() {
-  const { userId, switchUser, users } = usePact();
-  return (
-    <div className="switcher" role="group" aria-label="Demo user">
-      {users.map((u) => (
-        <button
-          key={u.id}
-          type="button"
-          className={userId === u.id ? "on" : ""}
-          onClick={() => switchUser(u.id)}
-        >
-          <span className="switcher-pill">{u.pill}</span>
-          <span className="switcher-handle">{u.handle}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function Auth0Account() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
 
@@ -134,8 +115,6 @@ export function BalanceControl({ user, bank }) {
 
 function Shell({ children }) {
   const { user, bank, backend } = usePact();
-  const { pathname } = useLocation();
-  const sportsbook = !onAuthRoute(pathname);
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -156,7 +135,6 @@ function Shell({ children }) {
         </nav>
         <div className="top-tools">
           <BalanceControl user={user} bank={bank} />
-          {sportsbook ? <Switcher /> : null}
           <AccountControl />
         </div>
       </header>
