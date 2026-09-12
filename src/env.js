@@ -2,24 +2,26 @@
  * Safe environment-variable parsing for the PACT app.
  *
  * Rules:
- *   - Only `VITE_` prefixed variables are exposed to the client bundle.
- *   - Required variables are validated at startup; missing ones throw a
- *     clear error so the dev server does not start silently broken.
- *   - No secret values (API keys, connection strings) are ever written to
- *     tracked files.  They live only in `.env` / `.env.local` which are
- *     git-ignored.
+ *    - Only `VITE_` prefixed variables are exposed to the client bundle.
+ *    - Required variables are validated at startup; missing ones throw a
+ *      clear error so the dev server does not start silently broken.
+ *    - No secret values (API keys, connection strings) are ever written to
+ *      tracked files.  They live only in `.env` / `.env.local` which are
+ *      git-ignored.
  *
  * Usage in the app:
  *   import { env } from "./env.js";
- *   const domain = env.AUTH0_DOMAIN;          // throws if missing
- *   const clientId = env.AUTH0_CLIENT_ID;     // throws if missing
+ *   const domain = env.AUTH0_DOMAIN;           // throws if missing
+ *   const clientId = env.AUTH0_CLIENT_ID;      // throws if missing
  *   const apiUrl = env.API_URL ?? "http://localhost:3001";
  */
 
 const REQUIRED = [
   "AUTH0_DOMAIN",
   "AUTH0_CLIENT_ID",
-  "ATLAS_URI",
+  "AUTH0_CLIENT_SECRET",
+  "AUTH0_AUDIENCE",
+  "AUTH0_SECRET",
   "API_URL",
 ];
 
@@ -45,10 +47,10 @@ export function validateEnv() {
     const msg = [
       "PACT startup failed: missing required environment variables.",
       "",
-      ...missing.map((k) => `  - ${k}`),
+      ...missing.map((k) => `   - ${k}`),
       "",
       "Create a .env file (or .env.local for dev) with these values.",
-      "See .env.example for a template.",
+      "See env-template.txt for a template.",
     ].join("\n");
     throw new Error(msg);
   }
@@ -82,4 +84,40 @@ export function clientEnvReady() {
     };
   }
   return { ready: true, message: null };
+}
+
+/**
+ * Determine if the backend Auth0 configuration is available.
+ * Used by the server to decide between live Auth0 and deterministic mocks.
+ */
+export function authConfigReady() {
+  const domain = process.env.AUTH0_DOMAIN;
+  const clientId = process.env.AUTH0_CLIENT_ID;
+  const clientSecret = process.env.AUTH0_CLIENT_SECRET;
+  const audience = process.env.AUTH0_AUDIENCE;
+  const secret = process.env.AUTH0_SECRET;
+
+  return !!(domain && clientId && clientSecret && audience && secret);
+}
+
+/**
+ * Get the Auth0 callback URL for the frontend dev server.
+ * Always points to localhost:5173 for development.
+ */
+export function getAuthCallbackUrl() {
+  return "http://localhost:5173/callback";
+}
+
+/**
+ * Get the Auth0 logout redirect URL.
+ */
+export function getAuthLogoutUrl() {
+  return "http://localhost:5173";
+}
+
+/**
+ * Get the Auth0 origin for the frontend.
+ */
+export function getAuthOrigin() {
+  return "http://localhost:5173";
 }

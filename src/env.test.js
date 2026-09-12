@@ -1,10 +1,9 @@
+/**
+ * Tests for the Auth0 environment configuration.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// We test the env module by mocking import.meta.env
-// since vitest's test environment doesn't propagate
-// process.env to import.meta.env the same way.
-
-describe("validateEnv", () => {
+describe("env module — auth configuration", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -16,66 +15,138 @@ describe("validateEnv", () => {
     process.env = originalEnv;
    });
 
-  it("throws when all required vars are missing", async () => {
-    delete process.env.AUTH0_DOMAIN;
-    delete process.env.AUTH0_CLIENT_ID;
-    delete process.env.ATLAS_URI;
-    delete process.env.API_URL;
+  describe("authConfigReady", () => {
+    it("returns true when all auth vars are present", async () => {
+      process.env.AUTH0_DOMAIN = "dev.auth0.com";
+      process.env.AUTH0_CLIENT_ID = "client123";
+      process.env.AUTH0_CLIENT_SECRET = "secret456";
+      process.env.AUTH0_AUDIENCE = "https://pact.api";
+      process.env.AUTH0_SECRET = "session-secret";
 
-    const { validateEnv } = await import("./env.js");
-    expect(() => validateEnv()).toThrow(
-       /missing required environment variables/,
-     );
+      const { authConfigReady } = await import("./env.js");
+      expect(authConfigReady()).toBe(true);
+     });
+
+    it("returns false when AUTH0_DOMAIN is missing", async () => {
+      process.env.AUTH0_CLIENT_ID = "client123";
+      process.env.AUTH0_CLIENT_SECRET = "secret456";
+      process.env.AUTH0_AUDIENCE = "https://pact.api";
+      process.env.AUTH0_SECRET = "session-secret";
+
+      const { authConfigReady } = await import("./env.js");
+      expect(authConfigReady()).toBe(false);
+     });
+
+    it("returns false when AUTH0_CLIENT_SECRET is missing", async () => {
+      process.env.AUTH0_DOMAIN = "dev.auth0.com";
+      process.env.AUTH0_CLIENT_ID = "client123";
+      process.env.AUTH0_AUDIENCE = "https://pact.api";
+      process.env.AUTH0_SECRET = "session-secret";
+
+      const { authConfigReady } = await import("./env.js");
+      expect(authConfigReady()).toBe(false);
+     });
+
+    it("returns false when AUTH0_AUDIENCE is missing", async () => {
+      process.env.AUTH0_DOMAIN = "dev.auth0.com";
+      process.env.AUTH0_CLIENT_ID = "client123";
+      process.env.AUTH0_CLIENT_SECRET = "secret456";
+      process.env.AUTH0_SECRET = "session-secret";
+
+      const { authConfigReady } = await import("./env.js");
+      expect(authConfigReady()).toBe(false);
+     });
+
+    it("returns false when AUTH0_SECRET is missing", async () => {
+      process.env.AUTH0_DOMAIN = "dev.auth0.com";
+      process.env.AUTH0_CLIENT_ID = "client123";
+      process.env.AUTH0_CLIENT_SECRET = "secret456";
+      process.env.AUTH0_AUDIENCE = "https://pact.api";
+
+      const { authConfigReady } = await import("./env.js");
+      expect(authConfigReady()).toBe(false);
+     });
    });
 
-  it("throws listing each missing variable", async () => {
-    delete process.env.AUTH0_DOMAIN;
-    delete process.env.ATLAS_URI;
+  describe("getAuthCallbackUrl", () => {
+    it("returns the localhost:5173 callback URL", async () => {
+      const { getAuthCallbackUrl } = await import("./env.js");
+      expect(getAuthCallbackUrl()).toBe("http://localhost:5173/callback");
+     });
+   });
+
+  describe("getAuthLogoutUrl", () => {
+    it("returns the localhost:5173 logout URL", async () => {
+      const { getAuthLogoutUrl } = await import("./env.js");
+      expect(getAuthLogoutUrl()).toBe("http://localhost:5173");
+     });
+   });
+
+  describe("getAuthOrigin", () => {
+    it("returns the localhost:5173 origin", async () => {
+      const { getAuthOrigin } = await import("./env.js");
+      expect(getAuthOrigin()).toBe("http://localhost:5173");
+     });
+   });
+});
+
+describe("validateEnv — updated required vars", () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+   });
+
+  afterEach(() => {
+    process.env = originalEnv;
+   });
+
+  it("throws when AUTH0_CLIENT_SECRET is missing", async () => {
+    delete process.env.AUTH0_CLIENT_SECRET;
+    process.env.AUTH0_DOMAIN = "dev.auth0.com";
+    process.env.AUTH0_CLIENT_ID = "client123";
+    process.env.AUTH0_AUDIENCE = "https://pact.api";
+    process.env.AUTH0_SECRET = "secret";
+    process.env.API_URL = "http://localhost:3001";
 
     const { validateEnv } = await import("./env.js");
-    expect(() => validateEnv()).toThrow(/AUTH0_DOMAIN/);
+    expect(() => validateEnv()).toThrow(/AUTH0_CLIENT_SECRET/);
+   });
+
+  it("throws when AUTH0_AUDIENCE is missing", async () => {
+    delete process.env.AUTH0_AUDIENCE;
+    process.env.AUTH0_DOMAIN = "dev.auth0.com";
+    process.env.AUTH0_CLIENT_ID = "client123";
+    process.env.AUTH0_CLIENT_SECRET = "secret";
+    process.env.AUTH0_SECRET = "secret";
+    process.env.API_URL = "http://localhost:3001";
+
+    const { validateEnv } = await import("./env.js");
+    expect(() => validateEnv()).toThrow(/AUTH0_AUDIENCE/);
+   });
+
+  it("throws when AUTH0_SECRET is missing", async () => {
+    delete process.env.AUTH0_SECRET;
+    process.env.AUTH0_DOMAIN = "dev.auth0.com";
+    process.env.AUTH0_CLIENT_ID = "client123";
+    process.env.AUTH0_CLIENT_SECRET = "secret";
+    process.env.AUTH0_AUDIENCE = "https://pact.api";
+    process.env.API_URL = "http://localhost:3001";
+
+    const { validateEnv } = await import("./env.js");
+    expect(() => validateEnv()).toThrow(/AUTH0_SECRET/);
    });
 
   it("passes when all required vars are present", async () => {
-    process.env.AUTH0_DOMAIN = "example.auth0.com";
-    process.env.AUTH0_CLIENT_ID = "abc123";
-    process.env.ATLAS_URI = "mongodb://localhost:27017";
+    process.env.AUTH0_DOMAIN = "dev.auth0.com";
+    process.env.AUTH0_CLIENT_ID = "client123";
+    process.env.AUTH0_CLIENT_SECRET = "secret456";
+    process.env.AUTH0_AUDIENCE = "https://pact.api";
+    process.env.AUTH0_SECRET = "session-secret";
     process.env.API_URL = "http://localhost:3001";
 
     const { validateEnv } = await import("./env.js");
     expect(() => validateEnv()).not.toThrow();
-   });
-
-  it("treats empty strings as missing", async () => {
-    process.env.AUTH0_DOMAIN = "";
-    process.env.AUTH0_CLIENT_ID = "abc";
-    process.env.ATLAS_URI = "mongodb://localhost";
-    process.env.API_URL = "http://localhost:3001";
-
-    const { validateEnv } = await import("./env.js");
-    expect(() => validateEnv()).toThrow(/AUTH0_DOMAIN/);
-   });
-});
-
-describe("clientEnvReady", () => {
-  it("returns not ready when VITE_AUTH0_DOMAIN is missing", async () => {
-    const { clientEnvReady } = await import("./env.js");
-    const { ready, message } = clientEnvReady();
-    expect(ready).toBe(false);
-    expect(message).toContain("VITE_AUTH0_DOMAIN");
-   });
-
-  it("returns not ready when VITE_AUTH0_CLIENT_ID is missing", async () => {
-    const { clientEnvReady } = await import("./env.js");
-    const { ready, message } = clientEnvReady();
-    expect(ready).toBe(false);
-    expect(message).toContain("VITE_AUTH0_CLIENT_ID");
-   });
-});
-
-describe("getViteEnv", () => {
-  it("returns undefined for non-existent VITE_ vars", async () => {
-    const { getViteEnv } = await import("./env.js");
-    expect(getViteEnv("NONEXISTENT")).toBeUndefined();
    });
 });
