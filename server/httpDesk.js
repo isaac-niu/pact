@@ -174,7 +174,13 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       send(res, 200, out);
       return true;
     }
-    const out = await verifyPact(pactId, payload.pass !== false, actorOf(req, payload), payload.reason);
+    const out = await verifyPact(
+      pactId,
+      payload.pass !== false,
+      actorOf(req, payload),
+      payload.reason,
+      payload.itemMarks,
+    );
     send(res, 200, out);
     return true;
   }

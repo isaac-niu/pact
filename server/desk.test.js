@@ -3,6 +3,48 @@ import assert from "node:assert/strict";
 import { createDeskLogic, bankOf } from "./desk.js";
 import { emptyDemoState } from "../src/data/seed.js";
 
+test("create stores a referee checklist and proof grades each line", async () => {
+  const desk = createDeskLogic(async (input) => ({
+    result: "pass",
+    confidence: 0.93,
+    rationale: "both lines hold",
+    source: "test",
+    auto: true,
+    items: [
+      { id: "sc_face", pass: true, note: "Face is on camera." },
+      { id: "sc_gym", pass: true, note: "Iron is in frame." },
+    ],
+    title: input.title,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    {
+      title: "Gym",
+      checklist: [
+        { id: "sc_face", label: "Face visible" },
+        { id: "sc_gym", label: "Gym floor or equipment visible" },
+      ],
+      stake: 2,
+      opponentId: "friend",
+    },
+    "you",
+  );
+  state = created.state;
+  assert.equal(created.result.checklist.length, 2);
+  assert.match(created.result.criteria, /Face visible/);
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const proved = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { dataUrl: "data:image/jpeg;base64,aa", name: "gym.jpg" },
+    "you",
+  );
+  assert.equal(proved.result.status, "resolved");
+  assert.equal(proved.result.verdict.items.length, 2);
+  assert.equal(proved.result.verdict.items.every((row) => row.pass === true), true);
+});
+
 test("create then accept locks both virtual SOL stakes", async () => {
   const desk = createDeskLogic(async () => ({
     result: "pass",

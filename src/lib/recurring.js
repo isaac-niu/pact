@@ -128,6 +128,7 @@ export function applyRecurringSpawns(state, { now = Date.now(), uid, bankOf } = 
       id: uid("pkt"),
       title: parent.title,
       criteria: parent.criteria,
+      checklist: parent.checklist || [],
       stake: parent.stake,
       deadline: nextOccurrenceDeadline(parent, now),
       creatorId: parent.creatorId,

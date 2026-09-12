@@ -37,6 +37,7 @@ describe("recurring slips", () => {
       id: "pkt_old",
       title: "Gym 3×",
       criteria: "Gym floor selfie",
+      checklist: [{ id: "sc_gym", label: "Gym floor selfie" }],
       stake: 2,
       creatorId: "you",
       opponentId: "friend",
@@ -64,6 +65,7 @@ describe("recurring slips", () => {
     expect(first.created[0].parentPactId).toBe("pkt_old");
     expect(first.created[0].occurrence).toBe(2);
     expect(first.created[0].streak).toBe(2);
+    expect(first.created[0].checklist).toEqual([{ id: "sc_gym", label: "Gym floor selfie" }]);
     expect(bankOf("you", first.state)).toBe(48);
     const second = applyRecurringSpawns(first.state, { now: now + 10, uid, bankOf });
     expect(second.created).toHaveLength(0);

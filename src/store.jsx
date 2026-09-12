@@ -65,7 +65,8 @@ export function PactProvider({ children }) {
       createPact: (input) => apiCreate(input, { actorId: snap.userId }),
       acceptPact: (id) => apiAccept(id, { actorId: snap.userId }),
       submitEvidence: (id, file) => apiSubmit(id, file, { actorId: snap.userId }),
-      verifyPact: (id, pass, reason) => apiVerify(id, pass, { actorId: snap.userId, reason }),
+      verifyPact: (id, pass, reason, itemMarks) =>
+        apiVerify(id, pass, { actorId: snap.userId, reason, itemMarks }),
       flagAppeal: (id, note) => apiFlag(id, note, { actorId: snap.userId }),
       markNoticeRead: (id) => apiMarkRead(id, { actorId: snap.userId }),
       markAllNoticesRead: () => apiMarkAllRead({ actorId: snap.userId }),

@@ -65,6 +65,7 @@ describe("PactProvider", () => {
     expect(created.status).toBe("open");
     expect(created.visibility).toBe("public");
     expect(created.cadence).toBe("none");
+    expect(created.checklist.map((item) => item.label)).toEqual(["Show a photo of the thing"]);
   });
 
   it("writes a series onto a new slip", async () => {
