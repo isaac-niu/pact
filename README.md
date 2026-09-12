@@ -2,19 +2,28 @@
 
 Social media for accountability, not attention.
 
-Local 1v1 loop: write a pact, a friend matches a **virtual SOL** stake, upload a photo, referee calls pass/fail, winner takes the pot. Pitch the loop — not Venmo + Twitter + gambling.
+1v1 loop: write a pact, a friend matches **virtual SOL**, upload a photo, a referee calls it, winner takes the pot. Pitch that loop — not Venmo + Twitter + gambling.
+
+Person A owns the sportsbook UI (`src/`). Person D owns deploy + a Node desk that can persist to Mongo and optionally call Gemini. If Mongo is down, the UI falls back to `localStorage`.
 
 ## Run (laptop)
 
 ```bash
-cp .env.example .env   # empty keys are fine
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. State is `localStorage`. Switch **You / Friend** in the top-right (ISAAC vs MAYA). A first visit loads sample slips so the board is not empty.
+Open `http://localhost:5173`. Switch **You (ISAAC)** / **Friend (MAYA)** in the top-right.
 
-Production-style local server (what Vultr runs):
+With a local server (Vite proxies `/api`):
+
+```bash
+npm run dev:server   # terminal 1
+npm run dev          # terminal 2
+```
+
+Production-style (what Vultr runs):
 
 ```bash
 npm run build
@@ -27,23 +36,35 @@ npm start
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — nginx, systemd, Vultr, env names
 - [docs/DEMO.md](docs/DEMO.md) — 3-minute judging script + fallbacks
 
-## What’s in this POC vs later
+## Routes
 
-| Now | Person B / C / later |
+| Path | Screen |
 | --- | --- |
-| User switcher | Auth0 |
-| localStorage | MongoDB Atlas |
-| Mocked referee | Gemini Flash on the photo |
-| Virtual SOL on the ticket | Virtual SOL ledger |
-| Optional ElevenLabs on settle | Same, if `ELEVENLABS_API_KEY` is set |
-| Vultr + nginx | Live URL for judges |
+| `/` | Pitch |
+| `/create` | Write slip |
+| `/feed` | Event tape + slips |
+| `/pact/:id` | Ticket, evidence, verdict |
+| `/me` | Profile, rate, virtual SOL bank |
+
+## Swap surface (`src/api/pact.js`)
+
+Pages import only this module. Local mock is the default. If `/api/config` says Mongo is up, the same functions talk to the Node desk.
+
+| Function | Behavior |
+| --- | --- |
+| `createPact({ title, criteria, stake, deadline, opponentId }, { actorId })` | Post slip, lock creator stake |
+| `acceptPact(pactId, { actorId })` | Friend matches stake |
+| `submitEvidence(pactId, file, { actorId })` | Photo → Gemini or mock referee → payout or friend-verify |
+| `verifyPact(pactId, { pass }, { actorId })` | Friend-verify fallback when Gemini is unsure |
+
+`src/api/referee.js` remains the in-browser mock. Server Gemini lives in `server/gemini.js`.
 
 ## Scripts
 
 ```bash
-npm test              # env/announcer unit checks
+npm test
 npm run build
 npm start
 BASE_URL=http://127.0.0.1:3000 npm run smoke
-DEMO_SEED=true npm run seed   # prints fixtures; will not write production Mongo
+DEMO_SEED=true npm run seed
 ```
