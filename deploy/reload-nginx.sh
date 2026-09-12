@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-nginx -t
+nginx -t >/dev/null
 systemctl reload nginx
