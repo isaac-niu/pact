@@ -148,44 +148,6 @@ h3,
   color: var(--text);
 }
 
-.switcher {
-  display: flex;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px;
-}
-
-.switcher button {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  display: grid;
-  line-height: 1.1;
-  text-align: left;
-}
-
-.switcher-pill {
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.switcher-handle {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.switcher button.on {
-  background: var(--lime);
-  color: var(--ink);
-}
-
 .account-control {
   display: flex;
   align-items: center;
@@ -396,7 +358,9 @@ h2 {
 }
 
 .page-head.tight {
-  margin: 36px 0 14px;
+  margin: 40px 0 14px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
 }
 
 .subhead {
@@ -1019,6 +983,11 @@ select {
 .hint {
   color: var(--muted);
   font-size: 13px;
+}
+
+label .hint {
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .announcer {

@@ -26,6 +26,7 @@ describe("local Pact proof of concept", () => {
 
     fireEvent.click(screen.getByRole("link", { name: "Write a slip" }));
     expect(screen.getByRole("heading", { name: "Write the pact" })).toBeInTheDocument();
+    expect(screen.getByText(/Max \d+\.\d{2} SOL/)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Title"), {
       target: { value: "Run a 5k" },

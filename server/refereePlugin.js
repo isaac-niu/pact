@@ -1,4 +1,5 @@
 import { loadEnvFile } from "./loadEnv.js";
+import { featureFlags } from "./env.js";
 import { geminiEnabled, judgeEvidence } from "./gemini.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
@@ -68,16 +69,31 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       await connectMongo();
     }
     const mongo = mongoReady();
+    const elevenlabs = featureFlags().elevenlabs;
     write(res, 200, {
       ok: true,
       service: "pact",
+      announcer: elevenlabs,
       features: {
         gemini: geminiEnabled(),
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
+        elevenlabs,
       },
     });
     return true;
+  }
+
+  // Vite proxies /api/announce to :3000. When the key is unset, answer here
+  // so the desk does not 500 on every settled-ticket view.
+  if (url === "/api/announce" && req.method === "POST") {
+    if (!process.env.ELEVENLABS_API_KEY) {
+      if (typeof req.resume === "function") req.resume();
+      res.statusCode = 204;
+      res.end();
+      return true;
+    }
+    return false;
   }
 
   const evidenceMatch = url.match(/^\/api\/evidence\/([^/]+)$/);
