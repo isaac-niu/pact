@@ -1,15 +1,36 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchAnnouncementAudio, isMuted, setMuted as persistMuted } from "../announcer.js";
+import {
+  announcerEnabled,
+  fetchAnnouncementAudio,
+  fetchDeskConfig,
+  isMuted,
+  setMuted as persistMuted,
+} from "../announcer.js";
 
 export default function Announcer({ pact, winnerHandle }) {
   const [audioUrl, setAudioUrl] = useState(null);
   const [muted, setMuted] = useState(isMuted);
   const [status, setStatus] = useState("idle");
+  const [liveVoice, setLiveVoice] = useState(null);
   const audioRef = useRef(null);
   const requested = useRef(null);
 
   useEffect(() => {
-    if (!pact?.verdict || requested.current === pact.id) return;
+    let cancelled = false;
+    fetchDeskConfig().then((cfg) => {
+      if (!cancelled) setLiveVoice(announcerEnabled(cfg));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (liveVoice !== true) {
+      if (liveVoice === false) setStatus("off");
+      return undefined;
+    }
+    if (!pact?.verdict || requested.current === pact.id) return undefined;
     requested.current = pact.id;
     let cancelled = false;
     setStatus("loading");
@@ -21,7 +42,7 @@ export default function Announcer({ pact, winnerHandle }) {
     return () => {
       cancelled = true;
     };
-  }, [pact, winnerHandle]);
+  }, [pact, winnerHandle, liveVoice]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -67,7 +88,9 @@ export default function Announcer({ pact, winnerHandle }) {
       </div>
       <p className="hint">
         {status === "off" || (!audioUrl && status !== "loading")
-          ? "Announcer is optional. Add ELEVENLABS_API_KEY on the server to hear the settle call."
+          ? liveVoice === true
+            ? "ElevenLabs is on the desk; this slip did not return a call."
+            : "Announcer is optional. Add ELEVENLABS_API_KEY on the server to hear the settle call."
           : muted
             ? "Desk is muted."
             : "Sportsbook call plays once when the slip settles. Voice by ElevenLabs."}

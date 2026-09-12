@@ -17,6 +17,14 @@ export function setMuted(muted) {
   }
 }
 
+export function announcerEnabled(cfg) {
+  return Boolean(cfg?.features?.elevenlabs || cfg?.announcer);
+}
+
+export function resetAnnouncementCache() {
+  cache.clear();
+}
+
 export function announcementText(pact, winnerHandle) {
   const result = pact?.verdict?.result;
   const rationale = pact?.verdict?.rationale || "";
@@ -32,6 +40,12 @@ export function announcementText(pact, winnerHandle) {
 export async function fetchAnnouncementAudio(pact, winnerHandle) {
   if (!pact?.id || !pact.verdict) return null;
   if (cache.has(pact.id)) return cache.get(pact.id);
+
+  const cfg = await fetchDeskConfig();
+  if (!announcerEnabled(cfg)) {
+    cache.set(pact.id, null);
+    return null;
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);
