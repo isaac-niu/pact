@@ -203,6 +203,35 @@ test("resolved series slips spawn the next stake on the reminder tick", async ()
   assert.equal(ticked.result.spawned, 1);
 });
 
+test("rail tickets lock virtual SOL and pay even money on settle", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "pass",
+    confidence: 0.92,
+    rationale: "gym",
+    source: "test",
+    auto: true,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const faded = await desk.placeSideStake(state, created.result.id, { side: "challenger", amount: 2 }, "rail");
+  state = faded.state;
+  const before = bankOf("rail", state);
+  const out = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { dataUrl: "data:image/jpeg;base64,aa", name: "gym.jpg" },
+    "you",
+  );
+  assert.equal(out.result.winnerId, "you");
+  assert.equal(bankOf("rail", out.state), before + 4);
+});
+
 test("spectators can heat a public mark and post a short take", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const state = emptyDemoState();

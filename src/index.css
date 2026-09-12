@@ -380,6 +380,36 @@ h2 {
   font-size: 16px;
 }
 
+.page-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.rail-book {
+  margin-top: 16px;
+}
+
+.rail-strip {
+  margin: 12px 0;
+}
+
+.rail-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rail-form {
+  grid-template-columns: auto 1fr auto;
+}
+
+.rail-amount {
+  display: grid;
+  gap: 4px;
+}
+
 .page-head {
   display: flex;
   justify-content: space-between;

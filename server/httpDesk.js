@@ -11,14 +11,16 @@ import {
   tickReminders,
   reactToMark,
   commentOnMark,
+  placeSideStake,
 } from "./deskStore.js";
 import { mongoReady } from "./mongo.js";
 import { listDeskUsers } from "./deskUsers.js";
+import { normalizeDeskActor } from "../src/data/users.js";
 
 function actorOf(req, payload = {}) {
   const header = req.headers["x-pact-actor"];
   const id = payload.actorId || header || "you";
-  return id === "friend" ? "friend" : "you";
+  return normalizeDeskActor(id);
 }
 
 async function jsonBody(req, readBody, limit) {
@@ -131,6 +133,18 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       return true;
     }
     const out = await commentOnMark(eventId, payload.body, actor);
+    send(res, 200, out);
+    return true;
+  }
+
+  const sideMatch = url.match(/^\/api\/pacts\/([^/]+)\/side-stake$/);
+  if (sideMatch && req.method === "POST") {
+    if (!mongoReady()) {
+      send(res, 503, { error: "mongo_unavailable" });
+      return true;
+    }
+    const payload = await jsonBody(req, readBody, 32_000);
+    const out = await placeSideStake(decodeURIComponent(sideMatch[1]), payload, actorOf(req, payload));
     send(res, 200, out);
     return true;
   }
