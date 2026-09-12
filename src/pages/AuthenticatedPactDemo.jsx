@@ -34,6 +34,8 @@ function PactDesk({
   onFeedChange,
   selectedGroup,
   onGroupChange,
+  sendTarget = "opponent",
+  onSendTargetChange,
   onCreateGroup,
   onJoinGroup,
   onJoinWithCode,
@@ -77,31 +79,73 @@ function PactDesk({
             onChange={(event) => onStakeChange(event.target.value)}
           />
         </label>
-        {onOpponentChange ? (
-          <label>
-            Opponent
-            <select
-              value={selectedOpponent}
-              onChange={(event) => onOpponentChange(event.target.value)}
-            >
-              <option value="">Select a signed-in counterparty</option>
-              {users.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                  {person.email ? ` · ${person.email}` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-        {onGroupChange ? (
-          <label>
-            Or send to a group
-            <select value={selectedGroup} onChange={(event) => onGroupChange(event.target.value)}>
-              <option value="">Direct counterparty</option>
-              {groups.filter((group) => group.memberIds.includes(userId)).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
-            </select>
-          </label>
+        {onOpponentChange && onGroupChange ? (
+          <>
+            <div className="tape-choice" role="radiogroup" aria-label="Opponent or group">
+              <label className={`opp-card ${sendTarget !== "group" ? "on" : ""}`}>
+                <input
+                  type="radio"
+                  name="sendTarget"
+                  value="opponent"
+                  checked={sendTarget !== "group"}
+                  onChange={() => onSendTargetChange("opponent")}
+                />
+                <span>
+                  <b>Opponent</b>
+                  <em>1v1 with a signed-in counterparty.</em>
+                </span>
+              </label>
+              <label className={`opp-card ${sendTarget === "group" ? "on" : ""}`}>
+                <input
+                  type="radio"
+                  name="sendTarget"
+                  value="group"
+                  checked={sendTarget === "group"}
+                  onChange={() => onSendTargetChange("group")}
+                />
+                <span>
+                  <b>Group</b>
+                  <em>Post to everyone in one of your groups.</em>
+                </span>
+              </label>
+            </div>
+            {sendTarget === "group" ? (
+              <label>
+                Group
+                <select
+                  value={selectedGroup}
+                  onChange={(event) => onGroupChange(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Choose a group
+                  </option>
+                  {groups
+                    .filter((group) => group.memberIds.includes(userId))
+                    .map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                Opponent
+                <select
+                  value={selectedOpponent}
+                  onChange={(event) => onOpponentChange(event.target.value)}
+                >
+                  <option value="">Select a signed-in counterparty</option>
+                  {users.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                      {person.email ? ` · ${person.email}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
         ) : null}
         <button className="btn btn-lime" type="submit">
           Create pact
@@ -286,6 +330,7 @@ function LivePactDesk() {
   const [groupId, setGroupId] = useState("");
   const [me, setMe] = useState(null);
   const [opponentId, setOpponentId] = useState("");
+  const [sendTarget, setSendTarget] = useState("opponent"); // "opponent" | "group"
   const [title, setTitle] = useState("");
   const [stake, setStake] = useState("1");
   const [message, setMessage] = useState("");
@@ -381,6 +426,15 @@ function LivePactDesk() {
       onFeedChange={setActiveFeed}
       selectedGroup={groupId}
       onGroupChange={setGroupId}
+      sendTarget={sendTarget}
+      onSendTargetChange={(next) => {
+        setSendTarget(next);
+        // Clear the other field so a stale selection can't ride along once
+        // the user switches — only one of opponentId/groupId should ever
+        // be live at a time.
+        if (next === "group") setOpponentId("");
+        else setGroupId("");
+      }}
       onCreateGroup={async (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -411,7 +465,7 @@ function LivePactDesk() {
             body: {
               title,
               stakeLamports: Number(stake) * 1_000_000_000,
-              ...(groupId ? { groupId } : { opponentId }),
+              ...(sendTarget === "group" ? { groupId } : { opponentId }),
             },
           });
           setTitle("");
