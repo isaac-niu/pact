@@ -32,16 +32,19 @@ export function useLiveAccount() {
   const refresh = useCallback(async () => {
     if (!ready) return;
     const token = await tokenOf();
-    const [identity, directory, social, crew] = await Promise.all([
+    const [identity, directory, social, crew, listed] = await Promise.all([
       api("/api/auth/me", { token }),
       optionalApi("/api/users", { token }, []),
       optionalApi("/api/friends", { token }, { friends: [], incoming: [], outgoing: [] }),
       optionalApi("/api/groups", { token }, []),
+      optionalApi("/api/groups/directory", { token }, []),
     ]);
     setMe(identity);
     setPeople(directory);
     setFriends(social);
-    setGroups(crew);
+    const byId = new Map();
+    for (const group of [...listed, ...crew]) byId.set(group.id, { ...byId.get(group.id), ...group });
+    setGroups([...byId.values()]);
   }, [ready, tokenOf]);
 
   useEffect(() => {

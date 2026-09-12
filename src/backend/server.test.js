@@ -292,6 +292,27 @@ describe("Pact API authorization", () => {
     expect(accepted.body.opponentId).toBe(bob.id);
   });
 
+  it("lists discoverable crews on the directory board", async () => {
+    const { carol } = await startLive();
+    await api("/api/groups", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ name: "Code only", visibility: "private" }),
+    });
+    const listed = await api("/api/groups", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ name: "Open iron", visibility: "public", discoverable: true }),
+    });
+    const board = await api("/api/groups/directory", { headers: auth("carol") });
+    expect(board.status).toBe(200);
+    expect(board.body.map((group) => group.name)).toEqual(["Open iron"]);
+    expect(board.body[0].joinCode).toBeUndefined();
+    const searched = await api("/api/groups/directory?q=iron", { headers: auth("carol") });
+    expect(searched.body.map((group) => group.id)).toEqual([listed.body.id]);
+    expect((await api("/api/groups/directory?q=secret", { headers: auth("carol") })).body).toEqual([]);
+  });
+
   it("lets signed-in users request and accept friends", async () => {
     const { alice, bob } = await startLive();
     const requested = await api("/api/friends", {
