@@ -1,6 +1,6 @@
 const cache = new Map();
 
-const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
+const DEFAULT_VOICE = "pNInz6obpgDQGcFmaJgB"; // Adam — works on ElevenLabs free (library voices 402)
 
 export function buildAnnouncement({ winner, result, rationale, title } = {}) {
   const who = winner || "The challenger";
@@ -34,7 +34,7 @@ export async function synthesize(text, env = process.env) {
       },
       body: JSON.stringify({
         text,
-        model_id: env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
+        model_id: env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2_5",
       }),
     });
   } catch {

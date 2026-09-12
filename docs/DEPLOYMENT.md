@@ -21,7 +21,8 @@ Put these in `/opt/pact/.env` on the server (mode `600`). Never commit them.
 | `BIND_HOST` | no (use `127.0.0.1` on Vultr) | D |
 | `NODE_ENV` | no (`production` via systemd) | D |
 | `ELEVENLABS_API_KEY` | no | D |
-| `ELEVENLABS_VOICE_ID` | no | D |
+| `ELEVENLABS_VOICE_ID` | no (default Adam `pNInz6obpgDQGcFmaJgB`; library voices 402 on free) | D |
+| `ELEVENLABS_MODEL_ID` | no (default `eleven_turbo_v2_5`) | D |
 | `GEMINI_API_KEY` | no for D; C needs it | C |
 | `AUTH0_DOMAIN` / `AUTH0_CLIENT_ID` / `AUTH0_CLIENT_SECRET` / `AUTH0_AUDIENCE` | no for D; B needs them | B |
 | `MONGODB_URI` | no to boot static site; needed for shared desk | B/D |
