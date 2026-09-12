@@ -2,8 +2,9 @@ import { createServer } from "node:http";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { featureFlags, publicConfig } from "./env.js";
 import { buildAnnouncement, synthesize } from "./elevenlabs.js";
+import { handleDeskApi } from "./httpDesk.js";
+import { connectMongo } from "./mongo.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 loadEnvFile(path.join(root, ".env"));
@@ -127,22 +128,16 @@ function serveStatic(req, res) {
 }
 
 async function handleApi(req, res) {
+  try {
+    if (await handleDeskApi(req, res, { send, readBody })) return;
+  } catch (err) {
+    const msg = String(err.message || "server_error");
+    const status = /mongo|conflict|desk_busy/.test(msg) ? 503 : 400;
+    send(res, status, { error: msg });
+    return;
+  }
+
   const url = req.url.split("?")[0];
-
-  if ((url === "/api/health" || url === "/healthz") && req.method === "GET") {
-    send(res, 200, {
-      ok: true,
-      service: "pact",
-      uptime: process.uptime(),
-      features: featureFlags(),
-    });
-    return;
-  }
-
-  if (url === "/api/config" && req.method === "GET") {
-    send(res, 200, publicConfig());
-    return;
-  }
 
   if (url === "/api/announce" && req.method === "POST") {
     let payload = {};
@@ -185,7 +180,7 @@ const server = createServer(async (req, res) => {
       res.writeHead(204, {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET,POST,OPTIONS",
-        "access-control-allow-headers": "content-type",
+        "access-control-allow-headers": "content-type, x-pact-actor",
       });
       res.end();
       return;
@@ -209,6 +204,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`pact listening on ${HOST}:${PORT}`);
+connectMongo().finally(() => {
+  server.listen(PORT, HOST, () => {
+    console.log(`pact listening on ${HOST}:${PORT}`);
+  });
 });

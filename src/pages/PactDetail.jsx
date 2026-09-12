@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
+import Announcer from "../components/Announcer.jsx";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
 
 const STAMPS = {
@@ -8,12 +9,13 @@ const STAMPS = {
   accepted: { label: "LIVE", className: "stamp-live" },
   evidence: { label: "PROOF", className: "stamp-live" },
   judging: { label: "DESK", className: "stamp-hot" },
+  review: { label: "REVIEW", className: "stamp-hot" },
   resolved: { label: "GRADED", className: "stamp-done" },
 };
 
 export default function PactDetail() {
   const { id } = useParams();
-  const { pacts, events, userId, acceptPact, submitEvidence, bankOf } = usePact();
+  const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, bankOf } = usePact();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -35,6 +37,7 @@ export default function PactDetail() {
   const canAccept = pact.status === "open" && userId === pact.opponentId;
   const canUpload =
     (pact.status === "accepted" || pact.status === "evidence") && userId === pact.creatorId;
+  const canVerify = pact.status === "review" && userId === pact.opponentId;
   const marks = events.filter((e) => e.pactId === pact.id).sort((a, b) => a.at - b.at);
   const tone = deadlineTone(pact.deadline);
 
@@ -45,6 +48,18 @@ export default function PactDetail() {
       await acceptPact(pact.id);
     } catch (err) {
       setError(err.message || "Could not accept");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onVerify(pass) {
+    setError("");
+    setBusy(true);
+    try {
+      await verifyPact(pact.id, pass);
+    } catch (err) {
+      setError(err.message || "Could not verify");
     } finally {
       setBusy(false);
     }
@@ -132,7 +147,7 @@ export default function PactDetail() {
             <img className="preview" src={pact.evidenceUrl} alt={pact.evidenceName || "Evidence"} />
           ) : (
             <p className="hint">
-              No photo yet. Challenger drops a local file — it never leaves this browser.
+              No photo yet. Challenger drops a photo for the referee.
             </p>
           )}
           {canUpload ? (
@@ -167,21 +182,40 @@ export default function PactDetail() {
           {pact.status === "accepted" ? (
             <p className="hint">Live. {creator.handle} owes a photo.</p>
           ) : null}
+          {pact.status === "review" ? (
+            <p className="hint">Gemini is unsure. Friend verifies the frame.</p>
+          ) : null}
+          {canVerify ? (
+            <div className="announcer-row">
+              <button className="btn btn-lime" type="button" disabled={busy} onClick={() => onVerify(true)}>
+                Friend: pass
+              </button>
+              <button className="btn btn-ghost" type="button" disabled={busy} onClick={() => onVerify(false)}>
+                Friend: fail
+              </button>
+            </div>
+          ) : null}
           {error ? <p className="err">{error}</p> : null}
 
           {pact.verdict ? (
             <div className={`verdict ${pact.verdict.result}`}>
               <div className="result">{pact.verdict.result}</div>
               <div className="hint">
-                Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · mocked
+                Confidence {(pact.verdict.confidence * 100).toFixed(0)}% ·{" "}
+                {pact.verdict.source || "mocked"}
               </div>
               <p>{pact.verdict.rationale}</p>
-              <div className="payout">
-                {winner.handle} takes the pot · {sol(pot)} SOL
-              </div>
-              <button className="btn btn-ghost" type="button" onClick={copyShare}>
-                {copied ? "Copied the post" : "Share the ticket"}
-              </button>
+              {pact.status === "resolved" && winner ? (
+                <>
+                  <div className="payout">
+                    {winner.handle} takes the pot · {sol(pot)} SOL
+                  </div>
+                  <Announcer pact={pact} winnerHandle={winner.handle} />
+                  <button className="btn btn-ghost" type="button" onClick={copyShare}>
+                    {copied ? "Copied the post" : "Share the ticket"}
+                  </button>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>

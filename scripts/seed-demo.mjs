@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 /**
- * Demo seed for Person B's future Mongo layer.
+ * Prints demo fixtures. Does not write Mongo unless you later add an explicit seeder.
  *
- * SAFETY: refuses to run unless DEMO_SEED=true.
- * SAFETY: refuses if NODE_ENV=production unless DEMO_SEED_PRODUCTION=true as well.
+ * SAFETY: refuses unless DEMO_SEED=true.
+ * SAFETY: refuses NODE_ENV=production unless DEMO_SEED_PRODUCTION=true.
  *
- * Today the live demo still uses client localStorage (see src/demo/fixtures.js).
- * This script only prints fixtures unless MONGODB_URI is set AND a future
- * Person B adapter exists at server/seed/mongo.js — we never invent their schema.
+ * The live Node desk auto-inserts this seed once if the `desk` document is missing.
+ * It never overwrites an existing Atlas desk.
  */
-import { demoPacts } from "../src/demo/fixtures.js";
+import { demoPacts } from "../src/data/seed.js";
 
 if (process.env.DEMO_SEED !== "true") {
   console.error("Refusing to seed. Set DEMO_SEED=true if you really want this.");
@@ -22,15 +21,6 @@ if (process.env.NODE_ENV === "production" && process.env.DEMO_SEED_PRODUCTION !=
 }
 
 const pacts = demoPacts();
-console.log(`Demo fixtures (${pacts.length} pacts) for localStorage / future Mongo:`);
+console.log(`Demo fixtures (${pacts.length} pacts):`);
 console.log(JSON.stringify(pacts, null, 2));
-
-if (!process.env.MONGODB_URI) {
-  console.log("No MONGODB_URI — nothing written. Client seed fills an empty browser automatically.");
-  process.exit(0);
-}
-
-console.log(
-  "MONGODB_URI is set, but this lane does not write Mongo documents (Person B owns the schema).",
-);
-console.log("Leave this output for B to map onto users / pacts / ledger collections.");
+console.log("Empty Atlas `pact.desk` is seeded automatically on first server boot.");

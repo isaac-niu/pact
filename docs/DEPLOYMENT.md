@@ -24,7 +24,8 @@ Put these in `/opt/pact/.env` on the server (mode `600`). Never commit them.
 | `ELEVENLABS_VOICE_ID` | no | D |
 | `GEMINI_API_KEY` | no for D; C needs it | C |
 | `AUTH0_DOMAIN` / `AUTH0_CLIENT_ID` / `AUTH0_CLIENT_SECRET` / `AUTH0_AUDIENCE` | no for D; B needs them | B |
-| `MONGODB_URI` | no for D; B needs it | B |
+| `MONGODB_URI` | no to boot static site; needed for shared desk | B/D |
+| `MONGO_DB_NAME` | no (default `pact`) | B/D |
 | `PUBLIC_URL` | no; add to Auth0 callbacks when B is live | B/D |
 
 ## First-time Vultr (Debian 12)
@@ -54,6 +55,7 @@ AUTH0_CLIENT_ID=
 AUTH0_CLIENT_SECRET=
 AUTH0_AUDIENCE=
 MONGODB_URI=
+MONGO_DB_NAME=pact
 PUBLIC_URL=http://YOUR_PUBLIC_IP
 EOF
 # NODE_ENV=production is set by systemd — do not put it in .env (Vite will warn).

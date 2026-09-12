@@ -1,34 +1,49 @@
 /**
  * Integration surface for Persons B / C.
  *
- * Default implementations are local + mocked (localStorage ledger,
- * in-browser photo, fake referee). Swap the three functions below
- * for Auth0/Mongo/Gemini later — pages import from this module only.
- *
- *   createPact({ title, criteria, stake, deadline, opponentId }, { actorId })
- *   acceptPact(pactId, { actorId })
- *   submitEvidence(pactId, file, { actorId })
- *
- * No Auth0, Mongo, Gemini SDK, Solana, ElevenLabs, or Vultr here.
+ * Pages import from this module only. Default is localStorage + mocked referee.
+ * boot() switches to the Node/Mongo desk when /api/config says Mongo is up.
  */
 
 import * as local from "./local.js";
+import * as remote from "./remote.js";
 
-export const createPact = local.createPact;
-export const acceptPact = local.acceptPact;
-export const submitEvidence = local.submitEvidence;
+let impl = local;
 
-export const pactApi = {
-  createPact,
-  acceptPact,
-  submitEvidence,
-};
+export async function boot() {
+  if (await remote.maybeRemote()) impl = remote;
+  return impl === remote;
+}
 
-export {
-  getSnapshot,
-  subscribe,
-  switchUser,
-  resetDesk,
-  bankOf,
-  recordOf,
-} from "./local.js";
+export function createPact(...args) {
+  return impl.createPact(...args);
+}
+export function acceptPact(...args) {
+  return impl.acceptPact(...args);
+}
+export function submitEvidence(...args) {
+  return impl.submitEvidence(...args);
+}
+export function verifyPact(...args) {
+  return impl.verifyPact(...args);
+}
+export function getSnapshot() {
+  return impl.getSnapshot();
+}
+export function subscribe(fn) {
+  return impl.subscribe(fn);
+}
+export function switchUser(id) {
+  return impl.switchUser(id);
+}
+export function resetDesk() {
+  return impl.resetDesk();
+}
+export function bankOf(...args) {
+  return impl.bankOf(...args);
+}
+export function recordOf(...args) {
+  return impl.recordOf(...args);
+}
+
+export const pactApi = { createPact, acceptPact, submitEvidence, verifyPact };

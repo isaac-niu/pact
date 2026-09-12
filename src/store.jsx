@@ -7,6 +7,7 @@ import {
   recordOf,
   resetDesk,
   submitEvidence as apiSubmit,
+  verifyPact as apiVerify,
   subscribe,
   switchUser as apiSwitch,
 } from "./api/pact.js";
@@ -42,6 +43,8 @@ export function PactProvider({ children }) {
       createPact: (input) => apiCreate(input, { actorId: snap.userId }),
       acceptPact: (id) => apiAccept(id, { actorId: snap.userId }),
       submitEvidence: (id, file) => apiSubmit(id, file, { actorId: snap.userId }),
+      verifyPact: (id, pass) => apiVerify(id, pass, { actorId: snap.userId }),
+      backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],
   );

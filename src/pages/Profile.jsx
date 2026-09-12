@@ -3,7 +3,7 @@ import { usePact } from "../store.jsx";
 import { formatWhen, sol } from "../lib/format.js";
 
 export default function Profile() {
-  const { user, bank, record, ledger, pacts, resetDesk } = usePact();
+  const { user, bank, record, ledger, pacts, resetDesk, backend } = usePact();
   const mine = pacts.filter((p) => p.creatorId === user.id || p.opponentId === user.id);
   const rate = record.rate == null ? "—" : `${Math.round(record.rate * 100)}%`;
 
@@ -74,10 +74,16 @@ export default function Profile() {
               ))}
             </ul>
           )}
-          <button className="btn btn-ghost" type="button" onClick={() => resetDesk()}>
-            Reset local desk
-          </button>
-          <p className="hint">Wipes this browser and reseeds the three demo slips.</p>
+          {backend === "mongo" ? (
+            <p className="hint">Shared Atlas desk — browser reset is disabled so we do not wipe judges.</p>
+          ) : (
+            <>
+              <button className="btn btn-ghost" type="button" onClick={() => resetDesk()}>
+                Reset local desk
+              </button>
+              <p className="hint">Wipes this browser and reseeds the three demo slips.</p>
+            </>
+          )}
         </div>
       </div>
     </div>
