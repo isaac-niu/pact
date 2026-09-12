@@ -4,6 +4,7 @@ import {
   band,
   bandName,
   classifyGeminiError,
+  DEFAULT_MODEL,
   evidenceHash,
   judgeEvidence,
   mockVerdict,
@@ -12,6 +13,33 @@ import {
   resetGeminiStatus,
   geminiStatus,
 } from "./gemini.js";
+
+test("uses an available Flash model by default", async () => {
+  resetGeminiStatus();
+  const originalFetch = globalThis.fetch;
+  let requestedUrl = "";
+  globalThis.fetch = async (url) => {
+    requestedUrl = String(url);
+    return new Response(
+      JSON.stringify({
+        candidates: [{ content: { parts: [{ text: '{"pass":true,"confidence":0.9,"rationale":"clear proof"}' }] } }],
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+
+  try {
+    const verdict = await judgeEvidence(
+      { title: "Gym", criteria: "Attend", dataUrl: "data:image/png;base64,aGVsbG8=" },
+      { GEMINI_API_KEY: "test-key" },
+    );
+    assert.equal(DEFAULT_MODEL, "gemini-3.6-flash");
+    assert.match(requestedUrl, /models\/gemini-3\.6-flash:generateContent/);
+    assert.equal(verdict.source, "gemini");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("high confidence auto-resolves a pass to the challenger", () => {
   const v = band(true, 0.88, "clear gym", "gemini");
