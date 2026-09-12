@@ -1,4 +1,5 @@
 import { useState } from "react";
+import EmptyState from "./EmptyState.jsx";
 
 export function ActionStatus({ status }) {
   if (!status?.text) return null;
@@ -13,6 +14,7 @@ export function CreateGroupForm({ onSubmit, busy, embedded = false }) {
   const [listed, setListed] = useState(false);
   return (
     <form
+      id="create-crew"
       className={embedded ? "form" : "card form"}
       onSubmit={(event) => {
         onSubmit(event);
@@ -85,7 +87,17 @@ export function DirectoryBrowse({ groups, query, onQuery, userId, onJoin, busy }
         />
       </label>
       {groups.length === 0 ? (
-        <p className="hint">No listed crews on this filter. Check “list in the directory” when you create one.</p>
+        <EmptyState
+          art="crew"
+          kicker="Directory"
+          title="No listed crews on this filter"
+          lede="Check “list in the directory” when you create one, or clear the search."
+          action={
+            <a className="btn btn-lime" href="#create-crew">
+              Name a crew
+            </a>
+          }
+        />
       ) : (
         groups.map((group) => {
           const member = group.memberIds?.includes(userId) || group.creatorId === userId;
@@ -237,7 +249,21 @@ export function GroupList({
   onDelete,
   busy,
 }) {
-  if (!groups.length) return <p className="hint">No groups yet. Create one or request to join.</p>;
+  if (!groups.length) {
+    return (
+      <EmptyState
+        art="crew"
+        kicker="Your desk"
+        title="No crew on your desk"
+        lede="Name a crew above, or request a listed one. Then write slips to the group."
+        action={
+          <a className="btn btn-lime" href="#create-crew">
+            Name a crew
+          </a>
+        }
+      />
+    );
+  }
   return groups.map((group) => {
     const member = group.memberIds?.includes(userId);
     const joining = busy === `join:${group.id}`;
@@ -295,13 +321,21 @@ export function GroupList({
   });
 }
 
-export function FriendsList({ people, incoming = [], onAdd, onAccept, busy }) {
+export function FriendsList({ people, incoming = [], friends = [], onAdd, onAccept, busy }) {
+  const friended = people.filter((person) => person.friend).concat(friends);
+  const seen = new Set();
+  const uniqueFriends = friended.filter((person) => {
+    if (seen.has(person.id)) return false;
+    seen.add(person.id);
+    return true;
+  });
+
   return (
     <>
-      {incoming.length ? (
-        <div className="card">
-          <div className="kicker">Incoming</div>
-          {incoming.map((person) => (
+      <div className="card">
+        <div className="kicker">Incoming</div>
+        {incoming.length ? (
+          incoming.map((person) => (
             <div className="people-row" key={person.id}>
               <div>
                 <b>{person.name}</b>
@@ -316,13 +350,61 @@ export function FriendsList({ people, incoming = [], onAdd, onAccept, busy }) {
                 {busy === `accept:${person.id}` ? "Accepting…" : "Accept"}
               </button>
             </div>
-          ))}
-        </div>
-      ) : null}
+          ))
+        ) : (
+          <EmptyState
+            art="people"
+            kicker="Incoming"
+            title="No incoming friend slips"
+            lede="A friend signs in, adds you, then you can pitch them a pact."
+            action={
+              <a className="btn btn-lime" href="/create">
+                Write a slip
+              </a>
+            }
+          />
+        )}
+      </div>
+      <div className="card">
+        <div className="kicker">Your friends</div>
+        {uniqueFriends.length ? (
+          uniqueFriends.map((person) => (
+            <div className="people-row" key={person.id}>
+              <div>
+                <b>{person.name}</b>
+                <div className="hint">{person.email || person.id}</div>
+              </div>
+              <span className="hint lime-hint">On your desk</span>
+            </div>
+          ))
+        ) : (
+          <EmptyState
+            art="people"
+            kicker="Book"
+            title="No friends on your desk"
+            lede="Add a desk from the list below, then write them a slip."
+            action={
+              <a className="btn btn-lime" href="/create">
+                Write a slip
+              </a>
+            }
+          />
+        )}
+      </div>
       <div className="card">
         <div className="kicker">Signed-in accounts</div>
         {people.length === 0 ? (
-          <p className="hint">No other accounts yet. Have a friend open this desk and sign in once.</p>
+          <EmptyState
+            art="people"
+            kicker="Directory"
+            title="No other desks on this book"
+            lede="Have a friend open this desk and sign in once. Then friend them and pitch a slip."
+            action={
+              <a className="btn btn-ghost" href="/create">
+                Write a slip anyway
+              </a>
+            }
+          />
         ) : (
           people.map((person) => {
             const adding = busy === `friend:${person.id}`;

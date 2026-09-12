@@ -27,6 +27,7 @@ describe("crew directory", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Listed crews" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No crew on your desk" })).toBeInTheDocument();
     expect(screen.getByText("Dawn gym")).toBeInTheDocument();
     expect(screen.getByText("Night runners")).toBeInTheDocument();
 

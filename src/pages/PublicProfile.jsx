@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { formatRate, publicProfileOf } from "../lib/publicProfile.js";
 import { formatWhen, sol } from "../lib/format.js";
 import { usePact } from "../store.jsx";
+import EmptyState from "../components/EmptyState.jsx";
 
 const STATUS = {
   open: "Open",
@@ -22,10 +23,17 @@ export default function PublicProfile() {
 
   if (!ticket) {
     return (
-      <div className="empty">
-        No ticket on this book.{" "}
-        <Link to="/feed">Back to the tape</Link>
-      </div>
+      <EmptyState
+        art="ticket"
+        kicker="Public book"
+        title="No ticket on this book"
+        lede="That handle is not on the open book."
+        action={
+          <Link className="btn btn-ghost" to="/feed">
+            Back to the tape
+          </Link>
+        }
+      />
     );
   }
 
