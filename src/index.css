@@ -734,7 +734,8 @@ textarea {
 .badge.type-deadline,
 .badge.type-appeal,
 .badge.type-flagged,
-.badge.type-graded {
+.badge.type-graded,
+.badge.type-series {
   color: var(--amber);
   border-color: var(--amber);
 }
@@ -1216,6 +1217,16 @@ label .hint {
   }
 
   .tape-row time {
+    display: none;
+  }
+
+  .notice-list li a,
+  .deadline-banner {
+    grid-template-columns: auto 1fr;
+  }
+
+  .notice-list time,
+  .deadline-banner .meta {
     display: none;
   }
 

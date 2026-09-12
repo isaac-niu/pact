@@ -9,6 +9,7 @@ import {
   reviewNotice,
 } from "../src/lib/notifications.js";
 import { applyDeadlineReminders } from "../src/lib/reminders.js";
+import { applyRecurringSpawns, seriesFields, withNextSpawn } from "../src/lib/recurring.js";
 import {
   appealNotice,
   canFlagAppeal,
@@ -71,6 +72,7 @@ export function createDeskLogic(judge) {
         acceptedAt: null,
         provedAt: null,
         resolvedAt: null,
+        ...seriesFields(input, now, () => uid("ser")),
       };
       return {
         state: {
@@ -255,8 +257,12 @@ export function createDeskLogic(judge) {
     },
 
     async tickReminders(state, now = Date.now()) {
-      const out = applyDeadlineReminders(state, now);
-      return { state: out.state, result: { created: out.created.length } };
+      const reminded = applyDeadlineReminders(state, now);
+      const spawned = applyRecurringSpawns(reminded.state, { now, uid, bankOf });
+      return {
+        state: spawned.state,
+        result: { created: reminded.created.length, spawned: spawned.created.length },
+      };
     },
   };
 }
@@ -267,7 +273,7 @@ function settle(state, pactId, verdict) {
   const loserId = winnerId === latest.creatorId ? latest.opponentId : latest.creatorId;
   const resolvedAt = Date.now();
   const pot = latest.stake * 2;
-  const resolved = { ...latest, status: "resolved", verdict, winnerId, resolvedAt };
+  const resolved = withNextSpawn({ ...latest, status: "resolved", verdict, winnerId, resolvedAt });
   return {
     ...state,
     pacts: state.pacts.map((p) => (p.id === pactId ? resolved : p)),

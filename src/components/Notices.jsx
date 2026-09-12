@@ -9,6 +9,7 @@ const LABELS = {
   deadline: "deadline",
   appeal: "appeal",
   graded: "graded",
+  series: "series",
 };
 
 export default function Notices() {

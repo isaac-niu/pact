@@ -5,6 +5,7 @@ import Announcer from "../components/Announcer.jsx";
 import DeadlineBanner from "../components/DeadlineBanner.jsx";
 import { canFlagAppeal, canResolveAppeal } from "../lib/appeals.js";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
+import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 
 const STAMPS = {
@@ -182,6 +183,14 @@ export default function PactDetail() {
             <dt>Deadline</dt>
             <dd className={`tone-${tone}`}>{formatWhen(pact.deadline)}</dd>
           </div>
+          {normalizeCadence(pact.cadence) !== "none" ? (
+            <div>
+              <dt>Series</dt>
+              <dd>
+                {cadenceLabel(pact.cadence)} · streak {pact.streak || 0} · slip {pact.occurrence || 1}
+              </dd>
+            </div>
+          ) : null}
         </dl>
         <DeadlineBanner pactId={pact.id} />
       </article>

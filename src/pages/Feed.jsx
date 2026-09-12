@@ -6,6 +6,7 @@ import Glossary from "../components/Glossary.jsx";
 import DeadlineBanner from "../components/DeadlineBanner.jsx";
 import Notices from "../components/Notices.jsx";
 import { approachingDeadline } from "../lib/reminders.js";
+import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
@@ -125,6 +126,9 @@ export default function Feed() {
                     ) : null}
                     {" · "}
                     {pactVisibility(p)}
+                    {normalizeCadence(p.cadence) !== "none"
+                      ? ` · ${cadenceLabel(p.cadence)} · streak ${p.streak || 0}`
+                      : ""}
                   </div>
                 </div>
                 <div className="stake">

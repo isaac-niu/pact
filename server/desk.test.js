@@ -158,6 +158,51 @@ test("tickReminders writes one deadline notice per live slip in the window", asy
   assert.equal(second.result.created, 0);
 });
 
+test("resolved series slips spawn the next stake on the reminder tick", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "pass",
+    confidence: 0.95,
+    rationale: "gym",
+    source: "test",
+    auto: true,
+  }));
+  const now = Date.now();
+  let state = emptyDemoState(now);
+  const created = await desk.createPact(
+    state,
+    {
+      title: "Gym 3x",
+      criteria: "Selfie",
+      stake: 1,
+      opponentId: "friend",
+      cadence: "3x-week",
+      seriesUntil: now + 40 * 24 * 60 * 60 * 1000,
+    },
+    "you",
+  );
+  state = created.state;
+  assert.equal(created.result.cadence, "3x-week");
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const settled = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { dataUrl: "data:image/jpeg;base64,aa", name: "gym.jpg" },
+    "you",
+  );
+  state = settled.state;
+  assert.equal(settled.result.status, "resolved");
+  assert.ok(settled.result.nextSpawnAt);
+  const before = bankOf("you", state);
+  const ticked = await desk.tickReminders(state, settled.result.nextSpawnAt);
+  const child = ticked.state.pacts.find((p) => p.parentPactId === created.result.id);
+  assert.ok(child);
+  assert.equal(child.status, "open");
+  assert.equal(child.occurrence, 2);
+  assert.equal(child.streak, 1);
+  assert.equal(bankOf("you", ticked.state), before - 1);
+  assert.equal(ticked.result.spawned, 1);
+});
+
 test("createPact stores public vs private tape", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const pub = await desk.createPact(

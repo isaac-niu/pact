@@ -139,7 +139,7 @@ export function markAllNoticesRead(actorId) {
 export async function tickReminders(now) {
   const { state } = await loadState();
   const preview = await desk.tickReminders(structuredClone(state), now);
-  if (!preview.result?.created) {
+  if (!preview.result?.created && !preview.result?.spawned) {
     return { result: preview.result, state: publicState(state) };
   }
   return mutate((next) => desk.tickReminders(next, now));
