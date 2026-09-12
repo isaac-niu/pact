@@ -25,6 +25,8 @@ export default function PactDetail() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [localPreview, setLocalPreview] = useState("");
   const pact = pacts.find((p) => p.id === id);
 
   if (!pact) {
@@ -71,10 +73,21 @@ export default function PactDetail() {
     }
   }
 
-  async function onFile(e) {
-    const file = e.target.files?.[0];
+  async function takeFile(file) {
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Drop a photo (png, jpg, webp).");
+      return;
+    }
     setError("");
+    if (localPreview) URL.revokeObjectURL(localPreview);
+    try {
+      if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+        setLocalPreview(URL.createObjectURL(file));
+      }
+    } catch {
+      /* jsdom / old browsers */
+    }
     setBusy(true);
     try {
       await submitEvidence(pact.id, file);
@@ -83,6 +96,12 @@ export default function PactDetail() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function onFile(e) {
+    const file = e.target.files?.[0];
+    await takeFile(file);
+    e.target.value = "";
   }
 
   async function copyShare() {
@@ -148,15 +167,42 @@ export default function PactDetail() {
       <div className="detail-grid">
         <div className="card">
           <div className="kicker">Evidence</div>
-          {pact.evidenceUrl ? (
-            <img className="preview" src={pact.evidenceUrl} alt={pact.evidenceName || "Evidence"} />
+          {pact.evidenceUrl || localPreview ? (
+            <div className="proof-frame">
+              <img
+                className="preview"
+                src={pact.evidenceUrl || localPreview}
+                alt={pact.evidenceName || "Evidence"}
+              />
+              {pact.evidenceName ? <span className="proof-name">{pact.evidenceName}</span> : null}
+            </div>
           ) : (
             <p className="hint">No photo yet. Challenger drops a frame for Gemini Flash.</p>
           )}
           {canUpload ? (
-            <label className="file">
-              Upload photo
-              <input type="file" accept="image/*" onChange={onFile} disabled={busy} />
+            <label
+              className={`dropzone ${dragOver ? "is-over" : ""} ${busy ? "is-busy" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                takeFile(e.dataTransfer.files?.[0]);
+              }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                aria-label="Upload photo"
+                onChange={onFile}
+                disabled={busy}
+              />
+              <span className="dropzone-kicker">{busy ? "Sending to the desk…" : "Proof frame"}</span>
+              <span className="dropzone-title">Upload photo</span>
+              <span className="dropzone-hint">Drop an image here or click to browse. PNG, JPG, WebP.</span>
             </label>
           ) : null}
           {pact.status === "open" && userId === pact.creatorId ? (

@@ -862,6 +862,86 @@ select {
   padding: 8px;
 }
 
+.proof-frame {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  background: #0a0c08;
+  overflow: hidden;
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background:
+    linear-gradient(45deg, #1a1d14 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(-45deg, #1a1d14 25%, transparent 25%) 0 8px / 16px 16px,
+    #0c0e0a;
+}
+
+.proof-name {
+  display: block;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  border-top: 1px solid var(--line);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  background: var(--panel-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone:hover,
+.dropzone.is-over {
+  border-color: var(--lime);
+  background: #161c0e;
+}
+
+.dropzone.is-busy {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.dropzone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.dropzone {
+  position: relative;
+}
+
+.dropzone-kicker {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lime-dim);
+}
+
+.dropzone-title {
+  font-family: "Anton", "Barlow Condensed", "Barlow", sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.dropzone-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .hint {
   color: var(--muted);
   font-size: 13px;
