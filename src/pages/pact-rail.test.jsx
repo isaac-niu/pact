@@ -1,15 +1,43 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
-import { resetDesk } from "../api/local.js";
+import { replaceDesk, resetDesk } from "../api/local.js";
+import { emptyDemoState } from "../data/seed.js";
 import App from "../App.jsx";
 import PactDetail from "./PactDetail.jsx";
 import { PactProvider } from "../store.jsx";
+
+const LIVE_ID = "test-live-public";
+
+function livePublicPact(now = Date.now()) {
+  return {
+    id: LIVE_ID,
+    title: "I'll post proof",
+    criteria: "Photo of the work.",
+    stake: 2,
+    deadline: now + 8 * 60 * 60 * 1000,
+    creatorId: "you",
+    opponentId: "friend",
+    status: "accepted",
+    visibility: "public",
+    createdAt: now,
+    acceptedAt: now,
+    winnerId: null,
+    verdict: null,
+    evidenceUrl: null,
+    evidenceName: null,
+  };
+}
 
 describe("spectator rail tickets", () => {
   beforeEach(() => {
     localStorage.clear();
     resetDesk();
+    const base = emptyDemoState();
+    replaceDesk({
+      ...base,
+      pacts: [livePublicPact(), ...base.pacts],
+    });
   });
 
   it("shows rail money on the public tape and lets GALE lock a ticket", async () => {
@@ -28,7 +56,7 @@ describe("spectator rail tickets", () => {
 
   it("locks a rail ticket on a live public slip from the ticket", async () => {
     render(
-      <MemoryRouter initialEntries={["/pact/demo-review-standup"]}>
+      <MemoryRouter initialEntries={[`/pact/${LIVE_ID}`]}>
         <PactProvider>
           <Routes>
             <Route path="/pact/:id" element={<PactDetail />} />

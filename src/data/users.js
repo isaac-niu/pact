@@ -1,6 +1,6 @@
 export const USERS = [
   { id: "you", name: "Isaac", handle: "ISAAC", pill: "You", tag: "CHALLENGER" },
-  { id: "friend", name: "Maya", handle: "MAYA", pill: "Friend", tag: "COUNTERPARTY" },
+  { id: "friend", name: "Friend", handle: "FRIEND", pill: "Friend", tag: "COUNTERPARTY" },
   { id: "rail", name: "Gale", handle: "GALE", pill: "Rail", tag: "SPECTATOR" },
 ];
 

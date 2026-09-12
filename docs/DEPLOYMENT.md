@@ -152,7 +152,7 @@ Missing ElevenLabs / Mongo / Auth0 must not crash the process.
 
 ## Seed safety
 
-Browsers with empty `localStorage` get sample slips (ISAAC vs MAYA). That is per-browser, not a server database.
+Browsers with empty `localStorage` get the gym sample slip (ISAAC vs Friend). That is per-browser, not a server database.
 
 `npm run seed` **refuses** unless `DEMO_SEED=true`, and still refuses in `NODE_ENV=production` unless `DEMO_SEED_PRODUCTION=true`. It does not write Mongo.
 

@@ -53,7 +53,7 @@ describe("AuthenticatedPactDemo", () => {
         requested: false,
       },
     ];
-    const people = [{ id: "auth0|demo-maya", name: "MAYA", email: null }];
+    const people = [{ id: "auth0|demo-maya", name: "FRIEND", email: null }];
     api.mockImplementation(async (path, options = {}) => {
       if (path === "/api/auth/mock-login") {
         return {
@@ -105,7 +105,7 @@ describe("AuthenticatedPactDemo", () => {
 
     expect(await screen.findByRole("button", { name: "Sign in as ISAAC" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sign in to Pact" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sign in as MAYA" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in as FRIEND" })).toBeInTheDocument();
     expect(screen.queryByText("My pacts")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Sign in as ISAAC" }));

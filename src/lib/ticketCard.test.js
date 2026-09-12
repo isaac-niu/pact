@@ -15,7 +15,7 @@ describe("shareable ticket cards", () => {
     const gym = emptyDemoState().pacts.find((p) => p.id === "demo-settled-gym");
     const model = ticketCardModel(gym, { origin: "https://pact.example" });
     expect(model.challenger).toBe("ISAAC");
-    expect(model.friend).toBe("MAYA");
+    expect(model.friend).toBe("FRIEND");
     expect(model.winner).toBe("ISAAC");
     expect(model.pot).toBe(4);
     expect(model.url).toBe("https://pact.example/pact/demo-settled-gym");

@@ -24,7 +24,7 @@ describe("desk notices", () => {
     const n = acceptedNotice(pact, "friend", 100);
     expect(n.userId).toBe("you");
     expect(n.type).toBe(NOTICE_TYPES.ACCEPTED);
-    expect(n.body).toMatch(/MAYA accepted/);
+    expect(n.body).toMatch(/FRIEND accepted/);
     expect(acceptedNotice(pact, "you")).toBeNull();
   });
 

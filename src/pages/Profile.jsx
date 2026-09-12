@@ -98,7 +98,7 @@ export default function Profile() {
               {flash ? (
                 <p className="hint lime-hint">{flash}</p>
               ) : (
-                <p className="hint">Wipes this browser and reseeds the three demo slips.</p>
+                <p className="hint">Wipes this browser and reseeds the gym demo slip.</p>
               )}
             </>
           )}

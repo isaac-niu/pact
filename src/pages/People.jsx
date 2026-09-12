@@ -4,7 +4,7 @@ import { useLiveAccount } from "../auth/useLiveAccount.js";
 import { ActionStatus, FriendsList } from "../components/SocialForms.jsx";
 import { createSocialActions } from "../lib/socialActions.js";
 
-const DEMO_PEOPLE = [{ id: "auth0|demo-maya", name: "MAYA", email: null }];
+const DEMO_PEOPLE = [];
 
 export default function People() {
   const live = useLiveAccount();

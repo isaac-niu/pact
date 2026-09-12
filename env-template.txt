@@ -37,7 +37,7 @@ VITE_AUTH0_CALLBACK_URL=http://localhost:5173/callback
 VITE_API_URL=http://localhost:3001
 PORT=3001
 
-# --- Deterministic local QA (ISAAC / MAYA, in-memory Maps) ---
+# --- Deterministic local QA (ISAAC / FRIEND, in-memory Maps) ---
 # Leave this unset (or anything other than 1) for live Auth0 + Atlas.
 # PACT_MOCK_AUTH=1
 

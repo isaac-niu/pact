@@ -80,7 +80,7 @@ export default function Home() {
             </div>
           </div>
           <footer className="ticket-foot">
-            Friend (MAYA) must accept before the pot locks. Proof is any photo.
+            Friend must accept before the pot locks. Proof is any photo.
           </footer>
         </article>
 

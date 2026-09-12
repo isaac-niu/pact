@@ -164,20 +164,14 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      if (parsed.seedVersion !== SEED_VERSION) {
+        return emptyDemoState();
+      }
       return normalize(parsed);
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
-      const parsed = JSON.parse(legacy);
-      const pacts = Array.isArray(parsed.pacts) ? parsed.pacts.map(upgradePact) : [];
-      return normalize({
-        userId: parsed.userId,
-        seedVersion: SEED_VERSION,
-        startingBank: STARTING_BANK,
-        pacts,
-        events: eventsFromLegacy(pacts),
-        ledger: ledgerFromLegacy(pacts),
-      });
+      return emptyDemoState();
     }
     return emptyDemoState();
   } catch {
@@ -244,6 +238,14 @@ export function switchUser(id) {
 
 export function resetDesk() {
   persist(emptyDemoState());
+}
+
+export function reloadDesk() {
+  persist(loadState());
+}
+
+export function replaceDesk(next) {
+  persist(normalize(next));
 }
 
 function readFileAsDataUrl(file) {

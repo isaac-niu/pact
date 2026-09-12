@@ -68,7 +68,7 @@ describe("createSocialActions", () => {
     const setStatus = vi.fn();
     const setGroups = vi.fn((update) => (typeof update === "function" ? update([]) : update));
     const setPeople = vi.fn((update) =>
-      typeof update === "function" ? update([{ id: "maya", name: "MAYA" }]) : update,
+      typeof update === "function" ? update([{ id: "friend", name: "FRIEND" }]) : update,
     );
     const actions = createSocialActions({
       tokenOf: async () => "token",
@@ -94,7 +94,7 @@ describe("createSocialActions", () => {
     await actions.joinWithCode({ preventDefault() {}, currentTarget: joinForm });
     expect(setStatus).toHaveBeenCalledWith({ tone: "ok", text: "Requested." });
 
-    await actions.addFriend("maya");
+    await actions.addFriend("friend");
     expect(setStatus).toHaveBeenCalledWith({ tone: "ok", text: "Friend added." });
   });
 });

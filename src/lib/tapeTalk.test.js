@@ -69,11 +69,27 @@ describe("tape talk", () => {
 
   it("keeps private marks off a stranger's chatter", () => {
     const seeded = emptyDemoState();
+    const privatePact = {
+      id: "test-private-run",
+      title: "Private run",
+      creatorId: "you",
+      opponentId: "friend",
+      status: "open",
+      visibility: "private",
+    };
+    const state = {
+      ...seeded,
+      pacts: [privatePact, ...seeded.pacts],
+      events: [
+        { id: "ev-run-post", pactId: privatePact.id, type: "posted", actorId: "you", at: Date.now() },
+        ...seeded.events,
+      ],
+    };
     expect(() =>
-      applyReaction(seeded, { eventId: "ev-run-post", emoji: "🔥", actorId: "stranger", uid }),
+      applyReaction(state, { eventId: "ev-run-post", emoji: "🔥", actorId: "stranger", uid }),
     ).toThrow(/off your tape/);
     expect(() =>
-      applyComment(seeded, { eventId: "ev-run-post", body: "nice", actorId: "stranger", uid }),
+      applyComment(state, { eventId: "ev-run-post", body: "nice", actorId: "stranger", uid }),
     ).toThrow(/off your tape/);
   });
 });
