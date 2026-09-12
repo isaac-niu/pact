@@ -1,0 +1,9 @@
+# PACT environment variable template
+# Copy to .env or .env.local and fill in values.
+# Do NOT commit real secrets.
+
+AUTH0_DOMAIN=
+AUTH0_CLIENT_ID=
+ATLAS_URI=
+API_URL=http://localhost:3001
+PORT=3001
