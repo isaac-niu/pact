@@ -52,6 +52,20 @@ describe("validateServerEnv", () => {
     expect(() => validateEnv()).not.toThrow();
    });
 
+  it("fails clearly when AUTH0_AUDIENCE is missing a colon", async () => {
+    process.env.AUTH0_DOMAIN = "example.auth0.com";
+    process.env.AUTH0_CLIENT_ID = "abc123";
+    process.env.AUTH0_CLIENT_SECRET = "secret";
+    process.env.AUTH0_AUDIENCE = "https//localhost";
+    process.env.AUTH0_SECRET = "session-secret";
+    process.env.MONGODB_URI = "mongodb://localhost:27017";
+    process.env.MONGODB_DB_NAME = "pact";
+
+    const { validateEnv } = await import("./env.js");
+    expect(() => validateEnv()).toThrow(/malformed/);
+    expect(() => validateEnv()).toThrow(/https:\/\/pact-api/);
+   });
+
   it("treats empty strings as missing", async () => {
     process.env.AUTH0_DOMAIN = "";
     process.env.AUTH0_CLIENT_ID = "abc";
@@ -80,6 +94,20 @@ describe("clientEnvReady", () => {
     expect(ready).toBe(false);
     expect(message).toContain("VITE_AUTH0_CLIENT_ID");
    });
+
+  it("returns not ready when VITE_AUTH0_AUDIENCE is missing", async () => {
+    const { clientEnvReady } = await import("./env.js");
+    const { ready, message } = clientEnvReady();
+    expect(ready).toBe(false);
+    expect(message).toContain("VITE_AUTH0_AUDIENCE");
+   });
+});
+
+describe("validateAuth0Audience", () => {
+  it("accepts the documented https://pact-api identifier", async () => {
+    const { validateAuth0Audience } = await import("./env.js");
+    expect(validateAuth0Audience("https://pact-api")).toBe("https://pact-api");
+  });
 });
 
 describe("getViteEnv", () => {

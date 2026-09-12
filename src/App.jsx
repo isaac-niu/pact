@@ -5,6 +5,7 @@ import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
 import PactDetail from "./pages/PactDetail.jsx";
 import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
+import Callback from "./pages/Callback.jsx";
 
 function Switcher() {
   const { userId, switchUser } = usePact();
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/pact/:id" element={<PactDetail />} />
         <Route path="/app" element={<AuthenticatedPactDemo />} />
+        <Route path="/callback" element={<Callback />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

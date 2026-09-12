@@ -8,12 +8,6 @@
  *   - No secret values (API keys, connection strings) are ever written to
  *     tracked files.  They live only in `.env` / `.env.local` which are
  *     git-ignored.
- *
- * Usage in the app:
- *   import { env } from "./env.js";
- *   const domain = env.AUTH0_DOMAIN;          // throws if missing
- *   const clientId = env.AUTH0_CLIENT_ID;     // throws if missing
- *   const apiUrl = env.API_URL ?? "http://localhost:3001";
  */
 
 const REQUIRED = [
@@ -26,12 +20,57 @@ const REQUIRED = [
   "MONGODB_DB_NAME",
 ];
 
+export const AUTH0_CALLBACK_URL = "http://localhost:5173/callback";
+export const AUTH0_LOGOUT_URL = "http://localhost:5173";
+export const AUTH0_ORIGIN = "http://localhost:5173";
+export const RECOMMENDED_AUTH0_AUDIENCE = "https://pact-api";
+
 /**
  * Read a single VITE_ env var. Returns undefined when absent.
  */
 export function getViteEnv(key) {
   const value = (import.meta.env ?? {})[`VITE_${key}`];
   return value === undefined ? undefined : String(value);
+}
+
+export function isMockAuth(environment = process.env) {
+  return environment.PACT_MOCK_AUTH === "1";
+}
+
+/**
+ * Reject the common localhost footgun (`https//localhost`, missing `:`)
+ * and other broken schemes. Prefer a stable API identifier such as
+ * `https://pact-api` — never bake a tenant-specific secret audience here.
+ */
+export function validateAuth0Audience(audience) {
+  const value = typeof audience === "string" ? audience.trim() : "";
+  if (!value) {
+    throw new Error(
+      "AUTH0_AUDIENCE is required. Use a stable API identifier such as https://pact-api, not a malformed value like https//localhost.",
+    );
+  }
+
+  if (/https?\/\//i.test(value) && !/^https?:\/\//i.test(value)) {
+    throw new Error(
+      `AUTH0_AUDIENCE looks malformed (${value}). Missing ':' after the URL scheme. ` +
+        `Use a stable API identifier such as ${RECOMMENDED_AUTH0_AUDIENCE}, not https//localhost.`,
+    );
+  }
+
+  if (/https?\/\//i.test(value)) {
+    throw new Error(
+      `AUTH0_AUDIENCE looks malformed (${value}). Missing ':' after the URL scheme. ` +
+        `Use a stable API identifier such as ${RECOMMENDED_AUTH0_AUDIENCE}, not https//localhost.`,
+    );
+  }
+
+  if (/^https?:[^/]/i.test(value)) {
+    throw new Error(
+      `AUTH0_AUDIENCE looks malformed (${value}). Expected a URI such as ${RECOMMENDED_AUTH0_AUDIENCE}.`,
+    );
+  }
+
+  return value;
 }
 
 /**
@@ -51,10 +90,12 @@ export function validateServerEnv(environment = process.env) {
       ...missing.map((k) => `  - ${k}`),
       "",
       "Create a .env file (or .env.local for dev) with these values.",
-      "See .env.example for a template.",
+      "See env-template.txt for a template.",
     ].join("\n");
     throw new Error(msg);
   }
+
+  validateAuth0Audience(environment.AUTH0_AUDIENCE);
 }
 
 // Retained as a small compatibility alias while the backend is introduced.
@@ -67,24 +108,28 @@ export const validateEnv = validateServerEnv;
 export const env = {
   AUTH0_DOMAIN: getViteEnv("AUTH0_DOMAIN"),
   AUTH0_CLIENT_ID: getViteEnv("AUTH0_CLIENT_ID"),
+  AUTH0_AUDIENCE: getViteEnv("AUTH0_AUDIENCE"),
+  AUTH0_CALLBACK_URL: getViteEnv("AUTH0_CALLBACK_URL") || AUTH0_CALLBACK_URL,
   API_URL: getViteEnv("API_URL"),
 };
 
 /**
- * Check whether the client-side env is fully configured.
+ * Check whether the client-side env is fully configured for live Auth0.
  * Returns a human-readable message when something is missing.
  */
 export function clientEnvReady() {
   const missing = [];
   if (!env.AUTH0_DOMAIN) missing.push("VITE_AUTH0_DOMAIN");
   if (!env.AUTH0_CLIENT_ID) missing.push("VITE_AUTH0_CLIENT_ID");
+  if (!env.AUTH0_AUDIENCE) missing.push("VITE_AUTH0_AUDIENCE");
 
   if (missing.length > 0) {
     return {
       ready: false,
       message:
         `Missing client env vars: ${missing.join(", ")}. ` +
-        "Set them in .env and restart the dev server.",
+        "Set them in .env and restart the Vite dev server. " +
+        `VITE_AUTH0_AUDIENCE should match AUTH0_AUDIENCE (recommended: ${RECOMMENDED_AUTH0_AUDIENCE}).`,
     };
   }
   return { ready: true, message: null };
