@@ -1,5 +1,5 @@
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
 import { api } from "./api.js";
@@ -14,6 +14,10 @@ import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 import People from "./pages/People.jsx";
 import Crew from "./pages/Crew.jsx";
+
+// The Solana wallet-adapter stack is a few hundred KB the app never needs
+// outside this one page — load it only when someone actually visits /wallet.
+const Wallet = lazy(() => import("./pages/Wallet.jsx"));
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -139,6 +143,7 @@ function Shell({ children }) {
           </NavLink>
           <NavLink to="/people">People</NavLink>
           <NavLink to="/crew">Crew</NavLink>
+          <NavLink to="/wallet">Wallet</NavLink>
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/app">Pact app</NavLink>
         </nav>
@@ -163,6 +168,14 @@ export default function App() {
         <Route path="/me" element={<Profile />} />
         <Route path="/people" element={<People />} />
         <Route path="/crew" element={<Crew />} />
+        <Route
+          path="/wallet"
+          element={
+            <Suspense fallback={<p className="hint">Loading wallet…</p>}>
+              <Wallet />
+            </Suspense>
+          }
+        />
         <Route path="/profile" element={<Navigate to="/me" replace />} />
         <Route path="/app" element={<AuthenticatedPactDemo />} />
         <Route path="/callback" element={<Callback />} />
