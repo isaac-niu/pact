@@ -68,7 +68,8 @@ describe("signed-in Write", () => {
 
   it("keeps the unsigned desk aimed at FRIEND", () => {
     renderWrite();
-    expect(screen.getByText("FRIEND")).toBeInTheDocument();
+    expect(screen.getAllByText("FRIEND").length).toBeGreaterThan(0);
+    expect(screen.getByText("Friend · 1v1 on this desk")).toBeInTheDocument();
     expect(screen.queryByLabelText("Signed-in friend")).not.toBeInTheDocument();
   });
 
