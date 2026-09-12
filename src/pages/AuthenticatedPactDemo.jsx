@@ -21,7 +21,7 @@ function clientLogoutUrl() {
 
 const MOCK_PEOPLE = {
   isaac: { name: "ISAAC", id: "auth0|demo-isaac", opponent: "auth0|demo-maya" },
-  maya: { name: "MAYA", id: "auth0|demo-maya", opponent: "auth0|demo-isaac" },
+  friend: { name: "FRIEND", id: "auth0|demo-maya", opponent: "auth0|demo-isaac" },
 };
 
 function PactDesk({
@@ -305,7 +305,7 @@ function MockPactDesk() {
     return (
       <section className="card">
         <h2>Sign in to Pact</h2>
-        <p>Protected pact data is hidden until you sign in. Mock mode uses ISAAC and MAYA.</p>
+        <p>Protected pact data is hidden until you sign in. Mock mode uses ISAAC and FRIEND.</p>
         <div className="auth-actions">
           {Object.entries(MOCK_PEOPLE).map(([key, person]) => (
             <button
@@ -622,7 +622,7 @@ export default function AuthenticatedPactDemo() {
         <h2>API unreachable</h2>
         <p>
           Start the backend with <code>npm run server</code> (live Auth0 + Atlas) or{" "}
-          <code>PACT_MOCK_AUTH=1 npm run server</code> for ISAAC/MAYA.
+          <code>PACT_MOCK_AUTH=1 npm run server</code> for ISAAC/FRIEND.
         </p>
       </section>
     );

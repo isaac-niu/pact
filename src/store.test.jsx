@@ -29,7 +29,7 @@ describe("PactProvider", () => {
       wrapper: PactProvider,
     });
     expect(result.current.opponent.id).toBe("friend");
-    expect(result.current.opponent.handle).toBe("MAYA");
+    expect(result.current.opponent.handle).toBe("FRIEND");
   });
 
   it("switches user between 'you' and 'friend'", () => {
@@ -148,6 +148,20 @@ describe("PactProvider", () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,
     });
+
+    await act(async () => {
+      await result.current.createPact({
+        title: "Soon",
+        criteria: "Show a photo of the thing.",
+        stake: 1,
+      });
+    });
+    const id = result.current.pacts.find((p) => p.title === "Soon").id;
+    act(() => result.current.switchUser("friend"));
+    await act(async () => {
+      await result.current.acceptPact(id);
+    });
+    act(() => result.current.switchUser("you"));
 
     expect(result.current.unreadNotices).toBeGreaterThan(0);
     const first = result.current.notices.find((n) => !n.readAt);

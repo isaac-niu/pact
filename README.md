@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. No `.env` required for the local desk. Switch **You (ISAAC)** / **Friend (MAYA)** in the top-right.
+Open `http://localhost:5173`. No `.env` required for the local desk. Switch **You (ISAAC)** / **Friend** in the top-right.
 
 Optional second terminal for the Person D Node desk (Vite proxies `/api/desk` and `/healthz`):
 
@@ -34,7 +34,7 @@ npm start
 
 ## 60-second click-through
 
-1. **Write** a slip: “I'll upload a gym selfie”, 2 SOL, Friend (MAYA).
+1. **Write** a slip: “I'll upload a gym selfie”, 2 SOL, Friend.
 2. Switch to **Friend** → **Accept**.
 3. Switch back to **You**. Upload a gym photo. Gemini (or mock) should **PASS** and ISAAC takes the pot.
 4. Repeat with a cat photo against a gym goal. Fail or **REVIEW**. If **REVIEW**, switch to Friend and tap **Friend: pass** or **Friend: fail**.
@@ -48,7 +48,7 @@ npm start
 | `/feed` | Event tape + slips |
 | `/pact/:id` | Ticket, evidence, verdict |
 | `/me` | Profile, rate, virtual SOL bank |
-| `/app` | Authenticated Auth0 / mock ISAAC-MAYA desk |
+| `/app` | Authenticated Auth0 / mock ISAAC-FRIEND desk |
 | `/callback` | Auth0 return route |
 
 ## Scripts
@@ -64,6 +64,7 @@ npm start
 | `npm run server` | Person B Auth0/Mongo API on port 3001 |
 | `npm run smoke` | Deploy smoke script |
 | `npm run seed` | Demo seed (`DEMO_SEED=true`) |
+| `npm run soft-reset` | One-shot Atlas cleanup (`SOFT_RESET=1`, `MONGODB_URI`) — test-named groups/pacts only |
 
 ## Person C referee
 
@@ -83,7 +84,7 @@ If `MONGODB_URI` is set, proof lands in **GridFS** (`evidence` bucket) and the v
 
 | Mode | How to start the API | Browser sign-in | Persistence |
 |------|----------------------|-----------------|-------------|
-| Mock | `PACT_MOCK_AUTH=1 npm run server` | ISAAC / MAYA buttons on `/app` | In-memory Maps |
+| Mock | `PACT_MOCK_AUTH=1 npm run server` | ISAAC / FRIEND buttons on `/app` | In-memory Maps |
 | Live | `npm run server` (do **not** set `PACT_MOCK_AUTH=1`) | Auth0 Universal Login | MongoDB Atlas |
 
 Create `.env` from `.env.example` or `env-template.txt`. **Never commit real secrets.**

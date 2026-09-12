@@ -118,7 +118,7 @@ export function createPactRequestHandler(options = {}) {
       }
       const body = await bodyOf(req);
       const demo = mockLoginUser(body?.as);
-      if (!demo) return send(res, 400, { error: "Choose isaac or maya" });
+      if (!demo) return send(res, 400, { error: "Choose isaac or friend" });
       const user = await store.getUserById(demo.id);
       return send(res, 200, { token: `mock-${user.id}`, user: publicUser(user) });
     }

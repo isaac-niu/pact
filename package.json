@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "server": "node src/backend/server.js",
     "smoke": "node scripts/smoke.mjs",
-    "seed": "node scripts/seed-demo.mjs"
+    "seed": "node scripts/seed-demo.mjs",
+    "soft-reset": "node scripts/soft-reset.mjs"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.24.1",

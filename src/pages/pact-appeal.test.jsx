@@ -1,13 +1,44 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
-import { resetDesk } from "../api/local.js";
+import { replaceDesk, resetDesk } from "../api/local.js";
+import { emptyDemoState } from "../data/seed.js";
 import PactDetail from "./PactDetail.jsx";
 import { PactProvider } from "../store.jsx";
 
+const REVIEW_ID = "demo-review-appeal";
+
+function reviewPact(now = Date.now()) {
+  return {
+    id: REVIEW_ID,
+    title: "I'll upload a gym selfie",
+    criteria: "Face or body in frame with gym floor or equipment visible.",
+    stake: 1,
+    deadline: now + 8 * 60 * 60 * 1000,
+    creatorId: "friend",
+    opponentId: "you",
+    status: "review",
+    evidenceUrl: null,
+    evidenceName: "gym-floor.jpg",
+    verdict: {
+      result: "review",
+      confidence: 0.61,
+      rationale: "Notes are in frame but the date is hard to read. Friend should confirm.",
+      source: "gemini",
+      auto: false,
+    },
+    winnerId: null,
+    visibility: "public",
+    createdAt: now - 9 * 60 * 60 * 1000,
+    acceptedAt: now - 8 * 60 * 60 * 1000,
+    provedAt: now - 25 * 60 * 1000,
+    resolvedAt: null,
+  };
+}
+
 function renderTicket() {
   return render(
-    <MemoryRouter initialEntries={["/pact/demo-review-standup"]}>
+    <MemoryRouter initialEntries={[`/pact/${REVIEW_ID}`]}>
       <PactProvider>
         <Routes>
           <Route path="/pact/:id" element={<PactDetail />} />
@@ -21,6 +52,31 @@ describe("REVIEW appeal on a ticket", () => {
   beforeEach(() => {
     localStorage.clear();
     resetDesk();
+    const base = emptyDemoState();
+    const review = reviewPact();
+    replaceDesk({
+      ...base,
+      pacts: [review, ...base.pacts],
+      events: [
+        {
+          id: "ev-rev-pro",
+          pactId: review.id,
+          type: "proved",
+          actorId: review.creatorId,
+          at: review.provedAt,
+          note: review.evidenceName,
+        },
+        {
+          id: "ev-rev-rev",
+          pactId: review.id,
+          type: "review",
+          actorId: review.opponentId,
+          at: review.provedAt + 1000,
+          note: "Gemini unsure — friend verifies",
+        },
+        ...base.events,
+      ],
+    });
   });
 
   it("shows Gemini rationale to the listed friend and requires a written grade", async () => {

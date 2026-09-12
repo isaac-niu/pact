@@ -9,8 +9,10 @@ describe("auth helpers", () => {
     expect(readBearerToken({ headers: { authorization: "Token abc" } })).toBeNull();
   });
 
-  it("exposes the ISAAC/MAYA mock identities", () => {
+  it("exposes the ISAAC/FRIEND mock identities", () => {
     expect(mockLoginUser("isaac").name).toBe("ISAAC");
+    expect(mockLoginUser("friend").name).toBe("FRIEND");
+    expect(mockLoginUser("friend").id).toBe("auth0|demo-maya");
     expect(mockLoginUser("maya").id).toBe("auth0|demo-maya");
     expect(mockLoginUser("carol")).toBeNull();
   });

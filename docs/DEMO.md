@@ -8,7 +8,7 @@
 
 Do **not** say Venmo + Twitter + gambling. Stakes are **virtual SOL**.
 
-Use two demo users already in the top-right pill: **You (ISAAC)** and **Friend (MAYA)**. No Auth0 required for this POC.
+Use two demo users already in the top-right pill: **You (ISAAC)** and **Friend**. No Auth0 required for this POC.
 
 ---
 
@@ -21,8 +21,6 @@ Open the live URL (or localhost). Home: “Bet on the version of you that shows 
 Click **View the board**. First visit is pre-seeded so judges never see an empty feed:
 
 - Settled gym selfie (ISAAC won)
-- Live LeetCode slip
-- Open 5K slip
 
 Click the settled gym slip so they see a ticket, not a form.
 
@@ -34,7 +32,7 @@ Click **Write slip** (or **Open a pact**).
 
 Leave the default challenge or type: “I’ll upload a gym selfie.” Stake **2** SOL. Click **Post to the board**.
 
-**Say:** “ISAAC just posted a 1v1 commitment. MAYA has to accept before the pot locks.”
+**Say:** “ISAAC just posted a 1v1 commitment. Friend has to accept before the pot locks.”
 
 Switcher → **Friend**. Click **Accept · 2.00 SOL**. Pot shows **4.00 SOL**.
 
@@ -76,7 +74,7 @@ Stop talking. Ask for questions.
 
 ## Backup paths (practice these once)
 
-**Auth0 login fails / not built:** stay on the ISAAC/MAYA switcher. That is the demo.
+**Auth0 login fails / not built:** stay on the You / Friend switcher. That is the demo.
 
 **No Gemini key:** mocked referee. Have a photo already on disk. Do not wait on Wi‑Fi to an AI studio page.
 
@@ -99,7 +97,7 @@ Stop talking. Ask for questions.
 | Pill | Handle | Role |
 | --- | --- | --- |
 | You | ISAAC | Challenger (writes slip, uploads proof) |
-| Friend | MAYA | Counterparty (accepts, matches stake) |
+| Friend | FRIEND | Counterparty (accepts, matches stake) |
 
 When Auth0 exists: two seeded logins from Person B. Until then, the pill is the two accounts.
 
