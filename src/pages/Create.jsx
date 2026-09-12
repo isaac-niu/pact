@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePact } from "../store.jsx";
 import { api } from "../api.js";
-import { clientEnvReady, env } from "../env.js";
+import { useLiveAccount } from "../auth/useLiveAccount.js";
+import { clientEnvReady } from "../env.js";
 import { defaultDeadline, localInputValue, sol } from "../lib/format.js";
+import { DESK_OPPONENT, liveActor } from "../lib/livePacts.js";
 import { cadenceLabel, defaultSeriesUntil } from "../lib/recurring.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
@@ -12,13 +13,10 @@ const LAMPORTS_PER_SOL = 1_000_000_000;
 export default function Create() {
   const { createPact, user, opponent, bank } = usePact();
   // Auth0Provider only mounts here once Auth0 env vars are configured (see
-  // AuthGate). Without it useAuth0() safely returns a stub context frozen
-  // at isAuthenticated: false / isLoading: true — so gate on env readiness
-  // too, or "Sign in" would render forever disabled with no explanation,
-  // and calling its stub loginWithRedirect would throw.
+  // AuthGate). Without it the optional hook stays signed out, so the unsigned
+  // You↔Friend desk still posts a localStorage slip.
   const authConfigured = clientEnvReady().ready;
-  const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, loginWithRedirect } =
-    useAuth0();
+  const live = useLiveAccount();
   const navigate = useNavigate();
   const [title, setTitle] = useState("I'll upload a gym selfie");
   const [criteria, setCriteria] = useState(
@@ -30,49 +28,32 @@ export default function Create() {
   const [seriesUntil, setSeriesUntil] = useState(localInputValue(defaultSeriesUntil()));
   const [visibility, setVisibility] = useState("public");
   const [destination, setDestination] = useState("desk"); // "desk" | "group"
-  const [groups, setGroups] = useState([]);
-  const [myId, setMyId] = useState(null);
   const [groupId, setGroupId] = useState("");
-  const [groupsError, setGroupsError] = useState("");
+  const [liveOpponentId, setLiveOpponentId] = useState(DESK_OPPONENT);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const amount = Number(stake);
   const pot = Number.isFinite(amount) ? amount * 2 : 0;
-  const opponentId = opponent.id;
-
-  const tokenOf = useCallback(
-    () => getAccessTokenSilently({ authorizationParams: { audience: env.AUTH0_AUDIENCE } }),
-    [getAccessTokenSilently],
-  );
+  const liveTargets = live.friends.friends?.length ? live.friends.friends : live.people;
+  const postingLive = Boolean(live.live && destination === "desk" && liveOpponentId !== DESK_OPPONENT);
+  const friendName = postingLive ? liveActor(liveOpponentId, liveTargets).handle : opponent.handle;
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setGroups([]);
-      setMyId(null);
-      return undefined;
+    if (!live.live) {
+      setLiveOpponentId(DESK_OPPONENT);
+      return;
     }
-    let active = true;
-    (async () => {
-      try {
-        const token = await tokenOf();
-        const [identity, myGroups] = await Promise.all([
-          api("/api/auth/me", { token }),
-          api("/api/groups", { token }),
-        ]);
-        if (!active) return;
-        setMyId(identity.id);
-        setGroups(myGroups.filter((g) => g.memberIds?.includes(identity.id)));
-      } catch (err) {
-        if (active) setGroupsError(err.message || "Could not load your groups");
+    const targets = live.friends.friends?.length ? live.friends.friends : live.people;
+    setLiveOpponentId((current) => {
+      if (current !== DESK_OPPONENT && targets.some((person) => person.id === current)) {
+        return current;
       }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticated, tokenOf]);
+      return targets[0]?.id || DESK_OPPONENT;
+    });
+  }, [live.live, live.friends.friends, live.people]);
 
-  const myGroups = groups.filter((g) => !myId || g.memberIds?.includes(myId));
+  const myGroups = live.groups.filter((g) => !live.me?.id || g.memberIds?.includes(live.me.id));
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -81,7 +62,7 @@ export default function Create() {
     try {
       if (destination === "group") {
         if (!groupId) throw new Error("Pick a group to send this slip to");
-        const token = await tokenOf();
+        const token = await live.tokenOf();
         await api("/api/pacts", {
           token,
           method: "POST",
@@ -94,12 +75,32 @@ export default function Create() {
         navigate("/app");
         return;
       }
+      if (postingLive) {
+        if (!liveOpponentId || liveOpponentId === DESK_OPPONENT) {
+          throw new Error("Pick a signed-in friend");
+        }
+        const token = await live.tokenOf();
+        const pact = await api("/api/pacts", {
+          token,
+          method: "POST",
+          body: {
+            title,
+            criteria,
+            stakeLamports: Math.round(amount * LAMPORTS_PER_SOL),
+            opponentId: liveOpponentId,
+            deadline: new Date(deadline).getTime(),
+            visibility,
+          },
+        });
+        navigate(`/pact/${pact.id}`);
+        return;
+      }
       const pact = await createPact({
         title,
         criteria,
         stake: amount,
         deadline: new Date(deadline).getTime(),
-        opponentId,
+        opponentId: opponent.id,
         visibility,
         cadence,
         seriesUntil: cadence === "none" ? null : new Date(seriesUntil).getTime(),
@@ -171,7 +172,7 @@ export default function Create() {
               <select
                 value={cadence}
                 onChange={(e) => setCadence(e.target.value)}
-                disabled={destination === "group"}
+                disabled={destination === "group" || postingLive}
               >
                 <option value="none">One-off</option>
                 <option value="daily">Daily</option>
@@ -186,7 +187,7 @@ export default function Create() {
                 type="datetime-local"
                 value={seriesUntil}
                 onChange={(e) => setSeriesUntil(e.target.value)}
-                disabled={destination === "group" || cadence === "none"}
+                disabled={destination === "group" || postingLive || cadence === "none"}
               />
             </label>
           </div>
@@ -203,8 +204,12 @@ export default function Create() {
                   onChange={() => setDestination("desk")}
                 />
                 <span>
-                  <b>{opponent.handle}</b>
-                  <em>{opponent.pill} · 1v1 on this desk</em>
+                  <b>{friendName}</b>
+                  <em>
+                    {postingLive
+                      ? "Signed-in friend · live 1v1"
+                      : `${opponent.pill} · 1v1 on this desk`}
+                  </em>
                 </span>
               </label>
               <label className={`opp-card ${destination === "group" ? "on" : ""}`}>
@@ -231,7 +236,7 @@ export default function Create() {
                   Groups need Auth0 configured on this desk (see <code>env-template.txt</code>) —
                   not available on this run.
                 </p>
-              ) : !isAuthenticated ? (
+              ) : !live.live ? (
                 <div className="opp-card">
                   <span>
                     <b>Sign in required</b>
@@ -240,15 +245,15 @@ export default function Create() {
                   <button
                     className="btn btn-ghost"
                     type="button"
-                    disabled={authLoading}
-                    onClick={() => loginWithRedirect({ appState: { returnTo: "/create" } })}
+                    disabled={live.isLoading}
+                    onClick={() => live.loginWithRedirect({ appState: { returnTo: "/create" } })}
                   >
                     Sign in
                   </button>
                 </div>
               ) : myGroups.length === 0 ? (
                 <p className="hint">
-                  {groupsError ||
+                  {live.error ||
                     "You're not in a group yet. Create or join one in the Pact app, then come back here."}
                 </p>
               ) : (
@@ -294,20 +299,74 @@ export default function Create() {
                   />
                   <span>
                     <b>Private tape</b>
-                    <em>Only you and {opponent.handle} see this slip.</em>
+                    <em>Only you and {friendName} see this slip.</em>
                   </span>
                 </label>
               </div>
             </fieldset>
           )}
 
+          {destination === "desk" ? (
+            <fieldset className="opp-field">
+              <legend>Friend</legend>
+              {!authConfigured ? (
+                <p className="hint">
+                  This desk posts to {opponent.handle}. Configure Auth0 to challenge a signed-in
+                  friend.
+                </p>
+              ) : !live.live ? (
+                <div className="opp-card">
+                  <span>
+                    <b>This desk · {opponent.handle}</b>
+                    <em>Sign in to pick a real friend instead of the You/Friend switcher.</em>
+                  </span>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    disabled={live.isLoading}
+                    onClick={() => live.loginWithRedirect({ appState: { returnTo: "/create" } })}
+                  >
+                    Sign in
+                  </button>
+                </div>
+              ) : (
+                <label>
+                  Challenge
+                  <select
+                    value={liveOpponentId}
+                    onChange={(e) => setLiveOpponentId(e.target.value)}
+                    aria-label="Signed-in friend"
+                  >
+                    {liveTargets.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name || person.email || "Friend"}
+                        {person.email && person.name ? ` · ${person.email}` : ""}
+                      </option>
+                    ))}
+                    <option value={DESK_OPPONENT}>This desk · {opponent.handle}</option>
+                  </select>
+                  <span className="hint">
+                    {liveTargets.length
+                      ? live.friends.friends?.length
+                        ? "Live 1v1 — they accept on their Pact app or this ticket."
+                        : "No friends yet — these are people who have signed in. Add one on People, or keep this desk."
+                      : live.error ||
+                        "No signed-in friends yet. Add one on People, or keep this desk's Friend."}
+                  </span>
+                </label>
+              )}
+            </fieldset>
+          ) : null}
+
           {error ? <p className="err">{error}</p> : null}
           <p className="hint">
             {destination === "group"
               ? `Posting as the group's stake — everyone in the group sees this slip once it's up.`
-              : `${user.handle} posts a slip. ${opponent.handle} must accept and match ${sol(
-                  amount || 0,
-                )} SOL. Bank ${sol(bank)} SOL. Stakes are virtual SOL on this desk.`}
+              : postingLive
+                ? `${live.me?.name || user.handle} posts a live 1v1. ${friendName} accepts on their Pact app or this ticket, then you upload proof on Tape.`
+                : `${user.handle} posts a slip. ${opponent.handle} must accept and match ${sol(
+                    amount || 0,
+                  )} SOL. Bank ${sol(bank)} SOL. Stakes are virtual SOL on this desk.`}
           </p>
           <button className="btn btn-lime" type="submit" disabled={busy}>
             Post to the board
@@ -334,7 +393,7 @@ export default function Create() {
         <div className="vs compact">
           <div className="side">
             <div className="odds-label">Challenger</div>
-            <div className="side-name">{user.handle}</div>
+            <div className="side-name">{postingLive ? live.me?.name || user.handle : user.handle}</div>
           </div>
           <div className="vs-mark">VS</div>
           <div className="side">
@@ -342,7 +401,7 @@ export default function Create() {
             <div className="side-name">
               {destination === "group"
                 ? myGroups.find((g) => g.id === groupId)?.name || "—"
-                : opponent.handle}
+                : friendName}
             </div>
           </div>
         </div>

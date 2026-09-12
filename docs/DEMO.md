@@ -99,7 +99,7 @@ Stop talking. Ask for questions.
 | You | ISAAC | Challenger (writes slip, uploads proof) |
 | Friend | FRIEND | Counterparty (accepts, matches stake) |
 
-When Auth0 exists: two seeded logins from Person B. Until then, the pill is the two accounts.
+When Auth0 exists: two seeded logins from Person B. Sign in on `/`, Write a slip to that friend (not the You/Friend switcher), they accept on `/app` or the ticket, then open Tape and upload — Gemini Flash grades the live 1v1. Until then, the pill is the two accounts.
 
 ---
 

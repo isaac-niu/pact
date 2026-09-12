@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { usePact, userById } from "../store.jsx";
+import { useLivePacts } from "../auth/useLivePacts.js";
+import { usePact } from "../store.jsx";
 import Announcer from "../components/Announcer.jsx";
 import DeadlineBanner from "../components/DeadlineBanner.jsx";
 import { canFlagAppeal, canResolveAppeal } from "../lib/appeals.js";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
+import { eventsFromLivePact, liveActor, toDeskPact } from "../lib/livePacts.js";
 import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
@@ -32,15 +34,28 @@ function sourceLabel(verdict) {
 export default function PactDetail() {
   const { id } = useParams();
   const { pacts, events, userId, acceptPact, submitEvidence, verifyPact, flagAppeal, bankOf } = usePact();
+  const live = useLivePacts({ pactId: id });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [localPreview, setLocalPreview] = useState("");
   const [gradeReason, setGradeReason] = useState("");
   const [flagNote, setFlagNote] = useState("");
-  const pact = pacts.find((p) => p.id === id);
+  const deskPact = pacts.find((p) => p.id === id);
+  const livePact = live.ticket ? toDeskPact(live.ticket) : null;
+  const pact = livePact || deskPact;
+  const liveSlip = pact?.source === "live";
+  const viewerId = liveSlip ? live.me?.id : userId;
 
-  if (!pact || !canSeePact(pact, userId)) {
+  if (live.signedIn && live.loading && !pact) {
+    return (
+      <div className="empty">
+        Opening the live ticket… <Link to="/feed">Back to the tape</Link>
+      </div>
+    );
+  }
+
+  if (!pact || !canSeePact(pact, viewerId || userId)) {
     return (
       <div className="empty">
         {pact ? "This slip is on a private tape." : "Slip not found."}{" "}
@@ -49,24 +64,27 @@ export default function PactDetail() {
     );
   }
 
-  const creator = userById(pact.creatorId);
-  const opponent = userById(pact.opponentId);
-  const winner = userById(pact.winnerId);
+  const creator = liveActor(pact.creatorId, live.directory);
+  const opponent = liveActor(pact.opponentId, live.directory);
+  const winner = pact.winnerId ? liveActor(pact.winnerId, live.directory) : null;
   const pot = pact.stake * 2;
   const stamp = STAMPS[pact.status] ?? STAMPS.open;
-  const canAccept = pact.status === "open" && userId === pact.opponentId;
+  const canAccept = pact.status === "open" && viewerId === pact.opponentId;
   const canUpload =
-    (pact.status === "accepted" || pact.status === "evidence") && userId === pact.creatorId;
-  const canVerify = canResolveAppeal(pact, userId);
-  const canFlag = canFlagAppeal(pact, userId);
-  const marks = events.filter((e) => e.pactId === pact.id).sort((a, b) => a.at - b.at);
+    (pact.status === "accepted" || pact.status === "evidence") && viewerId === pact.creatorId;
+  const canVerify = !liveSlip && canResolveAppeal(pact, userId);
+  const canFlag = !liveSlip && canFlagAppeal(pact, userId);
+  const marks = (liveSlip ? eventsFromLivePact(pact) : events)
+    .filter((e) => e.pactId === pact.id)
+    .sort((a, b) => a.at - b.at);
   const tone = deadlineTone(pact.deadline);
 
   async function onAccept() {
     setError("");
     setBusy(true);
     try {
-      await acceptPact(pact.id);
+      if (liveSlip) await live.acceptLive(pact.id);
+      else await acceptPact(pact.id);
     } catch (err) {
       setError(err.message || "Could not accept");
     } finally {
@@ -115,7 +133,8 @@ export default function PactDetail() {
     }
     setBusy(true);
     try {
-      await submitEvidence(pact.id, file);
+      if (liveSlip) await live.submitLiveEvidence(pact, file);
+      else await submitEvidence(pact.id, file);
     } catch (err) {
       setError(err.message || "Could not send proof");
     } finally {
@@ -186,7 +205,7 @@ export default function PactDetail() {
         <DeadlineBanner pactId={pact.id} />
       </article>
 
-      {pactVisibility(pact) === "public" ? <RailBook pact={pact} /> : null}
+      {!liveSlip && pactVisibility(pact) === "public" ? <RailBook pact={pact} /> : null}
       <TicketShare pact={pact} />
 
       <div className="detail-grid">
@@ -266,7 +285,7 @@ export default function PactDetail() {
           ) : null}
           {pact.status === "appeal" ? (
             <p className="hint">
-              Open appeal. {userById(pact.appeal?.flaggedBy)?.handle || "A desk"} flagged this call
+              Open appeal. {liveActor(pact.appeal?.flaggedBy, live.directory).handle || "A desk"} flagged this call
               — resolve it in the open, not a silent pass/fail.
             </p>
           ) : null}
@@ -294,7 +313,7 @@ export default function PactDetail() {
               ) : null}
               {pact.appeal?.resolution?.reason ? (
                 <p className="hint">
-                  Open grade · {userById(pact.appeal.resolution.actorId)?.handle}:{" "}
+                  Open grade · {liveActor(pact.appeal.resolution.actorId, live.directory).handle}:{" "}
                   {pact.appeal.resolution.reason}
                 </p>
               ) : null}
@@ -360,11 +379,11 @@ export default function PactDetail() {
               <div className="mark-line">
                 <span className={`badge type-${ev.type}`}>{ev.type}</span>
                 <span>
-                  {userById(ev.actorId)?.handle} · {ev.note}
+                  {liveActor(ev.actorId, live.directory).handle} · {ev.note}
                 </span>
                 <time>{formatWhen(ev.at)}</time>
               </div>
-              <TapeTalk eventId={ev.id} />
+              {liveSlip ? null : <TapeTalk eventId={ev.id} />}
             </li>
           ))}
         </ol>

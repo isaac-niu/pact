@@ -4,7 +4,8 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
 import { api } from "./api.js";
 import { sol } from "./lib/format.js";
-import { AUTH0_LOGOUT_URL, clientEnvReady, env, pageIsHttps } from "./env.js";
+import { needsAuth0 } from "./auth/AuthGate.jsx";
+import { AUTH0_LOGOUT_URL, clientEnvReady, env } from "./env.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -22,7 +23,7 @@ const Wallet = lazy(() => import("./pages/Wallet.jsx"));
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 function onAuthRoute(pathname) {
-  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+  return needsAuth0(pathname);
 }
 
 function Auth0Account() {
@@ -56,7 +57,7 @@ function Auth0Account() {
 
 export function AccountControl() {
   const { pathname } = useLocation();
-  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
+  if (!clientEnvReady().ready || !onAuthRoute(pathname)) {
     return (
       <NavLink className="account-login" to="/app">
         Sign in
@@ -110,7 +111,7 @@ export function BalanceControl() {
   // The local-desk balance only belongs on its own page (/me), where it's
   // unambiguous whose bank you're looking at. The shared header only shows
   // a balance once there's a real signed-in Auth0 identity behind it.
-  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
+  if (!clientEnvReady().ready || !onAuthRoute(pathname)) {
     return null;
   }
   return <Auth0Balance />;
