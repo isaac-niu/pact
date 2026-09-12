@@ -22,6 +22,12 @@ import {
 import { applySideStake, settleSideStakes } from "../lib/sideStakes.js";
 import { applyComment, applyReaction } from "../lib/tapeTalk.js";
 import { judgeEvidence } from "./referee.js";
+import {
+  attachChecklistToVerdict,
+  friendItemMarks,
+  pactChecklist,
+  slipCriteria,
+} from "../lib/successCriteria.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
 const LEGACY_KEY = "pact.demo.v1";
@@ -64,6 +70,7 @@ function upgradePact(p) {
     parentPactId: null,
     nextSpawnAt: null,
     ...p,
+    checklist: pactChecklist({ ...p, checklist: p.checklist }),
   };
 }
 
@@ -271,13 +278,12 @@ export async function createPact(input, ctx = {}) {
   requireUser(actorId);
 
   const title = String(input.title ?? "").trim();
-  const criteria = String(input.criteria ?? "").trim();
+  const { criteria, checklist } = slipCriteria(input);
   const stake = Number(input.stake);
   const deadline = Number(input.deadline) || defaultDeadline();
   const opponentId = input.opponentId || otherUserId(actorId);
 
   if (!title) throw new Error("Write the challenge");
-  if (!criteria) throw new Error("Say what counts as proof");
   if (!Number.isFinite(stake) || stake <= 0) throw new Error("Stake a positive amount");
   if (opponentId === actorId) throw new Error("Pick the other desk");
   if (!userById(opponentId)) throw new Error("Unknown opponent");
@@ -288,6 +294,7 @@ export async function createPact(input, ctx = {}) {
     id: uid("pkt"),
     title,
     criteria,
+    checklist,
     stake,
     deadline,
     creatorId: actorId,
@@ -445,16 +452,20 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     notifications: mergeNotices(state.notifications, [provedNotice(pact, actorId, provedAt)]),
   });
 
-  const verdict = await judgeEvidence({
-    title: pact.title,
-    criteria: pact.criteria,
-    fileName: evidenceName,
-    dataUrl: evidenceUrl,
-    pactId,
-    creatorId: pact.creatorId,
-    opponentId: pact.opponentId,
-    stake: pact.stake,
-  });
+  const verdict = attachChecklistToVerdict(
+    await judgeEvidence({
+      title: pact.title,
+      criteria: pact.criteria,
+      checklist: pact.checklist,
+      fileName: evidenceName,
+      dataUrl: evidenceUrl,
+      pactId,
+      creatorId: pact.creatorId,
+      opponentId: pact.opponentId,
+      stake: pact.stake,
+    }),
+    { ...pact, fileName: evidenceName },
+  );
 
   const latest = state.pacts.find((p) => p.id === pactId);
   if (!latest) throw new Error("Slip vanished mid-call");
@@ -549,6 +560,7 @@ export async function verifyPact(pactId, pass, ctx = {}) {
     rationale: reason,
     source: pact.status === "appeal" ? "appeal" : "friend",
     auto: true,
+    items: friendItemMarks(pact, pass, ctx.itemMarks, reason) || pact.verdict?.items,
   });
 
   fetch("/api/pacts/verify", {

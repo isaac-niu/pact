@@ -159,7 +159,7 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   actorId = ctx.actorId || actorId;
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/verify`, {
     method: "POST",
-    body: JSON.stringify({ actorId, pass, reason: ctx.reason }),
+    body: JSON.stringify({ actorId, pass, reason: ctx.reason, itemMarks: ctx.itemMarks }),
   });
   apply(out.state);
   return out.result;

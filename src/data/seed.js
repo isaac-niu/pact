@@ -9,7 +9,11 @@ function gymPact(now) {
   return {
     id: "demo-settled-gym",
     title: "I'll upload a gym selfie",
-    criteria: "Face or body in frame with gym floor or equipment visible.",
+    criteria: "Face or body in frame · gym floor or equipment visible.",
+    checklist: [
+      { id: "sc_face", label: "Face or body in frame" },
+      { id: "sc_gym", label: "Gym floor or equipment visible" },
+    ],
     stake: 2,
     deadline: now - DAY,
     creatorId: "you",
@@ -21,6 +25,10 @@ function gymPact(now) {
       result: "pass",
       confidence: 0.94,
       rationale: "Clear gym-floor selfie. Subject in frame, workout context visible.",
+      items: [
+        { id: "sc_face", label: "Face or body in frame", pass: true, note: "Subject in frame." },
+        { id: "sc_gym", label: "Gym floor or equipment visible", pass: true, note: "Workout context visible." },
+      ],
     },
     winnerId: "you",
     visibility: "public",

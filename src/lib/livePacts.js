@@ -43,6 +43,7 @@ export function toDeskPact(live) {
     id: live.id,
     title: live.title,
     criteria: live.criteria?.trim() || DEFAULT_CRITERIA,
+    checklist: live.checklist || [],
     stake: Number(live.stakeLamports || 0) / LAMPORTS_PER_SOL,
     deadline: Number(live.deadline) || createdAt + 24 * 60 * 60 * 1000,
     creatorId: live.creatorId,
@@ -145,6 +146,7 @@ export async function submitLiveProof(pact, file, tokenOf) {
   const verdict = await judgeEvidence({
     title: pact.title,
     criteria: pact.criteria,
+    checklist: pact.checklist,
     fileName: evidenceName,
     dataUrl,
     pactId: pact.id,

@@ -139,6 +139,7 @@ export async function handleRefereeApi(req, res, helpers = {}) {
     const verdict = await judgeEvidence({
       title: payload.title,
       criteria: payload.criteria,
+      checklist: payload.checklist,
       fileName: payload.fileName,
       dataUrl: payload.dataUrl,
     });

@@ -125,8 +125,8 @@ export function submitEvidence(pactId, file, actorId) {
   return mutate((state) => desk.submitEvidence(state, pactId, file, actorId));
 }
 
-export function verifyPact(pactId, pass, actorId, reason) {
-  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId, reason));
+export function verifyPact(pactId, pass, actorId, reason, itemMarks) {
+  return mutate((state) => desk.verifyPact(state, pactId, pass, actorId, { reason, itemMarks }));
 }
 
 export function flagAppeal(pactId, note, actorId) {

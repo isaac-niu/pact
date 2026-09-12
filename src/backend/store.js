@@ -49,6 +49,7 @@ export function publicPact(pact) {
     id: pact.id,
     title: pact.title,
     criteria: pact.criteria ?? null,
+    checklist: Array.isArray(pact.checklist) ? pact.checklist : [],
     stakeLamports: pact.stakeLamports,
     creatorId: pact.creatorId,
     opponentId: pact.opponentId,
@@ -176,6 +177,7 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
       opponentId = null,
       groupId = null,
       criteria = null,
+      checklist = [],
       deadline = null,
       visibility = "public",
     }) {
@@ -183,6 +185,7 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
         id: randomUUID(),
         title,
         criteria: criteria ? String(criteria).trim() : null,
+        checklist: Array.isArray(checklist) ? checklist : [],
         stakeLamports,
         creatorId,
         opponentId,

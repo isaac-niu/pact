@@ -100,7 +100,11 @@ describe("signed-in Write", () => {
           body: expect.objectContaining({
             title: "I'll upload a gym selfie",
             opponentId: "auth0|pat",
-            criteria: expect.stringContaining("gym"),
+            criteria: "Face visible · Gym floor or equipment visible",
+            checklist: [
+              { id: "sc_face", label: "Face visible" },
+              { id: "sc_gym", label: "Gym floor or equipment visible" },
+            ],
           }),
         }),
       );

@@ -298,6 +298,7 @@ export function createPactRequestHandler(options = {}) {
         opponentId: opponent?.id ?? null,
         groupId: group?.id ?? null,
         criteria: body.criteria ?? null,
+        checklist: body.checklist ?? [],
         deadline: body.deadline ?? null,
         visibility: body.visibility,
       });

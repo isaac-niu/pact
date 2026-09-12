@@ -131,6 +131,7 @@ export function createMongoStore(db) {
       opponentId = null,
       groupId = null,
       criteria = null,
+      checklist = [],
       deadline = null,
       visibility = "public",
     }) {
@@ -138,6 +139,7 @@ export function createMongoStore(db) {
         id: randomUUID(),
         title,
         criteria: criteria ? String(criteria).trim() : null,
+        checklist: Array.isArray(checklist) ? checklist : [],
         stakeLamports,
         creatorId,
         opponentId,

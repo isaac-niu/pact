@@ -179,11 +179,21 @@ test("missing photo mock-fails so the desk can still talk", () => {
 });
 
 test("present photo mock-passes so A can demo without a key", () => {
-  const v = mockVerdict({ title: "Gym selfie", fileName: "gym.jpg", criteria: "Be at the gym." });
+  const v = mockVerdict({
+    title: "Gym selfie",
+    fileName: "gym.jpg",
+    criteria: "Face visible · gym iron visible",
+    checklist: [
+      { id: "sc_face", label: "Face visible" },
+      { id: "sc_gym", label: "gym iron visible" },
+    ],
+  });
   assert.equal(v.result, "pass");
   assert.ok(v.confidence >= 0.8);
   assert.equal(v.auto, true);
   assert.equal(v.source, "mock");
+  assert.equal(v.items.length, 2);
+  assert.equal(v.items.every((row) => row.pass === true), true);
 });
 
 test("cat photo mock-fails a gym goal so the demo still has a loss", () => {

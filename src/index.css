@@ -1435,3 +1435,75 @@ label .hint {
     flex-wrap: wrap;
   }
 }
+
+.checklist-field .hint {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.checklist-edit,
+.checklist-read,
+.checklist-grade,
+.checklist-grade-form {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.checklist-edit li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.checklist-scratch {
+  height: fit-content;
+}
+
+.checklist-read {
+  margin: 6px 0 0;
+}
+
+.checklist-read li,
+.checklist-grade li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+}
+
+.checklist-read li::before {
+  content: "▸";
+  color: var(--lime);
+  font-size: 11px;
+}
+
+.checklist-grade {
+  margin-top: 10px;
+}
+
+.checklist-grade li.hold .badge,
+.checklist-grade li.miss .badge,
+.checklist-grade li.open .badge {
+  letter-spacing: 0.12em;
+}
+
+.checklist-line-head {
+  margin-bottom: 6px;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+}
+
+.ticket-criteria + .checklist-read,
+.ticket-preview .checklist-read {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
