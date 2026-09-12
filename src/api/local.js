@@ -1,4 +1,4 @@
-import { STARTING_BANK, otherUserId, userById } from "../data/users.js";
+import { STARTING_BANK, normalizeDeskActor, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
 import {
@@ -19,6 +19,7 @@ import {
   gradedNotice,
   requireGradeReason,
 } from "../lib/appeals.js";
+import { applySideStake, settleSideStakes } from "../lib/sideStakes.js";
 import { applyComment, applyReaction } from "../lib/tapeTalk.js";
 import { judgeEvidence } from "./referee.js";
 
@@ -191,7 +192,7 @@ function normalize(parsed) {
     ? parsed.notifications
     : noticesFromLifecycle(pacts, events);
   return {
-    userId: parsed.userId === "friend" ? "friend" : "you",
+    userId: normalizeDeskActor(parsed.userId),
     seedVersion: SEED_VERSION,
     startingBank: Number.isFinite(parsed.startingBank) ? parsed.startingBank : STARTING_BANK,
     pacts,
@@ -200,6 +201,7 @@ function normalize(parsed) {
     notifications,
     reactions: Array.isArray(parsed.reactions) ? parsed.reactions : [],
     comments: Array.isArray(parsed.comments) ? parsed.comments : [],
+    sideStakes: Array.isArray(parsed.sideStakes) ? parsed.sideStakes : [],
   };
 }
 
@@ -235,8 +237,9 @@ export function recordOf(userId, snap = state) {
 }
 
 export function switchUser(id) {
-  if (id !== "you" && id !== "friend") return;
-  persist({ ...state, userId: id });
+  const next = normalizeDeskActor(id);
+  if (next !== id) return;
+  persist({ ...state, userId: next });
 }
 
 export function resetDesk() {
@@ -369,27 +372,32 @@ function settle(latest, verdict) {
     resolvedAt,
   });
 
-  persist({
-    ...state,
-    pacts: state.pacts.map((p) => (p.id === latest.id ? resolved : p)),
-    events: [
-      { id: uid("ev"), pactId: latest.id, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
-      { id: uid("ev"), pactId: latest.id, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
-      ...state.events,
-    ],
-    ledger: [
-      {
-        id: uid("ld"),
-        userId: winnerId,
-        amount: pot,
-        kind: "payout",
-        pactId: latest.id,
-        at: resolvedAt,
-        note: "Pot paid",
-      },
-      ...state.ledger,
-    ],
-  });
+  const next = settleSideStakes(
+    {
+      ...state,
+      pacts: state.pacts.map((p) => (p.id === latest.id ? resolved : p)),
+      events: [
+        { id: uid("ev"), pactId: latest.id, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
+        { id: uid("ev"), pactId: latest.id, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
+        ...state.events,
+      ],
+      ledger: [
+        {
+          id: uid("ld"),
+          userId: winnerId,
+          amount: pot,
+          kind: "payout",
+          pactId: latest.id,
+          at: resolvedAt,
+          note: "Pot paid",
+        },
+        ...state.ledger,
+      ],
+    },
+    resolved,
+    { now: resolvedAt, uid },
+  );
+  persist(next);
 
   return resolved;
 }
@@ -601,6 +609,21 @@ export async function commentOnMark(eventId, body, ctx = {}) {
   const actorId = ctx.actorId ?? state.userId;
   requireUser(actorId);
   const out = applyComment(state, { eventId, body, actorId, uid });
+  persist(out.state);
+  return out.result;
+}
+
+export async function placeSideStake(pactId, input, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const out = applySideStake(state, {
+    pactId,
+    actorId,
+    side: input.side,
+    amount: input.amount,
+    uid,
+    bankOf,
+  });
   persist(out.state);
   return out.result;
 }

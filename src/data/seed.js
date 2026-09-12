@@ -143,7 +143,37 @@ export function demoLedger(pacts) {
     { id: "ld-run-a", userId: run.creatorId, amount: -run.stake, kind: "stake", pactId: run.id, at: run.createdAt, note: run.title },
     { id: "ld-rev-a", userId: review.creatorId, amount: -review.stake, kind: "stake", pactId: review.id, at: review.createdAt, note: review.title },
     { id: "ld-rev-b", userId: review.opponentId, amount: -review.stake, kind: "stake", pactId: review.id, at: review.acceptedAt, note: review.title },
+    { id: "ld-gym-rail-a", userId: "rail", amount: -1, kind: "side-stake", pactId: gym.id, at: gym.provedAt, note: "Rail ticket · challenger" },
+    { id: "ld-gym-rail-w", userId: "rail", amount: 2, kind: "side-payout", pactId: gym.id, at: gym.resolvedAt, note: "Rail ticket paid" },
+    { id: "ld-leet-rail", userId: "rail", amount: -1, kind: "side-stake", pactId: leet.id, at: leet.acceptedAt + 60 * 1000, note: "Rail ticket · challenger" },
   ].sort((a, b) => b.at - a.at);
+}
+
+export function demoSideStakes(pacts) {
+  const gym = pacts.find((p) => p.id === "demo-settled-gym");
+  const leet = pacts.find((p) => p.id === "demo-live-leetcode");
+  return [
+    {
+      id: "ss-gym-rail",
+      pactId: gym.id,
+      userId: "rail",
+      side: "challenger",
+      amount: 1,
+      at: gym.provedAt,
+      settledAt: gym.resolvedAt,
+      won: true,
+    },
+    {
+      id: "ss-leet-rail",
+      pactId: leet.id,
+      userId: "rail",
+      side: "challenger",
+      amount: 1,
+      at: leet.acceptedAt + 60 * 1000,
+      settledAt: null,
+      won: null,
+    },
+  ];
 }
 
 export function demoTalk(pacts) {
@@ -221,5 +251,6 @@ export function emptyDemoState(now = Date.now()) {
     notifications: demoNotices(pacts),
     reactions: talk.reactions,
     comments: talk.comments,
+    sideStakes: demoSideStakes(pacts),
   };
 }

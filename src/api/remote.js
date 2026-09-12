@@ -1,4 +1,4 @@
-import { STARTING_BANK } from "../data/users.js";
+import { STARTING_BANK, normalizeDeskActor } from "../data/users.js";
 import { emptyDemoState } from "../data/seed.js";
 
 const listeners = new Set();
@@ -42,6 +42,7 @@ function apply(snap) {
     notifications: snap.notifications || [],
     reactions: snap.reactions || [],
     comments: snap.comments || [],
+    sideStakes: snap.sideStakes || [],
     users: snap.users || [],
   };
   notify();
@@ -86,8 +87,9 @@ export function subscribe(fn) {
 }
 
 export function switchUser(id) {
-  if (id !== "you" && id !== "friend") return;
-  actorId = id;
+  const next = normalizeDeskActor(id);
+  if (next !== id) return;
+  actorId = next;
   if (enabled) {
     req("/api/desk").then(apply).catch(() => notify());
   } else notify();
@@ -217,6 +219,16 @@ export async function commentOnMark(eventId, body, ctx = {}) {
   const out = await req(`/api/marks/${encodeURIComponent(eventId)}/comment`, {
     method: "POST",
     body: JSON.stringify({ actorId, body }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function placeSideStake(pactId, input, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/side-stake`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, side: input.side, amount: input.amount }),
   });
   apply(out.state);
   return out.result;

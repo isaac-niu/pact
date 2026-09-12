@@ -1,4 +1,5 @@
 import { STARTING_BANK, userById } from "../src/data/users.js";
+import { applySideStake, settleSideStakes } from "../src/lib/sideStakes.js";
 import { emptyDemoState } from "../src/data/seed.js";
 import {
   acceptedNotice,
@@ -275,6 +276,18 @@ export function createDeskLogic(judge) {
       if (!userById(actorId)) throw new Error("Unknown demo user");
       return applyComment(state, { eventId, body, actorId, uid });
     },
+
+    async placeSideStake(state, pactId, input, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      return applySideStake(state, {
+        pactId,
+        actorId,
+        side: input.side,
+        amount: input.amount,
+        uid,
+        bankOf,
+      });
+    },
   };
 }
 
@@ -285,19 +298,23 @@ function settle(state, pactId, verdict) {
   const resolvedAt = Date.now();
   const pot = latest.stake * 2;
   const resolved = withNextSpawn({ ...latest, status: "resolved", verdict, winnerId, resolvedAt });
-  return {
-    ...state,
-    pacts: state.pacts.map((p) => (p.id === pactId ? resolved : p)),
-    events: [
-      { id: uid("ev"), pactId, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
-      { id: uid("ev"), pactId, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
-      ...state.events,
-    ],
-    ledger: [
-      { id: uid("ld"), userId: winnerId, amount: pot, kind: "payout", pactId, at: resolvedAt, note: "Pot paid" },
-      ...state.ledger,
-    ],
-  };
+  return settleSideStakes(
+    {
+      ...state,
+      pacts: state.pacts.map((p) => (p.id === pactId ? resolved : p)),
+      events: [
+        { id: uid("ev"), pactId, type: "won", actorId: winnerId, at: resolvedAt, note: "Takes the pot" },
+        { id: uid("ev"), pactId, type: "lost", actorId: loserId, at: resolvedAt + 1, note: "Stake gone" },
+        ...state.events,
+      ],
+      ledger: [
+        { id: uid("ld"), userId: winnerId, amount: pot, kind: "payout", pactId, at: resolvedAt, note: "Pot paid" },
+        ...state.ledger,
+      ],
+    },
+    resolved,
+    { now: resolvedAt, uid },
+  );
 }
 
 export function seededState() {

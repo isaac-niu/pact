@@ -39,12 +39,15 @@ function memoryDb() {
 test("usersFromState persists SOL banks for both desks", () => {
   const state = emptyDemoState();
   const users = usersFromState(state);
-  assert.equal(users.length, 2);
+  assert.equal(users.length, 3);
   const isaac = users.find((u) => u.id === "you");
   const maya = users.find((u) => u.id === "friend");
+  const gale = users.find((u) => u.id === "rail");
   assert.equal(isaac.handle, "ISAAC");
   assert.equal(isaac.balance, bankOf("you", state));
   assert.equal(maya.balance, bankOf("friend", state));
+  assert.equal(gale.handle, "GALE");
+  assert.equal(gale.balance, bankOf("rail", state));
   assert.ok(Number.isFinite(isaac.balance));
 });
 
@@ -67,7 +70,7 @@ test("syncDeskUsers upserts SOL banks and ledger rows", async () => {
   const out = await syncDeskUsers(state, { db, force: true });
   assert.equal(out.persist, true);
   const users = await listDeskUsers(db);
-  assert.equal(users.length, 2);
+  assert.equal(users.length, 3);
   assert.equal(
     users.find((u) => u.id === "you").balance,
     bankOf("you", state),

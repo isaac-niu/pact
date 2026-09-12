@@ -52,6 +52,9 @@ export function reactToMark(...args) {
 export function commentOnMark(...args) {
   return impl.commentOnMark(...args);
 }
+export function placeSideStake(...args) {
+  return impl.placeSideStake(...args);
+}
 export function getSnapshot() {
   return impl.getSnapshot();
 }
@@ -90,4 +93,5 @@ export const pactApi = {
   tickReminders,
   reactToMark,
   commentOnMark,
+  placeSideStake,
 };

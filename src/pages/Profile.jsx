@@ -4,9 +4,10 @@ import { usePact } from "../store.jsx";
 import { formatWhen, sol } from "../lib/format.js";
 
 export default function Profile() {
-  const { user, bank, record, ledger, pacts, resetDesk, backend } = usePact();
+  const { user, bank, record, ledger, pacts, resetDesk, backend, sideStakes } = usePact();
   const [flash, setFlash] = useState("");
   const mine = pacts.filter((p) => p.creatorId === user.id || p.opponentId === user.id);
+  const railTickets = (sideStakes || []).filter((row) => row.userId === user.id);
   const rate = record.rate == null ? "—" : `${Math.round(record.rate * 100)}%`;
 
   function onReset() {
@@ -67,6 +68,12 @@ export default function Profile() {
         </div>
         <div className="card">
           <div className="kicker">Slips</div>
+          {railTickets.length ? (
+            <p className="hint">
+              Rail tickets · {railTickets.length} on the book
+              {railTickets.some((row) => !row.settledAt) ? " · live fade" : ""}
+            </p>
+          ) : null}
           {mine.length === 0 ? (
             <p className="hint">This desk has no tickets.</p>
           ) : (

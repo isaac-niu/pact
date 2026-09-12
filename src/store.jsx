@@ -14,6 +14,7 @@ import {
   verifyPact as apiVerify,
   reactToMark as apiReact,
   commentOnMark as apiComment,
+  placeSideStake as apiSideStake,
   subscribe,
   switchUser as apiSwitch,
 } from "./api/pact.js";
@@ -51,6 +52,7 @@ export function PactProvider({ children }) {
       notifications: snap.notifications || [],
       reactions: snap.reactions || [],
       comments: snap.comments || [],
+      sideStakes: snap.sideStakes || [],
       notices: noticesForUser(snap.notifications, snap.userId),
       unreadNotices: unreadCount(snap.notifications, snap.userId),
       bank,
@@ -70,6 +72,7 @@ export function PactProvider({ children }) {
       tickReminders: () => apiTickReminders(),
       reactToMark: (eventId, emoji) => apiReact(eventId, emoji, { actorId: snap.userId }),
       commentOnMark: (eventId, body) => apiComment(eventId, body, { actorId: snap.userId }),
+      placeSideStake: (id, input) => apiSideStake(id, input, { actorId: snap.userId }),
       backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],

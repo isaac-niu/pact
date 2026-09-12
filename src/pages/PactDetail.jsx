@@ -8,6 +8,7 @@ import { deadlineTone, formatWhen, sol } from "../lib/format.js";
 import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
+import RailBook from "../components/RailBook.jsx";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -196,6 +197,8 @@ export default function PactDetail() {
         </dl>
         <DeadlineBanner pactId={pact.id} />
       </article>
+
+      {pactVisibility(pact) === "public" ? <RailBook pact={pact} /> : null}
 
       <div className="detail-grid">
         <div className="card">

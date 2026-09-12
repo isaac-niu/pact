@@ -1,6 +1,7 @@
 import { featureFlags } from "./env.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
+import { normalizeDeskActor } from "../src/data/users.js";
 import { getLastGeminiError, judgeEvidence } from "./gemini.js";
 import { ensureDeskIndexes, syncDeskUsers, usersFromState } from "./deskUsers.js";
 
@@ -86,7 +87,7 @@ async function mutate(fn) {
 
 function publicState(state, actorId = "you") {
   return {
-    userId: actorId === "friend" ? "friend" : "you",
+    userId: normalizeDeskActor(actorId),
     startingBank: state.startingBank,
     pacts: state.pacts,
     events: state.events,
@@ -94,6 +95,7 @@ function publicState(state, actorId = "you") {
     notifications: state.notifications || [],
     reactions: state.reactions || [],
     comments: state.comments || [],
+    sideStakes: state.sideStakes || [],
     users: usersFromState(state),
     backend: "mongo",
   };
@@ -154,4 +156,8 @@ export function reactToMark(eventId, emoji, actorId) {
 
 export function commentOnMark(eventId, body, actorId) {
   return mutate((state) => desk.commentOnMark(state, eventId, body, actorId));
+}
+
+export function placeSideStake(pactId, input, actorId) {
+  return mutate((state) => desk.placeSideStake(state, pactId, input, actorId));
 }
