@@ -4,37 +4,26 @@ import { useLiveAccount } from "../auth/useLiveAccount.js";
 import { ActionStatus, FriendsList } from "../components/SocialForms.jsx";
 import { createSocialActions } from "../lib/socialActions.js";
 
+const DEMO_PEOPLE = [{ id: "auth0|demo-maya", name: "MAYA", email: null }];
+
 export default function People() {
   const live = useLiveAccount();
   const [busy, setBusy] = useState("");
   const [status, setStatus] = useState(null);
-
-  if (!live.live) {
-    return (
-      <section className="card">
-        <h2>Friends</h2>
-        <p className="lede">Sign in with Auth0 to add real accounts — not just the ISAAC / MAYA demo desks.</p>
-        {live.loginWithRedirect ? (
-          <button
-            className="btn btn-lime"
-            type="button"
-            onClick={() => live.loginWithRedirect({ appState: { returnTo: "/people" } })}
-          >
-            Sign in
-          </button>
-        ) : null}
-      </section>
-    );
-  }
+  const [localPeople, setLocalPeople] = useState(DEMO_PEOPLE);
+  const people = live.live ? live.people : localPeople;
+  const setPeople = live.live ? live.setPeople : setLocalPeople;
 
   const actions = createSocialActions({
-    tokenOf: live.tokenOf,
-    refresh: live.refresh,
-    userId: live.me?.id,
+    tokenOf: live.live ? live.tokenOf : async () => {
+      throw new Error("not_found");
+    },
+    refresh: live.live ? live.refresh : undefined,
+    userId: live.me?.id || "demo-you",
     setBusy,
     setStatus,
     setGroups: live.setGroups,
-    setPeople: live.setPeople,
+    setPeople,
     setFriends: live.setFriends,
   });
 
@@ -42,7 +31,7 @@ export default function People() {
     <div>
       <div className="page-head">
         <div>
-          <div className="kicker">{live.me?.name}</div>
+          <div className="kicker">{live.me?.name || "Friends"}</div>
           <h2>People</h2>
           <p className="lede slim">Anyone who has signed in once lands here. Friend them, then pitch them.</p>
         </div>
@@ -50,9 +39,12 @@ export default function People() {
           Write a slip
         </Link>
       </div>
+      {!live.live ? (
+        <p className="hint">Demo desk — adding a friend stays on this page until you sign in.</p>
+      ) : null}
       <ActionStatus status={status || (live.error ? { tone: "err", text: live.error } : null)} />
       <FriendsList
-        people={live.people}
+        people={people}
         incoming={live.friends.incoming}
         onAdd={actions.addFriend}
         onAccept={actions.acceptFriend}

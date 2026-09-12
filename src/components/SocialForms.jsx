@@ -135,7 +135,7 @@ export function FriendsList({ people, incoming = [], onAdd, onAccept, busy }) {
                   <b>{person.name}</b>
                   <div className="hint">{person.email || person.id}</div>
                 </div>
-                {person.friend ? (
+                {person.friend || person.requested ? (
                   <button className="btn btn-ghost" type="button" disabled>
                     Friend added
                   </button>
@@ -143,10 +143,10 @@ export function FriendsList({ people, incoming = [], onAdd, onAccept, busy }) {
                   <button
                     className="btn btn-ghost"
                     type="button"
-                    disabled={adding || person.requested}
+                    disabled={adding}
                     onClick={() => onAdd(person.id)}
                   >
-                    {adding ? "Adding…" : person.requested ? "Requested" : "Add friend"}
+                    {adding ? "Adding…" : "Add friend"}
                   </button>
                 )}
               </div>
