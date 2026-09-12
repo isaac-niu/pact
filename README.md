@@ -31,10 +31,11 @@ That's the product: accountability with a sportsbook ticket, not a platform.
 | `npm run dev` | Start the Vite dev server on `localhost:5173` |
 | `npm run build` | Build the app for production |
 | `npm run preview` | Preview the production build locally |
-| `npm run test` | Run the Vitest test suite (jsdom) |
+| `npm run test` | Run the Vitest test suite (jsdom); also accepts the factory's `--runInBand` verifier flag |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run lint` | Run ESLint on all source files |
-| `npm run typecheck` | Run TypeScript type checking (`tsc --noEmit`) |
+| `npm run typecheck` | Check the JavaScript/JSX source with TypeScript (`tsc --noEmit`) |
+| `npm run server` | Validate server configuration and start the local API on port 3001 |
 
 ## Environment variables
 
@@ -44,24 +45,30 @@ Create a `.env` or `.env.local` file from the `env-template.txt` template. **Nev
 |----------|----------|-------------|
 | `AUTH0_DOMAIN` | Yes | Auth0 tenant domain (e.g. `myapp.auth0.com`) |
 | `AUTH0_CLIENT_ID` | Yes | Auth0 application client ID |
-| `ATLAS_URI` | Yes | MongoDB Atlas connection string (SECRET) |
-| `API_URL` | No | Backend API base URL (default `http://localhost:3001`) |
+| `AUTH0_CLIENT_SECRET` | Yes, server only | Auth0 application client secret (SECRET) |
+| `AUTH0_AUDIENCE` | Yes, server only | Auth0 API audience |
+| `AUTH0_SECRET` | Yes, server only | Auth0 session secret (SECRET) |
+| `MONGODB_URI` | Yes, server only | MongoDB Atlas connection string (SECRET) |
+| `MONGODB_DB_NAME` | Yes, server only | MongoDB database name |
+| `VITE_AUTH0_DOMAIN` | No, client only | Browser-safe Auth0 domain for the future login UI |
+| `VITE_AUTH0_CLIENT_ID` | No, client only | Browser-safe Auth0 client ID for the future login UI |
+| `VITE_API_URL` | No, client only | API base URL (defaults to `http://localhost:3001`) |
 | `PORT` | No | Backend server port (default `3001`) |
 
 ### Startup validation
 
-The app validates required environment variables on startup. If any are missing, a clear error message lists every missing variable and instructs you to create a `.env` file. No secret values are ever written to tracked files.
+`npm run server` validates the required server variables before binding its port. If any are missing, it exits with a clear error that lists variable names only; no secret value is printed. The existing localStorage Vite demo deliberately remains runnable without backend credentials during the migration.
 
 ### Client-safe exposure
 
-Only `VITE_`-prefixed variables are exposed to the browser bundle. The `src/env.js` module provides safe access through `getViteEnv()` and `clientEnvReady()`.
+Only `VITE_`-prefixed variables are exposed to the browser bundle. The `src/env.js` module provides safe access through `getViteEnv()` and `clientEnvReady()`; server-only Auth0 and Mongo variables are never exposed to Vite.
 
 ## Backend
 
 A stub Express server lives in `src/backend/server.js`. Start it with:
 
 ```bash
-node src/backend/server.js
+npm run server
 ```
 
 It provides a health check at `GET /api/health` and stub pact endpoints. Wire up Atlas and Auth0 when ready.
