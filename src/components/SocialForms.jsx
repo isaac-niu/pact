@@ -10,8 +10,15 @@ export function ActionStatus({ status }) {
 }
 
 export function CreateGroupForm({ onSubmit, busy, embedded = false }) {
+  const [listed, setListed] = useState(false);
   return (
-    <form className={embedded ? "form" : "card form"} onSubmit={onSubmit}>
+    <form
+      className={embedded ? "form" : "card form"}
+      onSubmit={(event) => {
+        onSubmit(event);
+        setListed(false);
+      }}
+    >
       <label>
         New group
         <input name="groupName" required placeholder="Training crew" disabled={Boolean(busy)} />
@@ -24,9 +31,17 @@ export function CreateGroupForm({ onSubmit, busy, embedded = false }) {
         </select>
       </label>
       <label className="check">
-        <input type="checkbox" name="discoverable" disabled={Boolean(busy)} />
+        <input
+          type="checkbox"
+          name="discoverable"
+          value="on"
+          checked={listed}
+          onChange={(event) => setListed(event.target.checked)}
+          disabled={Boolean(busy)}
+        />
         List in the directory
       </label>
+      {listed ? <p className="hint lime-hint">This crew will show on the directory board.</p> : null}
       <button className="btn btn-lime" type="submit" disabled={busy === "create-group"}>
         {busy === "create-group" ? "Creating…" : "Create group"}
       </button>
