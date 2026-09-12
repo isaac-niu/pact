@@ -4,7 +4,15 @@ import { AUTH0_CALLBACK_URL, clientEnvReady, env, pageIsHttps } from "../env.js"
 
 function needsAuth0(pathname) {
   if (pageIsHttps()) return true;
-  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+  // /create needs a live Auth0 session too: it offers "send to a group",
+  // which is an authenticated-desk feature (real multi-person groups only
+  // exist behind Auth0 + Mongo, not the local you/friend desk).
+  return (
+    pathname === "/app" ||
+    pathname.startsWith("/app/") ||
+    pathname === "/callback" ||
+    pathname === "/create"
+  );
 }
 
 export default function AuthGate({ children }) {
