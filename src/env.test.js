@@ -118,6 +118,11 @@ describe("clientEnvReady", () => {
       logoutUrl: "http://203.0.113.10",
       origin: "http://203.0.113.10",
     });
+    expect(getAuth0PublicUrls({ PUBLIC_URL: "https://203.0.113.10" })).toEqual({
+      callbackUrl: "https://203.0.113.10/callback",
+      logoutUrl: "https://203.0.113.10",
+      origin: "https://203.0.113.10",
+    });
   });
 
   it("is ready when all browser-safe Auth0 values are present", async () => {

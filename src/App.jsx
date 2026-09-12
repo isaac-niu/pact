@@ -4,7 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
 import { api } from "./api.js";
 import { sol } from "./lib/format.js";
-import { AUTH0_LOGOUT_URL, clientEnvReady } from "./env.js";
+import { AUTH0_LOGOUT_URL, clientEnvReady, env, pageIsHttps } from "./env.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -40,7 +40,7 @@ function Auth0Account() {
       <button
         className="account-logout"
         type="button"
-        onClick={() => logout({ logoutParams: { returnTo: AUTH0_LOGOUT_URL } })}
+        onClick={() => logout({ logoutParams: { returnTo: env.AUTH0_LOGOUT_URL || AUTH0_LOGOUT_URL } })}
       >
         Sign out
       </button>
@@ -50,7 +50,7 @@ function Auth0Account() {
 
 export function AccountControl() {
   const { pathname } = useLocation();
-  if (!clientEnvReady().ready || !onAuthRoute(pathname)) {
+  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
     return (
       <NavLink className="account-login" to="/app">
         Sign in
@@ -107,7 +107,7 @@ function DeskBalance({ user, bank }) {
 
 export function BalanceControl({ user, bank }) {
   const { pathname } = useLocation();
-  if (!clientEnvReady().ready || !onAuthRoute(pathname)) {
+  if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
     return <DeskBalance user={user} bank={bank} />;
   }
   return <Auth0Balance />;

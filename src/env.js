@@ -25,6 +25,10 @@ export const AUTH0_LOGOUT_URL = "http://localhost:5173";
 export const AUTH0_ORIGIN = "http://localhost:5173";
 export const RECOMMENDED_AUTH0_AUDIENCE = "https://pact-api";
 
+export function pageIsHttps() {
+  return typeof window !== "undefined" && window.location?.protocol === "https:";
+}
+
 /** Public Auth0 URLs for this process. Uses PUBLIC_URL on Vultr; localhost in tests. */
 export function getAuth0PublicUrls(environment = process.env) {
   const publicUrl = String(environment.PUBLIC_URL || "")

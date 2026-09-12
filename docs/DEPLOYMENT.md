@@ -4,7 +4,8 @@ Hackathon-simple: Vite build + Node on `127.0.0.1:3000` + nginx on port 80. No D
 
 ## What runs where
 
-- **nginx :80** — public HTTP, reverse-proxies to Node
+- **nginx :80 / :443** — public HTTP (ACME) + HTTPS reverse-proxy to Node
+- **Let's Encrypt** — trusted cert for the public IP (short-lived, auto-renewed) so Auth0 can use HTTPS callbacks
 - **systemd `pact`** — `node server/index.js`
 - **SPA** — `dist/` from `npm run build`
 - **API** — `/api/health`, `/api/config`, `POST /api/announce` (ElevenLabs, optional)
@@ -59,7 +60,7 @@ AUTH0_CLIENT_SECRET=
 AUTH0_AUDIENCE=
 MONGODB_URI=
 MONGO_DB_NAME=pact
-PUBLIC_URL=http://YOUR_PUBLIC_IP
+PUBLIC_URL=https://YOUR_PUBLIC_IP
 EOF
 # NODE_ENV=production is set by systemd — do not put it in .env (Vite will warn).
 systemctl restart pact
@@ -70,14 +71,18 @@ Then:
 ```bash
 curl -fsS http://127.0.0.1:3000/api/health
 curl -fsS -o /dev/null -w "%{http_code}\n" http://127.0.0.1/
-# from your laptop:
-curl -fsS http://YOUR_PUBLIC_IP/api/health
+# from your laptop (after TLS):
+curl -fsS https://YOUR_PUBLIC_IP/api/health
 ```
 
-Add `http://YOUR_PUBLIC_IP` (and `http://YOUR_PUBLIC_IP:80` if needed) to Auth0 **Allowed Callback URLs**, **Logout URLs**, and **Web Origins** when login exists. Localhost stays:
+`deploy/bootstrap.sh` issues a Let's Encrypt **IP certificate** (6-day, renewed twice daily) and sets `PUBLIC_URL=https://YOUR_PUBLIC_IP`. Add these to the Auth0 SPA **Allowed Callback URLs**, **Logout URLs**, and **Web Origins** (keep localhost for laptops):
 
+- `https://YOUR_PUBLIC_IP/callback`
+- `https://YOUR_PUBLIC_IP`
 - `http://localhost:5173`
-- `http://127.0.0.1:5173`
+- `http://localhost:5173/callback`
+
+The API identifier (`AUTH0_AUDIENCE`) stays whatever Person B configured (often `https://localhost`). That is not the site URL.
 
 ## Repeat deploy after a merge
 
