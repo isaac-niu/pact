@@ -3,10 +3,10 @@ import { usePact } from "../store.jsx";
 import { sol } from "../lib/format.js";
 
 const STEPS = [
-  { n: "01", label: "Say it", copy: "Write the pact in one line." },
-  { n: "02", label: "Stake it", copy: "Friend matches virtual SOL." },
-  { n: "03", label: "Prove it", copy: "Upload the photo. Desk calls it." },
-  { n: "04", label: "Share it", copy: "The settled ticket is the post." },
+  { n: "01", label: "Say it" },
+  { n: "02", label: "Stake it" },
+  { n: "03", label: "Prove it" },
+  { n: "04", label: "Share it" },
 ];
 
 export default function Home() {
@@ -27,7 +27,7 @@ export default function Home() {
 
       <ol className="loop" aria-label="Product loop">
         {STEPS.map((step, i) => (
-          <li key={step.n} title={step.copy}>
+          <li key={step.n}>
             <span className="loop-n">{step.n}</span>
             <strong>{step.label}</strong>
             {i < STEPS.length - 1 ? <span className="loop-arrow" aria-hidden="true">→</span> : null}
