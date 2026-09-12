@@ -45,6 +45,23 @@ function isParticipant(pact, user) {
   return pact.creatorId === user.id || pact.opponentId === user.id;
 }
 
+function isGroupMember(group, user) {
+  return Boolean(group?.memberIds?.includes(user.id));
+}
+
+function publicGroup(group, user) {
+  const { joinCode, pendingMemberIds = [], ...safeGroup } = group;
+  if (group.creatorId === user.id) return { ...safeGroup, joinCode, pendingMemberIds };
+  return { ...safeGroup, requested: pendingMemberIds.includes(user.id) };
+}
+
+async function requestToJoinGroup(store, group, user) {
+  if (isGroupMember(group, user)) return { group, status: 200 };
+  if (!group.pendingMemberIds.includes(user.id)) group.pendingMemberIds.push(user.id);
+  await store.saveGroup(group);
+  return { group: { ...group, requested: true }, status: 202 };
+}
+
 export function createPactServer(options = {}) {
   const mode = options.mode ?? "mock";
   const store = options.store ?? createMemoryStore({ seedDemoUsers: mode === "mock" });
@@ -118,6 +135,46 @@ export function createPactServer(options = {}) {
       return send(res, 200, others);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/groups") {
+      const groups = await store.listGroupsForUser(user.id);
+      return send(res, 200, groups.filter((group) => group.discoverable || isGroupMember(group, user) || group.creatorId === user.id).map((group) => publicGroup(group, user)));
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/groups") {
+      const body = await bodyOf(req);
+      const name = body?.name?.trim();
+      const visibility = body?.visibility;
+      if (!name || !["public", "private"].includes(visibility)) return send(res, 400, { error: "name and visibility are required" });
+      const group = await store.createGroup({ name, visibility, discoverable: Boolean(body?.discoverable), creatorId: user.id });
+      return send(res, 201, publicGroup(group, user));
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/groups/join") {
+      const joinCode = (await bodyOf(req))?.joinCode?.trim().toUpperCase();
+      if (!joinCode) return send(res, 400, { error: "A join code is required" });
+      const group = await store.getGroupByJoinCode(joinCode);
+      if (!group) return send(res, 404, { error: "Group not found" });
+      const result = await requestToJoinGroup(store, group, user);
+      return send(res, result.status, publicGroup(result.group, user));
+    }
+
+    const groupMatch = url.pathname.match(/^\/api\/groups\/([^/]+)\/(join|approve)$/);
+    if (req.method === "POST" && groupMatch) {
+      const group = await store.getGroup(groupMatch[1]);
+      if (!group) return send(res, 404, { error: "Group not found" });
+      if (groupMatch[2] === "join") {
+        if (!group.discoverable && !isGroupMember(group, user) && group.creatorId !== user.id) return send(res, 403, { error: "Use this group's join code" });
+        const result = await requestToJoinGroup(store, group, user);
+        return send(res, result.status, publicGroup(result.group, user));
+      }
+      if (group.creatorId !== user.id) return send(res, 403, { error: "Only the group admin can approve members" });
+      const memberId = (await bodyOf(req))?.userId;
+      if (!group.pendingMemberIds.includes(memberId)) return send(res, 404, { error: "Join request not found" });
+      group.pendingMemberIds = group.pendingMemberIds.filter((id) => id !== memberId);
+      group.memberIds.push(memberId);
+      return send(res, 200, publicGroup(await store.saveGroup(group), user));
+    }
+
     if (req.method === "GET" && url.pathname === "/api/pacts") {
       return send(res, 200, (await store.listPactsForUser(user.id)).map(publicPact));
     }
@@ -125,22 +182,25 @@ export function createPactServer(options = {}) {
     if (req.method === "POST" && url.pathname === "/api/pacts") {
       const body = await bodyOf(req);
       const opponent = body?.opponentId ? await store.getUserById(body.opponentId) : null;
+      const group = body?.groupId ? await store.getGroup(body.groupId) : null;
       if (
         !body?.title?.trim() ||
         !Number.isInteger(body.stakeLamports) ||
         body.stakeLamports <= 0 ||
-        !opponent ||
-        body.opponentId === user.id
+        (Boolean(opponent) === Boolean(group)) ||
+        (opponent && body.opponentId === user.id) ||
+        (group && !isGroupMember(group, user))
       ) {
         return send(res, 400, {
-          error: "title, positive integer stakeLamports, and a different known counterparty are required",
+          error: "title, positive integer stakeLamports, and one valid counterparty or group are required",
         });
       }
       const pact = await store.createPact({
         title: body.title.trim(),
         stakeLamports: body.stakeLamports,
         creatorId: user.id,
-        opponentId: opponent.id,
+        opponentId: opponent?.id ?? null,
+        groupId: group?.id ?? null,
       });
       return send(res, 201, publicPact(pact));
     }
@@ -149,8 +209,19 @@ export function createPactServer(options = {}) {
     if (req.method === "GET" && pactMatch) {
       const pact = await store.getPact(pactMatch[1]);
       if (!pact) return send(res, 404, { error: "Pact not found" });
-      if (!isParticipant(pact, user)) return send(res, 403, { error: "Forbidden" });
+      const group = pact.groupId ? await store.getGroup(pact.groupId) : null;
+      if (!isParticipant(pact, user) && !(pact.sharedToGroupAt && isGroupMember(group, user))) return send(res, 403, { error: "Forbidden" });
       return send(res, 200, publicPact(pact));
+    }
+
+    const shareMatch = url.pathname.match(/^\/api\/pacts\/([^/]+)\/share$/);
+    if (req.method === "POST" && shareMatch) {
+      const pact = await store.getPact(shareMatch[1]);
+      const group = pact?.groupId ? await store.getGroup(pact.groupId) : null;
+      if (!pact) return send(res, 404, { error: "Pact not found" });
+      if (pact.creatorId !== user.id || !isGroupMember(group, user)) return send(res, 403, { error: "Only the creator can share this pact with its group" });
+      pact.sharedToGroupAt = Date.now();
+      return send(res, 200, publicPact(await store.savePact(pact)));
     }
 
     const actionMatch = url.pathname.match(/^\/api\/pacts\/([^/]+)\/(accept|decline|settle)$/);
@@ -158,14 +229,17 @@ export function createPactServer(options = {}) {
       const pact = await store.getPact(actionMatch[1]);
       const action = actionMatch[2];
       if (!pact) return send(res, 404, { error: "Pact not found" });
-      if (!isParticipant(pact, user)) return send(res, 403, { error: "Forbidden" });
+      const group = pact.groupId ? await store.getGroup(pact.groupId) : null;
+      if (!isParticipant(pact, user) && !(pact.sharedToGroupAt && isGroupMember(group, user))) return send(res, 403, { error: "Forbidden" });
 
       if (action === "accept") {
         const creator = await store.getUserById(pact.creatorId);
-        const opponent = await store.getUserById(pact.opponentId);
-        if (user.id !== pact.opponentId || pact.status !== "draft") {
+        const groupCanAccept = pact.groupId && pact.sharedToGroupAt && isGroupMember(group, user) && user.id !== pact.creatorId;
+        if ((!groupCanAccept && user.id !== pact.opponentId) || pact.status !== "draft") {
           return send(res, 409, { error: "Pact cannot be accepted" });
         }
+        if (groupCanAccept) pact.opponentId = user.id;
+        const opponent = await store.getUserById(pact.opponentId);
         if (
           !creator ||
           !opponent ||
