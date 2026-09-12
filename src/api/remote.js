@@ -1,5 +1,6 @@
 import { STARTING_BANK } from "../data/users.js";
 import { emptyDemoState } from "../data/seed.js";
+import { prepareProof } from "../lib/proof.js";
 
 const listeners = new Set();
 let actorId = "you";
@@ -123,18 +124,9 @@ export async function acceptPact(pactId, ctx = {}) {
   return out.result;
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Could not read that file"));
-    reader.readAsDataURL(file);
-  });
-}
-
 export async function submitEvidence(pactId, file, ctx = {}) {
   actorId = ctx.actorId || actorId;
-  const evidenceDataUrl = await readFileAsDataUrl(file);
+  const evidenceDataUrl = await prepareProof(file);
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/evidence`, {
     method: "POST",
     body: JSON.stringify({

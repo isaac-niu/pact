@@ -1,6 +1,7 @@
 import { STARTING_BANK, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
+import { validateProofFile } from "../lib/proof.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -372,6 +373,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
     throw new Error("This slip is not live for proof");
   }
   if (!file) throw new Error("Add a photo first");
+  validateProofFile(file);
 
   const evidenceUrl = await readFileAsDataUrl(file);
   const evidenceName = file.name || "proof.jpg";

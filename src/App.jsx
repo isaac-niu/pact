@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { usePact } from "./store.jsx";
 import { sol } from "./lib/format.js";
+import { deskLine, fetchDeskConfig } from "./lib/desk.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -22,6 +24,33 @@ function Switcher() {
           <span className="switcher-handle">{u.handle}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+function DeskTape() {
+  const [line, setLine] = useState("DESK…");
+  useEffect(() => {
+    let alive = true;
+    function pull() {
+      fetchDeskConfig()
+        .then((cfg) => {
+          if (alive) setLine(deskLine(cfg));
+        })
+        .catch(() => {
+          if (alive) setLine("DESK OFFLINE");
+        });
+    }
+    pull();
+    const t = setInterval(pull, 20_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+  return (
+    <div className="desk-tape" role="status">
+      {line}
     </div>
   );
 }
@@ -54,6 +83,7 @@ function Shell({ children }) {
           <Switcher />
         </div>
       </header>
+      <DeskTape />
       {children}
     </div>
   );

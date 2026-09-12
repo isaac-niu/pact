@@ -84,7 +84,22 @@ h3,
   gap: 16px;
   padding: 10px 0 22px;
   border-bottom: 1px solid var(--line);
+  margin-bottom: 0;
+}
+
+.desk-tape {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lime);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
   margin-bottom: 28px;
+  background: transparent;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .brand {

@@ -16,7 +16,7 @@ export default function Home() {
 
   return (
     <section className="hero">
-      <p className="kicker">1v1 accountability · virtual SOL · mocked referee</p>
+      <p className="kicker">1v1 accountability · virtual SOL · Gemini referee</p>
       <h1>
         Bet on the
         <br />
@@ -37,9 +37,10 @@ export default function Home() {
 
       <p className="lede">
         Social media for accountability, not attention. You post a pact, a
-        friend matches the stake, you prove it with a photo, a referee stands
-        or fades the slip. Winner takes the pot. This branch is local only —
-        no wallet, no auth, no chain.
+        friend matches the stake, you prove it with a photo, Gemini Flash
+        stands or fades the slip. ≥0.8 auto-resolves. Middle band is one
+        friend button, not a committee. Winner takes the pot — virtual SOL,
+        no wallet.
       </p>
 
       <div className="cta-row">

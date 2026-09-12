@@ -1,12 +1,13 @@
 import { featureFlags } from "./env.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
-import { judgeEvidence } from "./gemini.js";
+import { geminiStatus, judgeEvidence } from "./gemini.js";
 
 const desk = createDeskLogic(judgeEvidence);
 
 export function liveConfig(env = process.env) {
   const flags = featureFlags(env);
+  const gemini = geminiStatus();
   return {
     ok: true,
     service: "pact",
@@ -16,6 +17,9 @@ export function liveConfig(env = process.env) {
       mongo: mongoConfigured(env) && mongoReady(),
       mongoConfigured: mongoConfigured(env),
       mongoError: mongoReady() ? null : mongoError(),
+      geminiLive: Boolean(gemini.lastLiveAt) && !gemini.lastError,
+      geminiError: gemini.lastError?.code || null,
+      geminiModel: gemini.lastModel,
     },
     auth0: flags.auth0
       ? {

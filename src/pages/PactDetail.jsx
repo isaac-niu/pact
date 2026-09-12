@@ -201,7 +201,13 @@ export default function PactDetail() {
               <div className="result">{pact.verdict.result}</div>
               <div className="hint">
                 Confidence {(pact.verdict.confidence * 100).toFixed(0)}% ·{" "}
-                {pact.verdict.source || "mocked"}
+                {pact.verdict.source === "gemini"
+                  ? `Gemini ${pact.verdict.model || "Flash"}`
+                  : pact.verdict.source === "friend"
+                    ? "friend verify"
+                    : pact.verdict.fallbackReason === "credits_depleted"
+                      ? "mocked · Gemini credits depleted"
+                      : pact.verdict.source || "mocked"}
               </div>
               <p>{pact.verdict.rationale}</p>
               {pact.status === "resolved" && winner ? (
