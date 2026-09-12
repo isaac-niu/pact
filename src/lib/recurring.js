@@ -138,6 +138,7 @@ export function applyRecurringSpawns(state, { now = Date.now(), uid, bankOf } = 
       evidenceName: null,
       evidenceKind: "photo",
       evidenceFiles: [],
+      evidenceSignal: null,
       verdict: null,
       winnerId: null,
       visibility: parent.visibility === "private" ? "private" : "public",

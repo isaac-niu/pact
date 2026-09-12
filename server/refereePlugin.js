@@ -3,6 +3,7 @@ import { featureFlags } from "./env.js";
 import { geminiEnabled, judgeEvidence } from "./gemini.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
+import { describeProofSignalHook, ingestProofSignal } from "../src/lib/proofSignals.js";
 import path from "node:path";
 import { handleOgApi } from "./ogTicket.js";
 
@@ -80,7 +81,9 @@ export async function handleRefereeApi(req, res, helpers = {}) {
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
         elevenlabs,
+        proofSignals: true,
       },
+      proofSignals: describeProofSignalHook(),
     });
     return true;
   }
@@ -95,6 +98,18 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       return true;
     }
     return false;
+  }
+
+  if (url === "/api/proof-signals" && req.method === "GET") {
+    write(res, 200, describeProofSignalHook());
+    return true;
+  }
+
+  if (url === "/api/proof-signals" && req.method === "POST") {
+    const payload = await parseBody(req, 32_000);
+    const out = ingestProofSignal(payload);
+    write(res, out.ok ? 200 : 400, out);
+    return true;
   }
 
   const evidenceMatch = url.match(/^\/api\/evidence\/([^/]+)$/);
@@ -141,6 +156,7 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       dataUrl: payload.dataUrl,
       files: payload.files,
       kind: payload.kind,
+      signal: payload.signal,
     });
 
     let evidenceUrl = payload.dataUrl || null;

@@ -45,6 +45,34 @@ test("create stores a referee checklist and proof grades each line", async () =>
   assert.equal(proved.result.verdict.items.every((row) => row.pass === true), true);
 });
 
+test("GPS demo pin can stand a gym slip without a photo", async () => {
+  const desk = createDeskLogic(async (input) => ({
+    result: input.signal ? "pass" : "fail",
+    confidence: 0.88,
+    rationale: "pin holds",
+    source: "test",
+    auto: true,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Face visible", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const proved = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { signal: { kind: "gps", lat: 37.7763, lng: -122.4241, label: "Gym pin", source: "demo" } },
+    "you",
+  );
+  assert.equal(proved.result.status, "resolved");
+  assert.equal(proved.result.evidenceKind, "gps");
+  assert.equal(proved.result.evidenceSignal.kind, "gps");
+  assert.equal(proved.result.winnerId, "you");
+});
+
 test("photo burst and a short clip still settle on the existing proof path", async () => {
   const desk = createDeskLogic(async (input) => ({
     result: "pass",

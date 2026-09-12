@@ -1,3 +1,5 @@
+import { labelSignal, normalizeSignal } from "./proofSignals.js";
+
 /**
  * Proof media for a live slip.
  *
@@ -75,6 +77,10 @@ export function requireProofFiles(files) {
 
 export function normalizeProofPayload(input) {
   if (!input) return { kind: "photo", files: [], label: "proof.jpg" };
+  if (input.signal) {
+    const signal = normalizeSignal(input.signal);
+    return { kind: signal.kind, files: [], label: input.name || labelSignal(signal), signal };
+  }
   if (input.files && Array.isArray(input.files) && input.files.length) {
     const files = input.files
       .filter((row) => row?.dataUrl)
@@ -103,6 +109,7 @@ export function primaryProofFile(payload) {
 }
 
 export function pactEvidenceFiles(pact, localFiles = []) {
+  if (pact?.evidenceSignal || localFiles.some?.((row) => row.signal)) return [];
   if (Array.isArray(pact?.evidenceFiles) && pact.evidenceFiles.length) return pact.evidenceFiles;
   if (localFiles.length) return localFiles;
   if (pact?.evidenceUrl) {

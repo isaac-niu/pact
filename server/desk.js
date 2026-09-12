@@ -71,6 +71,7 @@ export function createDeskLogic(judge) {
         evidenceName: null,
         evidenceKind: "photo",
         evidenceFiles: [],
+        evidenceSignal: null,
         verdict: null,
         winnerId: null,
         visibility: input.visibility === "private" ? "private" : "public",
@@ -137,7 +138,7 @@ export function createDeskLogic(judge) {
       if (!["accepted", "evidence"].includes(pact.status)) throw new Error("This slip is not live for proof");
       const payload = normalizeProofPayload(file);
       const primary = primaryProofFile(payload);
-      if (!primary?.dataUrl) throw new Error("Add a photo first");
+      if (!primary?.dataUrl && !payload.signal) throw new Error("Add a photo first");
 
       const evidenceName = payload.label;
       const provedAt = Date.now();
@@ -148,10 +149,11 @@ export function createDeskLogic(judge) {
             ? {
                 ...p,
                 status: "judging",
-                evidenceUrl: primary.dataUrl,
+                evidenceUrl: primary?.dataUrl || null,
                 evidenceName,
                 evidenceKind: payload.kind,
                 evidenceFiles: payload.files,
+                evidenceSignal: payload.signal || null,
                 provedAt,
                 verdict: null,
                 winnerId: null,
@@ -171,9 +173,10 @@ export function createDeskLogic(judge) {
           criteria: pact.criteria,
           checklist: pact.checklist,
           fileName: evidenceName,
-          dataUrl: primary.dataUrl,
+          dataUrl: primary?.dataUrl || null,
           files: payload.files,
           kind: payload.kind,
+          signal: payload.signal,
         }),
         { ...pact, fileName: evidenceName },
       );

@@ -12,7 +12,9 @@ import RailBook from "../components/RailBook.jsx";
 import TicketShare from "../components/TicketShare.jsx";
 import { ChecklistGrade, ChecklistGradeForm, ChecklistList } from "../components/ChecklistMarks.jsx";
 import ProofPreview from "../components/ProofPreview.jsx";
+import ProofSignals from "../components/ProofSignals.jsx";
 import { isAllowedProofFile, requireProofFiles } from "../lib/proofMedia.js";
+import { ingestProofSignal, mockFitnessWorkout, mockGpsCheckin, normalizeSignal } from "../lib/proofSignals.js";
 import { pactChecklist } from "../lib/successCriteria.js";
 
 const STAMPS = {
@@ -148,6 +150,56 @@ export default function PactDetail() {
     e.target.value = "";
   }
 
+  async function postSignal(raw) {
+    setError("");
+    setBusy(true);
+    try {
+      let ingested = ingestProofSignal(raw);
+      try {
+        const res = await fetch("/api/proof-signals", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(raw),
+        });
+        if (res.ok) ingested = await res.json();
+      } catch {
+        /* hook down — local ingest already ran */
+      }
+      if (!ingested.ok) throw new Error(ingested.error || "Signal faded");
+      await submitEvidence(pact.id, { signal: ingested.signal });
+    } catch (err) {
+      setError(err.message || "Could not send proof");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onLocation() {
+    const pin = await new Promise((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            source: "device",
+            label: "Device pin",
+          }),
+        () => resolve(null),
+        { timeout: 2500, maximumAge: 30_000 },
+      );
+    });
+    await postSignal(pin ? normalizeSignal({ kind: "gps", ...pin }) : mockGpsCheckin(pact));
+  }
+
+  async function onFitness() {
+    await postSignal(mockFitnessWorkout(pact));
+  }
+
   return (
     <div>
       <div className="page-head">
@@ -243,6 +295,7 @@ export default function PactDetail() {
               </span>
             </label>
           ) : null}
+          {canUpload ? <ProofSignals busy={busy} onLocation={onLocation} onFitness={onFitness} /> : null}
           {pact.status === "open" && userId === pact.creatorId ? (
             <p className="hint">
               Counterparty accepts this slip from their signed-in Pact app, or from the other desk.

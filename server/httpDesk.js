@@ -162,6 +162,7 @@ export async function handleDeskApi(req, res, { send, readBody }) {
           name: payload.evidenceName,
           files: payload.evidenceFiles,
           kind: payload.evidenceKind,
+          signal: payload.signal,
         },
         actorOf(req, payload),
       );

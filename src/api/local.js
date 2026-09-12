@@ -267,7 +267,7 @@ function readFileAsDataUrl(file) {
 
 async function readProofInput(file) {
   const fromPayload = normalizeProofPayload(file);
-  if (fromPayload.files.length) return fromPayload;
+  if (fromPayload.files.length || fromPayload.signal) return fromPayload;
   const raw = Array.isArray(file) || file?.item ? Array.from(file) : file ? [file] : [];
   const list = requireProofFiles(raw.filter((row) => !row?.dataUrl));
   const files = [];
@@ -321,6 +321,7 @@ export async function createPact(input, ctx = {}) {
     evidenceName: null,
     evidenceKind: "photo",
     evidenceFiles: [],
+    evidenceSignal: null,
     verdict: null,
     winnerId: null,
     visibility: input.visibility === "private" ? "private" : "public",
@@ -445,9 +446,9 @@ export async function submitEvidence(pactId, file, ctx = {}) {
   }
   const payload = await readProofInput(file);
   const primary = primaryProofFile(payload);
-  if (!primary) throw new Error("Add a photo first");
+  if (!primary && !payload.signal) throw new Error("Add a photo first");
   const evidenceName = payload.label;
-  const evidenceUrl = primary.dataUrl;
+  const evidenceUrl = primary?.dataUrl || null;
   const provedAt = Date.now();
 
   persist({
@@ -461,6 +462,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
             evidenceName,
             evidenceKind: payload.kind,
             evidenceFiles: payload.files,
+            evidenceSignal: payload.signal || null,
             provedAt,
             verdict: null,
             winnerId: null,
@@ -483,6 +485,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
       dataUrl: evidenceUrl,
       files: payload.files,
       kind: payload.kind,
+      signal: payload.signal,
       pactId,
       creatorId: pact.creatorId,
       opponentId: pact.opponentId,
