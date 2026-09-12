@@ -410,6 +410,23 @@ h2 {
   gap: 4px;
 }
 
+.ticket-share {
+  margin-top: 16px;
+}
+
+.ticket-card-frame {
+  margin: 12px 0;
+  background: #070806;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.ticket-card-frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .page-head {
   display: flex;
   justify-content: space-between;
