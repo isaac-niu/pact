@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { featureFlags, publicConfig } from "./env.js";
-import { buildAnnouncement } from "./elevenlabs.js";
+import { buildAnnouncement, synthesize } from "./elevenlabs.js";
 
 test("feature flags stay false when secrets are missing", () => {
   const flags = featureFlags({});
@@ -27,6 +27,11 @@ test("feature flags detect configured services without exposing values", () => {
   });
   const json = JSON.stringify(publicConfig({ ELEVENLABS_API_KEY: "secret" }));
   assert.equal(json.includes("secret"), false);
+});
+
+test("synthesize noops without a key and never throws", async () => {
+  const r = await synthesize("ISAAC completed the challenge.", {});
+  assert.equal(r.disabled, true);
 });
 
 test("announcement line stays short and readable", () => {

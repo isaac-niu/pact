@@ -70,7 +70,7 @@ export default function Announcer({ pact, winnerHandle }) {
           ? "Announcer is optional. Add ELEVENLABS_API_KEY on the server to hear the settle call."
           : muted
             ? "Desk is muted."
-            : "Sportsbook call plays once when the slip settles."}
+            : "Sportsbook call plays once when the slip settles. Voice by ElevenLabs."}
       </p>
     </div>
   );

@@ -2,6 +2,8 @@
 
 **Pitch line:** Social media for accountability, not attention.
 
+**Live URL:** this agent did not receive `VULTR_HOST` / SSH. After Person D SSHs to the box, put that URL here and in Auth0 callbacks. Until then, demo on `npm run dev` or `npm start`.
+
 **Loop (say this while clicking):** Say it → stake it → prove it → share it.
 
 Do **not** say Venmo + Twitter + gambling. Stakes are **virtual SOL**.

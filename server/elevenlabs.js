@@ -1,6 +1,8 @@
 const cache = new Map();
 
-const DEFAULT_VOICE = "pNInz6obpgDQGcFmaJgB"; // Adam — works on ElevenLabs free (library voices 402)
+// Adam is always usable on the ElevenLabs free plan. Custom/library voices often 402.
+export const FREE_PLAN_VOICE = "pNInz6obpgDQGcFmaJgB";
+const DEFAULT_VOICE = FREE_PLAN_VOICE;
 
 export function buildAnnouncement({ winner, result, rationale, title } = {}) {
   const who = winner || "The challenger";
@@ -20,31 +22,43 @@ export async function synthesize(text, env = process.env) {
   const cacheKey = text;
   if (cache.has(cacheKey)) return { audio: cache.get(cacheKey), cached: true };
 
-  const voice = env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voice}`;
+  const preferred = (env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE).trim();
+  const voices = preferred === FREE_PLAN_VOICE ? [FREE_PLAN_VOICE] : [preferred, FREE_PLAN_VOICE];
+  const model = env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2_5";
 
-  let res;
-  try {
-    res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "xi-api-key": key,
-        accept: "audio/mpeg",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        text,
-        model_id: env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2_5",
-      }),
-    });
-  } catch {
-    return { error: "announcer_unavailable" };
+  let lastStatus = 0;
+  for (const voice of voices) {
+    let res;
+    try {
+      res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": key,
+          accept: "audio/mpeg",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: model,
+        }),
+      });
+    } catch {
+      return { error: "announcer_unavailable" };
+    }
+
+    if (res.ok) {
+      const audio = Buffer.from(await res.arrayBuffer());
+      if (cache.size > 32) cache.clear();
+      cache.set(cacheKey, audio);
+      return { audio };
+    }
+
+    lastStatus = res.status;
+    // 402 = payment required / voice not on this plan — try Adam next.
+    if (res.status !== 402 && res.status !== 404) {
+      return { error: "announcer_unavailable", status: res.status };
+    }
   }
 
-  if (!res.ok) return { error: "announcer_unavailable", status: res.status };
-
-  const audio = Buffer.from(await res.arrayBuffer());
-  if (cache.size > 32) cache.clear();
-  cache.set(cacheKey, audio);
-  return { audio };
+  return { error: "announcer_unavailable", status: lastStatus };
 }
