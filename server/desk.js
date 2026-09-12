@@ -22,6 +22,7 @@ import { applyComment, applyReaction } from "../src/lib/tapeTalk.js";
 import { getSidekickLine } from "./ifmSidekick.js";
 import { attachChecklistToVerdict, friendItemMarks, slipCriteria } from "../src/lib/successCriteria.js";
 import { normalizeProofPayload, primaryProofFile } from "../src/lib/proofMedia.js";
+import { describeRail, mergeEscrow, normalizeEscrow } from "../src/lib/solanaEscrow.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -80,6 +81,7 @@ export function createDeskLogic(judge, getSidekick = getSidekickLine) {
         acceptedAt: null,
         provedAt: null,
         resolvedAt: null,
+        escrow: normalizeEscrow(input.escrow),
         ...seriesFields(input, now, () => uid("ser")),
       };
       return {
@@ -315,6 +317,29 @@ export function createDeskLogic(judge, getSidekick = getSidekickLine) {
         uid,
         bankOf,
       });
+    },
+
+    async attachEscrow(state, pactId, patch, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      const pact = state.pacts.find((p) => p.id === pactId);
+      if (!pact) throw new Error("Slip not on the board");
+      if (pact.creatorId !== actorId && pact.opponentId !== actorId) {
+        throw new Error("Only a desk on this slip can mark the rail");
+      }
+      const escrow = mergeEscrow(pact.escrow, patch);
+      const next = { ...pact, escrow };
+      const now = Date.now();
+      return {
+        state: {
+          ...state,
+          pacts: state.pacts.map((p) => (p.id === pactId ? next : p)),
+          events: [
+            { id: uid("ev"), pactId, type: "escrow", actorId, at: now, note: describeRail(escrow) },
+            ...state.events,
+          ],
+        },
+        result: next,
+      };
     },
   };
 }

@@ -1,5 +1,6 @@
 import { featureFlags } from "./env.js";
 import { describeProofSignalHook } from "../src/lib/proofSignals.js";
+import { describeEscrowHook } from "../src/lib/solanaEscrow.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
 import { normalizeDeskActor } from "../src/data/users.js";
@@ -21,8 +22,10 @@ export function liveConfig(env = process.env) {
       mongoError: mongoReady() ? null : mongoError(),
       lastGeminiError: getLastGeminiError(),
       proofSignals: true,
+      solanaEscrow: true,
     },
     proofSignals: describeProofSignalHook(),
+    solanaEscrow: describeEscrowHook(env),
     auth0: flags.auth0
       ? {
           domain: env.AUTH0_DOMAIN,
@@ -163,4 +166,8 @@ export function commentOnMark(eventId, body, actorId) {
 
 export function placeSideStake(pactId, input, actorId) {
   return mutate((state) => desk.placeSideStake(state, pactId, input, actorId));
+}
+
+export function attachEscrow(pactId, patch, actorId) {
+  return mutate((state) => desk.attachEscrow(state, pactId, patch, actorId));
 }

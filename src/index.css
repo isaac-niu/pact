@@ -816,6 +816,11 @@ textarea {
   border-color: #3d4a18;
 }
 
+.badge.type-escrow {
+  color: var(--lime);
+  border-color: #3d4a18;
+}
+
 .badge.type-review,
 .badge.type-deadline,
 .badge.type-appeal,
@@ -1540,4 +1545,47 @@ label .hint {
   font-size: 20px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.wallet-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 7px 12px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.wallet-chip b {
+  color: var(--lime);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.wallet-chip.muted {
+  color: var(--muted);
+}
+
+.wallet-rail,
+.escrow-rail {
+  margin-bottom: 16px;
+}
+
+.wallet-actions,
+.wallet-connected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.mono-sig {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
 }

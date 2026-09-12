@@ -10,11 +10,15 @@ import { cadenceLabel, defaultSeriesUntil } from "../lib/recurring.js";
 import { criteriaFromChecklist, defaultGymChecklist } from "../lib/successCriteria.js";
 import ChecklistEditor from "../components/ChecklistEditor.jsx";
 import { ChecklistList } from "../components/ChecklistMarks.jsx";
+import { WalletRail } from "../components/WalletRail.jsx";
+import { createEscrowIntent, lockStake } from "../lib/solanaEscrow.js";
+import { useWallet } from "../wallet/WalletProvider.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 export default function Create() {
-  const { createPact, user, opponent, bank } = usePact();
+  const { createPact, attachEscrow, user, opponent, bank } = usePact();
+  const { connected, publicKey, cluster, sendEscrow } = useWallet();
   // Auth0Provider only mounts here once Auth0 env vars are configured (see
   // AuthGate). Without it the optional hook stays signed out, so the unsigned
   // You↔Friend desk still posts a localStorage slip.
@@ -33,6 +37,7 @@ export default function Create() {
   const [liveOpponentId, setLiveOpponentId] = useState(DESK_OPPONENT);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lockOnChain, setLockOnChain] = useState(false);
 
   const amount = Number(stake);
   const pot = Number.isFinite(amount) ? amount * 2 : 0;
@@ -108,6 +113,16 @@ export default function Create() {
         cadence,
         seriesUntil: cadence === "none" ? null : new Date(seriesUntil).getTime(),
       });
+      if (lockOnChain && connected) {
+        const intent = createEscrowIntent({
+          pactId: pact.id,
+          stakeSol: amount,
+          creatorPubkey: publicKey,
+          cluster,
+        });
+        const out = await lockStake({ intent, wallet: { publicKey }, send: sendEscrow });
+        await attachEscrow(pact.id, out.escrow);
+      }
       navigate(`/pact/${pact.id}`);
     } catch (err) {
       setError(err.message || "Could not post the slip");
@@ -125,6 +140,7 @@ export default function Create() {
             <h2>Write the pact</h2>
           </div>
         </div>
+        <WalletRail />
         <form className="card form" onSubmit={onSubmit}>
           <label>
             Title
@@ -148,7 +164,12 @@ export default function Create() {
                 onChange={(e) => setStake(e.target.value)}
                 required
               />
-              <span className="hint">Max {sol(bank)} SOL</span>
+              <span className="hint">
+                Max {sol(bank)} SOL
+                {connected && lockOnChain
+                  ? " · virtual book still holds the ticket; chain lock is extra"
+                  : " · virtual SOL on this desk"}
+              </span>
             </label>
             <label>
               Deadline
@@ -302,6 +323,7 @@ export default function Create() {
           )}
 
           {destination === "desk" ? (
+            <>
             <fieldset className="opp-field">
               <legend>Friend</legend>
               {!authConfigured ? (
@@ -351,6 +373,25 @@ export default function Create() {
                 </label>
               )}
             </fieldset>
+            {connected ? (
+              <label className={`opp-card ${lockOnChain ? "on" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={lockOnChain}
+                  onChange={(e) => setLockOnChain(e.target.checked)}
+                  aria-label="Lock this stake on the chain rail"
+                />
+                <span>
+                  <b>Chain rail</b>
+                  <em>
+                    Lock a memo on {cluster}. Virtual book still holds the ticket if the send misses.
+                  </em>
+                </span>
+              </label>
+            ) : (
+              <p className="hint">Sit the wallet rail to lock this stake on-chain. Virtual book is the default.</p>
+            )}
+            </>
           ) : null}
 
           {error ? <p className="err">{error}</p> : null}

@@ -5,6 +5,7 @@ import { getSidekickLine, ifmEnabled } from "./ifmSidekick.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import { describeProofSignalHook, ingestProofSignal } from "../src/lib/proofSignals.js";
+import { describeEscrowHook } from "../src/lib/solanaEscrow.js";
 import path from "node:path";
 import { handleOgApi } from "./ogTicket.js";
 
@@ -85,8 +86,10 @@ export async function handleRefereeApi(req, res, helpers = {}) {
         elevenlabs,
         ifm: ifmEnabled(),
         proofSignals: true,
+        solanaEscrow: true,
       },
       proofSignals: describeProofSignalHook(),
+      solanaEscrow: describeEscrowHook(process.env),
     });
     return true;
   }

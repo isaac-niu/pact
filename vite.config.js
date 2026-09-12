@@ -20,11 +20,20 @@ function isRefereeApi(url = "") {
 
 export default defineConfig({
   plugins: [react(), refereePlugin(root)],
+  plugins: [react(), refereePlugin(root)],
   // @solana/web3.js and its dependencies reference the Node `global` and
   // `Buffer` globals; the Buffer polyfill lives in main.jsx, this covers
   // the bare `global` references some of those packages make.
   define: {
     global: "globalThis",
+  },
+  resolve: {
+    alias: {
+      buffer: "buffer",
+    },
+  },
+  optimizeDeps: {
+    include: ["buffer", "@solana/web3.js"],
   },
   server: {
     host: true,

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePact } from "../store.jsx";
 import { formatWhen, sol } from "../lib/format.js";
+import { WalletRail } from "../components/WalletRail.jsx";
 
 export default function Profile() {
   const { user, bank, record, ledger, pacts, resetDesk, backend, sideStakes } = usePact();
@@ -24,6 +25,8 @@ export default function Profile() {
           <p className="lede slim">{user.name} · SOL bank lives in MongoDB on this desk</p>
         </div>
       </div>
+
+      <WalletRail />
 
       <div className="odds-strip profile-strip">
         <div className="odds-cell">

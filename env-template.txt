@@ -37,6 +37,14 @@ VITE_AUTH0_CALLBACK_URL=http://localhost:5173/callback
 VITE_API_URL=http://localhost:3001
 PORT=3001
 
+# --- Solana (browser-safe, no secrets) ---
+# /wallet page: optional custom RPC; unset uses public devnet.
+# VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+# Demo desk rail (memo on public cluster). Mainnet refused unless allowed.
+VITE_SOLANA_CLUSTER=devnet
+VITE_SOLANA_RPC=
+VITE_SOLANA_ESCROW_TREASURY=
+
 # --- Deterministic local QA (ISAAC / FRIEND, in-memory Maps) ---
 # Leave this unset (or anything other than 1) for live Auth0 + Atlas.
 # PACT_MOCK_AUTH=1

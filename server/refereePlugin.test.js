@@ -80,6 +80,9 @@ test("config reports announcer disabled without ElevenLabs key", async () => {
     assert.equal(body.announcer, false);
     assert.equal(body.features.elevenlabs, false);
     assert.equal("lastGeminiError" in body.features, true);
+    assert.equal(body.features.solanaEscrow, true);
+    assert.equal(body.solanaEscrow.cluster, "devnet");
+    assert.equal(body.solanaEscrow.virtualFallback, true);
     assert.equal(JSON.stringify(body).includes("test-key"), false);
   } finally {
     if (prev === undefined) delete process.env.ELEVENLABS_API_KEY;

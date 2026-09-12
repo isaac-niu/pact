@@ -15,6 +15,7 @@ import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 import People from "./pages/People.jsx";
 import Crew from "./pages/Crew.jsx";
+import { WalletRail } from "./components/WalletRail.jsx";
 
 // The Solana wallet-adapter stack is a few hundred KB the app never needs
 // outside this one page — load it only when someone actually visits /wallet.
@@ -158,6 +159,7 @@ function Shell({ children }) {
           <NavLink to="/app">Pact app</NavLink>
         </nav>
         <div className="top-tools">
+          <WalletRail compact />
           <BalanceControl />
           <AccountControl />
         </div>

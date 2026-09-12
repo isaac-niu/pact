@@ -135,9 +135,11 @@ export const env = {
   AUTH0_CALLBACK_URL: getViteEnv("AUTH0_CALLBACK_URL") || AUTH0_CALLBACK_URL,
   AUTH0_LOGOUT_URL: getViteEnv("AUTH0_LOGOUT_URL") || AUTH0_LOGOUT_URL,
   API_URL: getViteEnv("API_URL"),
-  // Optional: custom Solana RPC endpoint for the /wallet page. Falls back to
-  // the public devnet cluster when unset — never required to run the app.
   SOLANA_RPC_URL: getViteEnv("SOLANA_RPC_URL"),
+  SOLANA_CLUSTER: getViteEnv("SOLANA_CLUSTER") || "devnet",
+  SOLANA_RPC: getViteEnv("SOLANA_RPC") || "",
+  SOLANA_ESCROW_TREASURY: getViteEnv("SOLANA_ESCROW_TREASURY") || "",
+  SOLANA_ALLOW_MAINNET: getViteEnv("SOLANA_ALLOW_MAINNET") || "",
 };
 
 /**
