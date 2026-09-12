@@ -1,6 +1,10 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { usePact } from "./store.jsx";
+import { api } from "./api.js";
 import { sol } from "./lib/format.js";
+import { AUTH0_LOGOUT_URL, clientEnvReady } from "./env.js";
 import Home from "./pages/Home.jsx";
 import Create from "./pages/Create.jsx";
 import Feed from "./pages/Feed.jsx";
@@ -9,23 +13,86 @@ import Profile from "./pages/Profile.jsx";
 import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 
-function Switcher() {
-  const { userId, switchUser, users } = usePact();
+const LAMPORTS_PER_SOL = 1_000_000_000;
+
+function Auth0Account() {
+  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
+
+  if (isLoading) return <span className="account-status">Checking account…</span>;
+  if (!isAuthenticated) {
+    return <button className="account-login" type="button" onClick={() => loginWithRedirect()}>Sign in</button>;
+  }
+
+  const name = user?.name || user?.nickname || user?.email || "Signed-in user";
   return (
-    <div className="switcher" role="group" aria-label="Demo user">
-      {users.map((u) => (
-        <button
-          key={u.id}
-          type="button"
-          className={userId === u.id ? "on" : ""}
-          onClick={() => switchUser(u.id)}
-        >
-          <span className="switcher-pill">{u.pill}</span>
-          <span className="switcher-handle">{u.handle}</span>
-        </button>
-      ))}
+    <div className="account-control" aria-label="Signed-in account">
+      <span className="account-name" title={name}>{name}</span>
+      <button
+        className="account-logout"
+        type="button"
+        onClick={() => logout({ logoutParams: { returnTo: AUTH0_LOGOUT_URL } })}
+      >
+        Sign out
+      </button>
     </div>
   );
+}
+
+export function AccountControl() {
+  if (!clientEnvReady().ready) {
+    return <NavLink className="account-login" to="/app">Sign in</NavLink>;
+  }
+  return <Auth0Account />;
+}
+
+function Auth0Balance() {
+  const { getAccessTokenSilently, isAuthenticated, isLoading, user } = useAuth0();
+  const [balanceLamports, setBalanceLamports] = useState(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setBalanceLamports(null);
+      return undefined;
+    }
+
+    let active = true;
+    getAccessTokenSilently()
+      .then((token) => api("/api/ledger", { token }))
+      .then((ledger) => {
+        if (active) setBalanceLamports(ledger.balanceLamports);
+      })
+      .catch(() => {
+        if (active) setBalanceLamports(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [getAccessTokenSilently, isAuthenticated]);
+
+  const name = user?.name || user?.nickname || user?.email || "Account";
+  const balance = balanceLamports === null ? "—" : sol(balanceLamports / LAMPORTS_PER_SOL);
+  return (
+    <NavLink to="/app" className="bank-chip" title="Your authenticated virtual SOL ledger">
+      <span className="bank-who">{isLoading ? "Account" : name}</span>
+      <b>{balance}</b>
+      <span>SOL</span>
+    </NavLink>
+  );
+}
+
+function LocalBalance({ user, bank }) {
+  return (
+    <NavLink to="/me" className="bank-chip" title="Local demo virtual SOL ledger">
+      <span className="bank-who">{user.handle}</span>
+      <b>{sol(bank)}</b>
+      <span>SOL</span>
+    </NavLink>
+  );
+}
+
+export function BalanceControl({ user, bank }) {
+  if (!clientEnvReady().ready) return <LocalBalance user={user} bank={bank} />;
+  return <Auth0Balance />;
 }
 
 function Shell({ children }) {
@@ -49,12 +116,8 @@ function Shell({ children }) {
           <NavLink to="/app">Pact app</NavLink>
         </nav>
         <div className="top-tools">
-          <NavLink to="/me" className="bank-chip" title="Virtual SOL ledger">
-            <span className="bank-who">{user.handle}</span>
-            <b>{sol(bank)}</b>
-            <span>SOL</span>
-          </NavLink>
-          <Switcher />
+          <BalanceControl user={user} bank={bank} />
+          <AccountControl />
         </div>
       </header>
       {children}
