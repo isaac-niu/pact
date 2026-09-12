@@ -90,4 +90,4 @@ export function usePact() {
   return ctx;
 }
 
-export { USERS, userById };
+export { USERS, userById, userByHandle } from "./data/users.js";

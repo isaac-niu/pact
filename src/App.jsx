@@ -14,6 +14,7 @@ import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 import People from "./pages/People.jsx";
 import Crew from "./pages/Crew.jsx";
+import PublicProfile from "./pages/PublicProfile.jsx";
 import { WalletRail } from "./components/WalletRail.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
@@ -163,6 +164,7 @@ export default function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/pact/:id" element={<PactDetail />} />
         <Route path="/me" element={<Profile />} />
+        <Route path="/u/:handle" element={<PublicProfile />} />
         <Route path="/people" element={<People />} />
         <Route path="/crew" element={<Crew />} />
         <Route path="/profile" element={<Navigate to="/me" replace />} />

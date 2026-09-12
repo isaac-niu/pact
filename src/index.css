@@ -905,6 +905,10 @@ textarea {
   text-transform: uppercase;
 }
 
+a.side-name:hover {
+  color: var(--lime);
+}
+
 .vs-mark {
   color: var(--muted);
   font-weight: 800;

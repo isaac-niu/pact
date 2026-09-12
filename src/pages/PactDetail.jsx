@@ -237,13 +237,17 @@ export default function PactDetail() {
         <div className="vs">
           <div className={`side ${pact.winnerId === creator.id ? "win" : ""}`}>
             <div className="odds-label">Challenger</div>
-            <div className="side-name">{creator.handle}</div>
+            <Link className="side-name" to={`/u/${creator.handle}`}>
+              {creator.handle}
+            </Link>
             <div className="hint">{sol(pact.stake)} SOL locked</div>
           </div>
           <div className="vs-mark">VS</div>
           <div className={`side ${pact.winnerId === opponent.id ? "win" : ""}`}>
             <div className="odds-label">Friend</div>
-            <div className="side-name">{opponent.handle}</div>
+            <Link className="side-name" to={`/u/${opponent.handle}`}>
+              {opponent.handle}
+            </Link>
             <div className="hint">
               {pact.status === "open" ? "awaiting accept" : `${sol(pact.stake)} SOL matched`}
             </div>

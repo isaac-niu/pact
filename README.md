@@ -50,6 +50,7 @@ npm start
 | `/feed` | Event tape + slips |
 | `/pact/:id` | Ticket, evidence, verdict |
 | `/me` | Profile, rate, virtual SOL bank |
+| `/u/:handle` | Public ticket — win rate, record, public pact history |
 | `/app` | Authenticated Auth0 / mock ISAAC-MAYA desk |
 | `/callback` | Auth0 return route |
 
