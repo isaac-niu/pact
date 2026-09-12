@@ -31,6 +31,23 @@ if [[ -f "$APP/.env" ]] && ! grep -q '^MONGODB_DB_NAME=' "$APP/.env"; then
   printf '\nMONGODB_DB_NAME=%s\n' "$MONGODB_DB_NAME" >> "$APP/.env"
 fi
 
+chmod +x "$APP/deploy/tls.sh" "$APP/deploy/install-nginx.sh" "$APP/deploy/reload-nginx.sh" 2>/dev/null || true
+if [[ -x "$APP/deploy/tls.sh" ]]; then
+  bash "$APP/deploy/tls.sh"
+  if [[ -f "$APP/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    . "$APP/.env"
+    set +a
+  fi
+  if [[ -n "${PUBLIC_URL:-}" ]]; then
+    public="${PUBLIC_URL%/}"
+    export VITE_AUTH0_CALLBACK_URL="${VITE_AUTH0_CALLBACK_URL:-${public}/callback}"
+    export VITE_AUTH0_LOGOUT_URL="${VITE_AUTH0_LOGOUT_URL:-${public}}"
+    export VITE_API_URL="${VITE_API_URL:-${public}}"
+  fi
+fi
+
 # vite lives in devDependencies — do not let NODE_ENV=production skip it.
 NPM_CONFIG_PRODUCTION=false npm ci
 npm run build
@@ -38,11 +55,14 @@ npm prune --omit=dev
 export NODE_ENV=production
 
 install -m 644 "$APP/deploy/pact.service" /etc/systemd/system/pact.service
-install -m 644 "$APP/deploy/nginx.conf" /etc/nginx/sites-available/pact
-ln -sfn /etc/nginx/sites-available/pact /etc/nginx/sites-enabled/pact
-rm -f /etc/nginx/sites-enabled/default
-
-nginx -t
+if [[ -x "$APP/deploy/install-nginx.sh" ]]; then
+  bash "$APP/deploy/install-nginx.sh"
+else
+  install -m 644 "$APP/deploy/nginx.conf" /etc/nginx/sites-available/pact
+  ln -sfn /etc/nginx/sites-available/pact /etc/nginx/sites-enabled/pact
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t
+fi
 systemctl daemon-reload
 systemctl enable --now pact
 systemctl restart pact
