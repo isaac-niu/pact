@@ -25,11 +25,22 @@ export function publicUser(user) {
   };
 }
 
-export function publicDirectoryUser(user) {
+export function publicDirectoryUser(user, viewer = null) {
   return {
     id: user.id,
     name: user.name,
     email: user.email ?? null,
+    friend: Boolean(viewer?.friendIds?.includes(user.id)),
+    requested: Boolean(viewer?.outgoingFriendIds?.includes(user.id)),
+  };
+}
+
+function withFriends(user) {
+  return {
+    ...user,
+    friendIds: Array.isArray(user.friendIds) ? user.friendIds : [],
+    incomingFriendIds: Array.isArray(user.incomingFriendIds) ? user.incomingFriendIds : [],
+    outgoingFriendIds: Array.isArray(user.outgoingFriendIds) ? user.outgoingFriendIds : [],
   };
 }
 
@@ -181,6 +192,37 @@ export function createMemoryStore({ seedDemoUsers = true } = {}) {
           return pact && (pact.creatorId === userId || pact.opponentId === userId);
         })
         .map(clone);
+    },
+
+    async requestFriend(fromId, toId) {
+      if (fromId === toId) throw new Error("Cannot friend yourself");
+      const from = users.get(fromId);
+      const to = users.get(toId);
+      if (!from || !to) throw new Error("User not found");
+      const a = withFriends(from);
+      const b = withFriends(to);
+      if (a.friendIds.includes(toId)) return { status: "friends" };
+      a.outgoingFriendIds = [...new Set([...a.outgoingFriendIds, toId])];
+      b.incomingFriendIds = [...new Set([...b.incomingFriendIds, fromId])];
+      users.set(fromId, a);
+      users.set(toId, b);
+      return { status: "requested" };
+    },
+
+    async acceptFriend(userId, fromId) {
+      const meDoc = users.get(userId);
+      const themDoc = users.get(fromId);
+      if (!meDoc || !themDoc) throw new Error("User not found");
+      const me = withFriends(meDoc);
+      const them = withFriends(themDoc);
+      if (!me.incomingFriendIds.includes(fromId)) throw new Error("No request");
+      me.incomingFriendIds = me.incomingFriendIds.filter((id) => id !== fromId);
+      them.outgoingFriendIds = them.outgoingFriendIds.filter((id) => id !== userId);
+      me.friendIds = [...new Set([...me.friendIds, fromId])];
+      them.friendIds = [...new Set([...them.friendIds, userId])];
+      users.set(userId, me);
+      users.set(fromId, them);
+      return { status: "friends" };
     },
   };
 }

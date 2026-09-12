@@ -33,4 +33,13 @@ describe("memory store", () => {
     expect(second.name).toBe("One Updated");
     expect(second.email).toBe("one@example.com");
   });
+
+  it("requests and accepts friends", async () => {
+    const store = createMemoryStore();
+    const isaac = await store.getUserById("auth0|demo-isaac");
+    const maya = await store.getUserById("auth0|demo-maya");
+    expect(await store.requestFriend(isaac.id, maya.id)).toEqual({ status: "requested" });
+    expect(await store.acceptFriend(maya.id, isaac.id)).toEqual({ status: "friends" });
+    expect((await store.getUserById(isaac.id)).friendIds).toContain(maya.id);
+  });
 });

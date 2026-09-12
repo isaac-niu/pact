@@ -144,5 +144,51 @@ export function createMongoStore(db) {
       if (pactIds.length === 0) return [];
       return (await transactions.find({ pactId: { $in: pactIds } }).toArray()).map(withoutMongoId);
     },
+
+    async requestFriend(fromId, toId) {
+      if (fromId === toId) throw new Error("Cannot friend yourself");
+      const fromDoc = await users.findOne({ id: fromId });
+      const toDoc = await users.findOne({ id: toId });
+      if (!fromDoc || !toDoc) throw new Error("User not found");
+      const from = withFriends(fromDoc);
+      const to = withFriends(toDoc);
+      if (from.friendIds.includes(toId)) return { status: "friends" };
+      from.outgoingFriendIds = [...new Set([...from.outgoingFriendIds, toId])];
+      to.incomingFriendIds = [...new Set([...to.incomingFriendIds, fromId])];
+      await users.updateOne({ id: fromId }, { $set: { outgoingFriendIds: from.outgoingFriendIds } });
+      await users.updateOne({ id: toId }, { $set: { incomingFriendIds: to.incomingFriendIds } });
+      return { status: "requested" };
+    },
+
+    async acceptFriend(userId, fromId) {
+      const meDoc = await users.findOne({ id: userId });
+      const themDoc = await users.findOne({ id: fromId });
+      if (!meDoc || !themDoc) throw new Error("User not found");
+      const me = withFriends(meDoc);
+      const them = withFriends(themDoc);
+      if (!me.incomingFriendIds.includes(fromId)) throw new Error("No request");
+      me.incomingFriendIds = me.incomingFriendIds.filter((id) => id !== fromId);
+      them.outgoingFriendIds = them.outgoingFriendIds.filter((id) => id !== userId);
+      me.friendIds = [...new Set([...me.friendIds, fromId])];
+      them.friendIds = [...new Set([...them.friendIds, userId])];
+      await users.updateOne(
+        { id: userId },
+        { $set: { incomingFriendIds: me.incomingFriendIds, friendIds: me.friendIds } },
+      );
+      await users.updateOne(
+        { id: fromId },
+        { $set: { outgoingFriendIds: them.outgoingFriendIds, friendIds: them.friendIds } },
+      );
+      return { status: "friends" };
+    },
+  };
+}
+
+function withFriends(user) {
+  return {
+    ...user,
+    friendIds: Array.isArray(user.friendIds) ? user.friendIds : [],
+    incomingFriendIds: Array.isArray(user.incomingFriendIds) ? user.incomingFriendIds : [],
+    outgoingFriendIds: Array.isArray(user.outgoingFriendIds) ? user.outgoingFriendIds : [],
   };
 }

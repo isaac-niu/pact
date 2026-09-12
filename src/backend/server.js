@@ -133,8 +133,45 @@ export function createPactRequestHandler(options = {}) {
     if (req.method === "GET" && url.pathname === "/api/users") {
       const others = (await store.listUsers())
         .filter((entry) => entry.id !== user.id)
-        .map(publicDirectoryUser);
+        .map((entry) => publicDirectoryUser(entry, user));
       return send(res, 200, others);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/friends") {
+      if (!store.requestFriend) return send(res, 501, { error: "Friends are not available" });
+      const people = await store.listUsers();
+      const byId = Object.fromEntries(people.map((entry) => [entry.id, entry]));
+      const pick = (ids = []) =>
+        ids
+          .map((id) => byId[id])
+          .filter(Boolean)
+          .map((entry) => publicDirectoryUser(entry, user));
+      return send(res, 200, {
+        friends: pick(user.friendIds),
+        incoming: pick(user.incomingFriendIds),
+        outgoing: pick(user.outgoingFriendIds),
+      });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/friends") {
+      if (!store.requestFriend) return send(res, 501, { error: "Friends are not available" });
+      const toId = (await bodyOf(req))?.userId;
+      if (!toId) return send(res, 400, { error: "userId is required" });
+      try {
+        return send(res, 200, await store.requestFriend(user.id, toId));
+      } catch (error) {
+        return send(res, 400, { error: error.message });
+      }
+    }
+
+    const friendAccept = url.pathname.match(/^\/api\/friends\/([^/]+)\/accept$/);
+    if (req.method === "POST" && friendAccept) {
+      if (!store.acceptFriend) return send(res, 501, { error: "Friends are not available" });
+      try {
+        return send(res, 200, await store.acceptFriend(user.id, decodeURIComponent(friendAccept[1])));
+      } catch (error) {
+        return send(res, 400, { error: error.message });
+      }
     }
 
     if (req.method === "GET" && url.pathname === "/api/groups") {

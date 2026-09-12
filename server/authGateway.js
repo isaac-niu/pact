@@ -10,6 +10,8 @@ export function isPersonBApi(req) {
   const url = String(req.url || "").split("?")[0];
   if (url === "/api/auth/health" || url.startsWith("/api/auth/")) return true;
   if (url === "/api/users" || url.startsWith("/api/users/")) return true;
+  if (url === "/api/friends" || url.startsWith("/api/friends/")) return true;
+  if (url === "/api/groups" || url.startsWith("/api/groups/")) return true;
   if (url === "/api/ledger") return true;
   if (url === "/api/pacts" || url.startsWith("/api/pacts/")) {
     const authz = req.headers.authorization || req.headers.Authorization || "";

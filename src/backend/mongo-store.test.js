@@ -75,5 +75,9 @@ describe("mongo store", () => {
     expect(await store.listPactsForUser(alice.id)).toHaveLength(1);
     expect(await store.listPactsForUser("auth0|stranger")).toHaveLength(0);
     expect(await store.listTransactionsForUser(bob.id)).toHaveLength(1);
+
+    expect(await store.requestFriend(alice.id, bob.id)).toEqual({ status: "requested" });
+    expect(await store.acceptFriend(bob.id, alice.id)).toEqual({ status: "friends" });
+    expect((await store.getUserById(alice.id)).friendIds).toContain(bob.id);
   });
 });

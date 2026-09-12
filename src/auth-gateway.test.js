@@ -7,6 +7,10 @@ describe("isPersonBApi", () => {
     expect(isPersonBApi({ url: "/api/auth/me", headers: {} })).toBe(true);
     expect(isPersonBApi({ url: "/api/users", headers: {} })).toBe(true);
     expect(isPersonBApi({ url: "/api/ledger", headers: {} })).toBe(true);
+    expect(isPersonBApi({ url: "/api/groups", headers: {} })).toBe(true);
+    expect(isPersonBApi({ url: "/api/groups/abc/join", headers: {} })).toBe(true);
+    expect(isPersonBApi({ url: "/api/friends", headers: {} })).toBe(true);
+    expect(isPersonBApi({ url: "/api/friends/auth0%7Cbob/accept", headers: {} })).toBe(true);
   });
 
   it("sends Bearer /api/pacts to Auth0 API and actor posts to the desk", () => {

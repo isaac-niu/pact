@@ -291,4 +291,28 @@ describe("Pact API authorization", () => {
     expect(accepted.body.status).toBe("accepted");
     expect(accepted.body.opponentId).toBe(bob.id);
   });
+
+  it("lets signed-in users request and accept friends", async () => {
+    const { alice, bob } = await startLive();
+    const requested = await api("/api/friends", {
+      method: "POST",
+      headers: auth("alice", { "content-type": "application/json" }),
+      body: JSON.stringify({ userId: bob.id }),
+    });
+    expect(requested.status).toBe(200);
+    expect(requested.body.status).toBe("requested");
+
+    const incoming = await api("/api/friends", { headers: auth("bob") });
+    expect(incoming.body.incoming.map((person) => person.id)).toContain(alice.id);
+
+    const accepted = await api(`/api/friends/${encodeURIComponent(alice.id)}/accept`, {
+      method: "POST",
+      headers: auth("bob"),
+    });
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.status).toBe("friends");
+
+    const directory = await api("/api/users", { headers: auth("alice") });
+    expect(directory.body.find((person) => person.id === bob.id).friend).toBe(true);
+  });
 });
