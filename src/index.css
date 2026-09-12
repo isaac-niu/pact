@@ -420,6 +420,31 @@ textarea {
   border-radius: 2px;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  flex: none;
+  accent-color: var(--lime);
+}
+
+label.check,
+label:has(> input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: max-content;
+}
+
+label.check input,
+label:has(> input[type="checkbox"]) > input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+}
+
 textarea {
   min-height: 84px;
   resize: vertical;
@@ -887,6 +912,27 @@ textarea {
 
 .status {
   color: var(--amber);
+}
+
+.status.ok {
+  color: var(--lime);
+}
+
+.status.err {
+  color: var(--red);
+}
+
+.people-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 select {

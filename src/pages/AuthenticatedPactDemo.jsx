@@ -1,7 +1,10 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, fetchHealth } from "../api.js";
+import { CreateGroupForm, FriendsList, GroupList, JoinCodeForm } from "../components/SocialForms.jsx";
 import { AUTH0_CALLBACK_URL, AUTH0_LOGOUT_URL, clientEnvReady, env } from "../env.js";
+import { createSocialActions } from "../lib/socialActions.js";
+import { isStubbedSocialError } from "../lib/social.js";
 
 function clientCallbackUrl() {
   return env.AUTH0_CALLBACK_URL || AUTH0_CALLBACK_URL;
@@ -40,6 +43,10 @@ function PactDesk({
   onJoinGroup,
   onJoinWithCode,
   onApprove,
+  onAddFriend,
+  onAcceptFriend,
+  incomingFriends = [],
+  busy = "",
   onShare,
   selectedOpponent,
   onOpponentChange,
@@ -152,32 +159,54 @@ function PactDesk({
         </button>
       </form>
       {message ? (
-        <p className="status" role="status">
-          {message}
+        <p className={`status ${typeof message === "object" ? message.tone : ""}`} role="status">
+          {typeof message === "object" ? message.text : message}
         </p>
       ) : null}
-      {onFeedChange ? <div className="card">
-        <h3>Group feeds</h3>
-        <div className="pact-actions">
-          <button className="btn btn-ghost" type="button" onClick={() => onFeedChange("mine")}>My feed</button>
-          {groups.filter((group) => group.memberIds.includes(userId)).map((group) => <button className="btn btn-ghost" type="button" key={group.id} onClick={() => onFeedChange(group.id)}>{group.name}{activeFeed === group.id ? " · selected" : ""}</button>)}
+      {onAddFriend ? (
+        <div>
+          <h3>Friends</h3>
+          <FriendsList
+            people={users}
+            incoming={incomingFriends}
+            onAdd={onAddFriend}
+            onAccept={onAcceptFriend}
+            busy={busy}
+          />
         </div>
-        <form className="form" onSubmit={onCreateGroup}>
-          <label>New group <input name="groupName" required placeholder="Training crew" /></label>
-          <label>Group type <select name="visibility"><option value="public">Public</option><option value="private">Private</option></select></label>
-          <label><input type="checkbox" name="discoverable" /> Show in the community group directory</label>
-          <button className="btn btn-lime" type="submit">Create group</button>
-        </form>
-        <form className="form" onSubmit={onJoinWithCode}>
-          <label>Join with code <input name="joinCode" required placeholder="8-character code" autoCapitalize="characters" /></label>
-          <button className="btn btn-ghost" type="submit">Request to join</button>
-        </form>
-        {groups.map((group) => <article className="slip" key={group.id}><b>{group.name}</b><p className="meta">{group.visibility} · {group.discoverable ? "listed" : "code only"} · {group.memberIds.length} member{group.memberIds.length === 1 ? "" : "s"}</p>
-          {!group.memberIds.includes(userId) ? <button className="btn btn-ghost" type="button" onClick={() => onJoinGroup(group.id)}>{group.requested ? "Request pending" : "Request to join"}</button> : null}
-          {group.creatorId === userId ? <p className="meta">Join code: <b>{group.joinCode}</b></p> : null}
-          {group.creatorId === userId && group.pendingMemberIds?.map((memberId) => <button className="btn btn-ghost" type="button" key={memberId} onClick={() => onApprove(group.id, memberId)}>Approve member</button>)}
-        </article>)}
-      </div> : null}
+      ) : null}
+      {onFeedChange ? (
+        <div className="card">
+          <h3>Group feeds</h3>
+          <div className="pact-actions">
+            <button className="btn btn-ghost" type="button" onClick={() => onFeedChange("mine")}>
+              My feed
+            </button>
+            {groups
+              .filter((group) => group.memberIds.includes(userId))
+              .map((group) => (
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  key={group.id}
+                  onClick={() => onFeedChange(group.id)}
+                >
+                  {group.name}
+                  {activeFeed === group.id ? " · selected" : ""}
+                </button>
+              ))}
+          </div>
+          <CreateGroupForm onSubmit={onCreateGroup} busy={busy} embedded />
+          <JoinCodeForm onSubmit={onJoinWithCode} busy={busy} embedded />
+          <GroupList
+            groups={groups}
+            userId={userId}
+            onJoin={onJoinGroup}
+            onApprove={onApprove}
+            busy={busy}
+          />
+        </div>
+      ) : null}
       <div className="card">
         <h3>My pacts</h3>
         {pacts.length === 0 ? <p className="hint">No pacts yet.</p> : null}
@@ -216,21 +245,56 @@ function MockPactDesk() {
   const [session, setSession] = useState(null);
   const [pacts, setPacts] = useState([]);
   const [ledger, setLedger] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [] });
   const [title, setTitle] = useState("");
   const [stake, setStake] = useState("1");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState("");
+  const [status, setStatus] = useState(null);
 
   const refresh = useCallback(
     async (next = session) => {
       if (!next) return;
-      const [myPacts, myLedger] = await Promise.all([
-        api("/api/pacts", { token: next.token }),
-        api("/api/ledger", { token: next.token }),
+      const token = next.token;
+      const optional = async (path, fallback) => {
+        try {
+          return await api(path, { token });
+        } catch (error) {
+          if (isStubbedSocialError(error)) return fallback;
+          throw error;
+        }
+      };
+      const [myPacts, myLedger, directory, myGroups, social] = await Promise.all([
+        api("/api/pacts", { token }),
+        api("/api/ledger", { token }),
+        optional("/api/users", []),
+        optional("/api/groups", []),
+        optional("/api/friends", { friends: [], incoming: [], outgoing: [] }),
       ]);
       setPacts(myPacts);
       setLedger(myLedger);
+      setUsers(directory);
+      setGroups(myGroups);
+      setFriends(social);
     },
     [session],
+  );
+
+  const social = useMemo(
+    () =>
+      createSocialActions({
+        tokenOf: async () => session?.token,
+        refresh,
+        userId: session?.user?.id,
+        setBusy,
+        setStatus,
+        setGroups,
+        setPeople: setUsers,
+        setFriends,
+      }),
+    [refresh, session],
   );
 
   useEffect(() => {
@@ -279,9 +343,24 @@ function MockPactDesk() {
         setSession(null);
         setPacts([]);
         setLedger(null);
+        setUsers([]);
+        setGroups([]);
+        setFriends({ friends: [], incoming: [], outgoing: [] });
       }}
       pacts={pacts}
       ledger={ledger}
+      users={users}
+      groups={groups}
+      incomingFriends={friends.incoming}
+      activeFeed="mine"
+      onFeedChange={() => {}}
+      onCreateGroup={social.createGroup}
+      onJoinGroup={social.joinGroup}
+      onJoinWithCode={social.joinWithCode}
+      onApprove={social.approveMember}
+      onAddFriend={social.addFriend}
+      onAcceptFriend={social.acceptFriend}
+      busy={busy}
       titleValue={title}
       onTitleChange={setTitle}
       stake={stake}
@@ -313,7 +392,7 @@ function MockPactDesk() {
         await api(`/api/pacts/${id}/decline`, { token: session.token, method: "PATCH" });
         await refresh();
       }}
-      message={message}
+      message={status || message}
       userId={session.user.id}
     />
   );
@@ -334,6 +413,9 @@ function LivePactDesk() {
   const [title, setTitle] = useState("");
   const [stake, setStake] = useState("1");
   const [message, setMessage] = useState("");
+  const [friends, setFriends] = useState({ friends: [], incoming: [], outgoing: [] });
+  const [busy, setBusy] = useState("");
+  const [status, setStatus] = useState(null);
 
   const tokenOf = useCallback(
     () =>
@@ -345,20 +427,45 @@ function LivePactDesk() {
 
   const refresh = useCallback(async () => {
     const token = await tokenOf();
-    const [identity, myPacts, myLedger, directory, myGroups] = await Promise.all([
+    const optional = async (path, fallback) => {
+      try {
+        return await api(path, { token });
+      } catch (error) {
+        if (isStubbedSocialError(error)) return fallback;
+        throw error;
+      }
+    };
+    const [identity, myPacts, myLedger, directory, myGroups, social] = await Promise.all([
       api("/api/auth/me", { token }),
       api("/api/pacts", { token }),
       api("/api/ledger", { token }),
-      api("/api/users", { token }),
-      api("/api/groups", { token }),
+      optional("/api/users", []),
+      optional("/api/groups", []),
+      optional("/api/friends", { friends: [], incoming: [], outgoing: [] }),
     ]);
     setMe(identity);
     setPacts(myPacts);
     setLedger(myLedger);
     setUsers(directory);
     setGroups(myGroups);
+    setFriends(social);
     setOpponentId((current) => current || directory[0]?.id || "");
   }, [tokenOf]);
+
+  const socialActions = useMemo(
+    () =>
+      createSocialActions({
+        tokenOf,
+        refresh,
+        userId: me?.id,
+        setBusy,
+        setStatus,
+        setGroups,
+        setPeople: setUsers,
+        setFriends,
+      }),
+    [tokenOf, refresh, me?.id],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
@@ -435,19 +542,14 @@ function LivePactDesk() {
         if (next === "group") setOpponentId("");
         else setGroupId("");
       }}
-      onCreateGroup={async (event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        try {
-          const token = await tokenOf();
-          await api("/api/groups", { token, method: "POST", body: { name: data.get("groupName"), visibility: data.get("visibility"), discoverable: data.get("discoverable") === "on" } });
-          event.currentTarget.reset();
-          await refresh();
-        } catch (error) { setMessage(error.message); }
-      }}
-      onJoinGroup={async (id) => { try { const token = await tokenOf(); const result = await api(`/api/groups/${id}/join`, { token, method: "POST" }); setMessage(result.requested ? "Join request sent." : "Joined group."); await refresh(); } catch (error) { setMessage(error.message); } }}
-      onJoinWithCode={async (event) => { event.preventDefault(); try { const token = await tokenOf(); const code = new FormData(event.currentTarget).get("joinCode"); await api("/api/groups/join", { token, method: "POST", body: { joinCode: code } }); event.currentTarget.reset(); setMessage("Join request sent."); await refresh(); } catch (error) { setMessage(error.message); } }}
-      onApprove={async (id, userId) => { try { const token = await tokenOf(); await api(`/api/groups/${id}/approve`, { token, method: "POST", body: { userId } }); await refresh(); } catch (error) { setMessage(error.message); } }}
+      onCreateGroup={socialActions.createGroup}
+      onJoinGroup={socialActions.joinGroup}
+      onJoinWithCode={socialActions.joinWithCode}
+      onApprove={socialActions.approveMember}
+      onAddFriend={socialActions.addFriend}
+      onAcceptFriend={socialActions.acceptFriend}
+      incomingFriends={friends.incoming}
+      busy={busy}
       onShare={async (id) => { try { const token = await tokenOf(); await api(`/api/pacts/${id}/share`, { token, method: "POST" }); setMessage("Shared with group."); await refresh(); } catch (error) { setMessage(error.message); } }}
       selectedOpponent={opponentId}
       onOpponentChange={setOpponentId}
@@ -486,7 +588,7 @@ function LivePactDesk() {
         await api(`/api/pacts/${id}/decline`, { token, method: "PATCH" });
         await refresh();
       }}
-      message={message}
+      message={status || message}
       userId={me?.id}
     />
   );

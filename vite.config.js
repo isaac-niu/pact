@@ -31,6 +31,7 @@ export default defineConfig({
       "/api/ledger": "http://localhost:3001",
       "/api/health": "http://localhost:3001",
       "/api/groups": pactApiUrl,
+      "/api/friends": pactApiUrl,
       "/api/pacts": {
         target: pactApiUrl,
         bypass(req) {
