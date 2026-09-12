@@ -1,5 +1,6 @@
 import { STARTING_BANK, normalizeDeskActor } from "../data/users.js";
 import { emptyDemoState } from "../data/seed.js";
+import { POLL_POLICIES, createHygienePoll } from "../lib/pollHygiene.js";
 
 const listeners = new Set();
 let actorId = "you";
@@ -74,15 +75,16 @@ export function getSnapshot() {
 export function subscribe(fn) {
   listeners.add(fn);
   fn(getSnapshot());
-  const t = setInterval(() => {
-    if (!enabled) return;
-    req("/api/desk")
-      .then(apply)
-      .catch(() => {});
-  }, 4000);
+  const stopPoll = createHygienePoll({
+    policy: POLL_POLICIES.desk,
+    run: async () => {
+      if (!enabled) return;
+      await req("/api/desk").then(apply);
+    },
+  }).start();
   return () => {
     listeners.delete(fn);
-    clearInterval(t);
+    stopPoll();
   };
 }
 
