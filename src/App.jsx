@@ -20,7 +20,16 @@ import Crew from "./pages/Crew.jsx";
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 function onAuthRoute(pathname) {
-  return pathname === "/app" || pathname.startsWith("/app/") || pathname === "/callback";
+  return (
+    pathname === "/app" ||
+    pathname.startsWith("/app/") ||
+    pathname === "/callback" ||
+    pathname === "/create" ||
+    pathname === "/people" ||
+    pathname === "/crew" ||
+    pathname === "/inbox" ||
+    pathname === "/wallet"
+  );
 }
 
 function Auth0Account() {
@@ -98,6 +107,10 @@ function Auth0Balance() {
     };
   }, [getAccessTokenSilently, isAuthenticated]);
 
+  // Signed-out visitors have no authenticated ledger — show nothing rather
+  // than a chip implying a balance exists before you've actually signed in.
+  if (!isLoading && !isAuthenticated) return null;
+
   const name = user?.name || user?.nickname || user?.email || "Account";
   const balance = balanceLamports === null ? "—" : sol(balanceLamports / LAMPORTS_PER_SOL);
   return (
@@ -109,26 +122,19 @@ function Auth0Balance() {
   );
 }
 
-function DeskBalance({ user, bank }) {
-  return (
-    <NavLink to="/wallet" className="bank-chip" title="Virtual SOL ledger">
-      <span className="bank-who">{user?.handle ?? "ISAAC"}</span>
-      <b>{sol(bank)}</b>
-      <span>SOL</span>
-    </NavLink>
-  );
-}
-
-export function BalanceControl({ user, bank }) {
+export function BalanceControl() {
   const { pathname } = useLocation();
+  // The local-desk balance only belongs on its own page (/me), where it's
+  // unambiguous whose bank you're looking at. The shared header only shows
+  // a balance once there's a real signed-in Auth0 identity behind it.
   if (!clientEnvReady().ready || (!onAuthRoute(pathname) && !pageIsHttps())) {
-    return <DeskBalance user={user} bank={bank} />;
+    return null;
   }
   return <Auth0Balance />;
 }
 
 function Shell({ children }) {
-  const { user, bank, backend } = usePact();
+  const { backend } = usePact();
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -152,7 +158,7 @@ function Shell({ children }) {
           <NavLink to="/app">Pact app</NavLink>
         </nav>
         <div className="top-tools">
-          <BalanceControl user={user} bank={bank} />
+          <BalanceControl />
           <AccountControl />
         </div>
       </header>
