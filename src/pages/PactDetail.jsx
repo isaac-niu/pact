@@ -252,7 +252,9 @@ export default function PactDetail() {
             </div>
           ) : null}
           {pact.status === "review" && !canVerify ? (
-            <p className="hint">Switch to {opponent.handle} in the top-right to stand or scratch this slip.</p>
+            <p className="hint">
+              {opponent.handle} verifies this frame from their signed-in Pact app.
+            </p>
           ) : null}
           {error ? <p className="err">{error}</p> : null}
 
