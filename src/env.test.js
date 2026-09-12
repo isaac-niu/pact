@@ -149,6 +149,13 @@ describe("validateAuth0Audience", () => {
   });
 });
 
+describe("pageIsHttps", () => {
+  it("is false in the jsdom test environment", async () => {
+    const { pageIsHttps } = await import("./env.js");
+    expect(pageIsHttps()).toBe(false);
+  });
+});
+
 describe("getViteEnv", () => {
   it("returns undefined for non-existent VITE_ vars", async () => {
     const { getViteEnv } = await import("./env.js");
