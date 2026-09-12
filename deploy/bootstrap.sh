@@ -62,7 +62,19 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 sleep 1
-curl -fsS http://127.0.0.1:3000/api/health
+ok=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  if curl -fsS http://127.0.0.1:3000/api/health; then
+    ok=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$ok" -ne 1 ]]; then
+  echo "pact did not become healthy on :3000" >&2
+  systemctl status pact --no-pager -l || true
+  exit 1
+fi
 echo
 curl -fsS http://127.0.0.1:3000/api/auth/health || echo "auth_health skipped"
 echo
