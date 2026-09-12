@@ -9,30 +9,45 @@
  * Until then, the frontend runs entirely on localStorage (see src/store.jsx).
  */
 
-import express from "express";
+import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
+import { validateServerEnv } from "../env.js";
 
-const app = express();
-const PORT = process.env.PORT ?? 3001;
+function sendJson(response, status, body) {
+  response.writeHead(status, { "content-type": "application/json" });
+  response.end(JSON.stringify(body));
+}
 
-app.use(express.json());
+export function createApp() {
+  return createServer((request, response) => {
+    if (request.method === "GET" && request.url === "/api/health") {
+      sendJson(response, 200, { status: "ok" });
+      return;
+    }
 
-// ─── Health check ───────────────────────────────────────────────
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", env: { api_url: process.env.API_URL } });
-});
+    if (request.method === "GET" && request.url === "/api/pacts") {
+      sendJson(response, 200, []);
+      return;
+    }
 
-// ─── Pact endpoints (stub) ─────────────────────────────────────
-app.get("/api/pacts", (_req, res) => {
-  // TODO: fetch from Atlas
-  res.json([]);
-});
+    if (request.method === "POST" && request.url === "/api/pacts") {
+      sendJson(response, 501, { error: "Not yet backed by Atlas" });
+      return;
+    }
 
-app.post("/api/pacts", (req, res) => {
-  // TODO: persist to Atlas
-  res.status(501).json({ error: "Not yet backed by Atlas" });
-});
+    sendJson(response, 404, { error: "Not found" });
+  });
+}
 
-// ─── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`PACT backend listening on http://localhost:${PORT}`);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  try {
+    validateServerEnv();
+    const port = Number(process.env.PORT ?? 3001);
+    createApp().listen(port, () => {
+      console.log(`PACT backend listening on http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+}
