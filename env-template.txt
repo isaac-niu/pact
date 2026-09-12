@@ -39,3 +39,7 @@ PORT=3001
 # --- Deterministic local QA (ISAAC / MAYA, in-memory Maps) ---
 # Leave this unset (or anything other than 1) for live Auth0 + Atlas.
 # PACT_MOCK_AUTH=1
+
+# --- Solana wallet (/wallet page only, real devnet, no wallet required) ---
+# Optional custom RPC endpoint. Leave unset to use the public devnet cluster.
+# VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
