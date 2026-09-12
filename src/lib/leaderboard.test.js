@@ -89,7 +89,7 @@ describe("open-book ranks", () => {
   });
 
   it("breaks ties by pot, then wins, then handle", () => {
-    const a = { handle: "FRIEND", rate: 1, streak: 0, potWon: 2, wins: 1 };
+    const a = { handle: "MAYA", rate: 1, streak: 0, potWon: 2, wins: 1 };
     const b = { handle: "ISAAC", rate: 1, streak: 0, potWon: 2, wins: 1 };
     expect(compareLines(a, b, "winRate")).toBeGreaterThan(0);
   });
