@@ -1,6 +1,8 @@
+import "dotenv/config";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { MongoClient } from "mongodb";
 import { validateServerEnv } from "../env.js";
 
 export const LAMPORTS_PER_SOL = 1_000_000_000;
@@ -10,15 +12,27 @@ const demoUsers = {
 };
 const send = (res, status, body) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
 const bodyOf = (req) => new Promise((resolve) => { let value = ""; req.on("data", (part) => { value += part; }); req.on("end", () => { try { resolve(value ? JSON.parse(value) : {}); } catch { resolve(null); } }); });
+const auth0Ready = () => ["AUTH0_DOMAIN", "AUTH0_CLIENT_ID", "AUTH0_CLIENT_SECRET", "AUTH0_AUDIENCE", "AUTH0_SECRET"].every((name) => Boolean(process.env[name]?.trim()));
+const callbackUrl = () => process.env.AUTH0_CALLBACK_URL ?? "http://localhost:5173/api/auth/callback";
+const cookie = (req, name) => req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1);
 
 export function createPactServer() {
   const users = new Map(Object.values(demoUsers).map((user) => [user.id, { ...user, createdAt: Date.now() }]));
-  const pacts = new Map(); const transactions = [];
-  const authenticated = (req) => [...users.values()].find((user) => req.headers.authorization === `Bearer mock-${user.id}`) ?? null;
+  const pacts = new Map(); const transactions = []; const states = new Set(); const sessions = new Map();
+  let mongo;
+  const database = async () => {
+    if (!process.env.MONGODB_URI || !process.env.MONGODB_DB_NAME) return null;
+    if (!mongo) { mongo = new MongoClient(process.env.MONGODB_URI); await mongo.connect(); await mongo.db(process.env.MONGODB_DB_NAME).collection("users").createIndex({ sub: 1 }, { unique: true }); }
+    return mongo.db(process.env.MONGODB_DB_NAME);
+  };
+  const authenticated = (req) => sessions.get(cookie(req, "pact_session")) ?? [...users.values()].find((user) => process.env.PACT_MOCK_AUTH === "1" && req.headers.authorization === `Bearer mock-${user.id}`) ?? null;
   return createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
-    if (req.method === "GET" && url.pathname === "/api/health") return send(res, 200, { status: "ok", mongo: { configured: Boolean(process.env.MONGODB_URI && process.env.MONGODB_DB_NAME), mode: "memory" } });
-    if (req.method === "POST" && url.pathname === "/api/auth/mock-login") { const body = await bodyOf(req); const user = demoUsers[body?.as]; return user ? send(res, 200, { token: `mock-${user.id}`, user: users.get(user.id) }) : send(res, 400, { error: "Choose isaac or maya" }); }
+    if (req.method === "GET" && url.pathname === "/api/health") { try { const db = await database(); if (db) await db.command({ ping: 1 }); return send(res, 200, { status: "ok", auth0: auth0Ready(), mongo: { configured: Boolean(db), mode: db ? "connected" : "memory" } }); } catch { return send(res, 503, { error: "MongoDB unavailable" }); } }
+    if (req.method === "GET" && url.pathname === "/api/auth/login") { if (!auth0Ready()) return send(res, 503, { error: "Auth0 is not configured" }); const state = randomUUID(); states.add(state); const authorize = new URL(`https://${process.env.AUTH0_DOMAIN}/authorize`); authorize.searchParams.set("response_type", "code"); authorize.searchParams.set("client_id", process.env.AUTH0_CLIENT_ID); authorize.searchParams.set("redirect_uri", callbackUrl()); authorize.searchParams.set("scope", "openid profile email"); authorize.searchParams.set("audience", process.env.AUTH0_AUDIENCE); authorize.searchParams.set("state", state); res.writeHead(302, { location: authorize.toString() }); return res.end(); }
+    if (req.method === "GET" && url.pathname === "/api/auth/callback") { const code = url.searchParams.get("code"); const state = url.searchParams.get("state"); if (!code || !state || !states.delete(state)) return send(res, 400, { error: "Invalid Auth0 callback state" }); const tokenResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ grant_type: "authorization_code", client_id: process.env.AUTH0_CLIENT_ID, client_secret: process.env.AUTH0_CLIENT_SECRET, code, redirect_uri: callbackUrl() }) }); if (!tokenResponse.ok) return send(res, 401, { error: "Auth0 token exchange failed" }); const tokens = await tokenResponse.json(); const profileResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, { headers: { authorization: `Bearer ${tokens.access_token}` } }); if (!profileResponse.ok) return send(res, 401, { error: "Auth0 profile lookup failed" }); const profile = await profileResponse.json(); const user = { id: profile.sub, sub: profile.sub, name: profile.name ?? profile.nickname ?? profile.sub, email: profile.email ?? null, balanceLamports: 10 * LAMPORTS_PER_SOL, createdAt: Date.now() }; users.set(user.id, user); const db = await database(); if (db) await db.collection("users").updateOne({ sub: user.sub }, { $set: { name: user.name, email: user.email, updatedAt: new Date() }, $setOnInsert: { balanceLamports: user.balanceLamports, createdAt: new Date() } }, { upsert: true }); const session = randomUUID(); sessions.set(session, user); res.writeHead(302, { location: "/app", "set-cookie": `pact_session=${session}; HttpOnly; SameSite=Lax; Path=/` }); return res.end(); }
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") { const returnTo = encodeURIComponent("http://localhost:5173"); sessions.delete(cookie(req, "pact_session")); res.writeHead(302, { location: auth0Ready() ? `https://${process.env.AUTH0_DOMAIN}/v2/logout?client_id=${process.env.AUTH0_CLIENT_ID}&returnTo=${returnTo}` : "/", "set-cookie": "pact_session=; HttpOnly; Max-Age=0; Path=/" }); return res.end(); }
+    if (req.method === "POST" && url.pathname === "/api/auth/mock-login") { if (process.env.PACT_MOCK_AUTH !== "1") return send(res, 404, { error: "Not found" }); const body = await bodyOf(req); const user = demoUsers[body?.as]; return user ? send(res, 200, { token: `mock-${user.id}`, user: users.get(user.id) }) : send(res, 400, { error: "Choose isaac or maya" }); }
     const user = authenticated(req); if (!user) return send(res, 401, { error: "Authentication required" });
     if (req.method === "GET" && url.pathname === "/api/auth/me") return send(res, 200, user);
     if (req.method === "GET" && url.pathname === "/api/pacts") return send(res, 200, [...pacts.values()].filter((pact) => pact.creatorId === user.id || pact.opponentId === user.id));

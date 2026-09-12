@@ -6,10 +6,10 @@ async function api(path, options = {}) {
   const response = await fetch(`http://127.0.0.1:${server.address().port}${path}`, options);
   return { status: response.status, body: await response.json() };
 }
-async function start() { server = createPactServer(); await new Promise((resolve) => server.listen(0, resolve)); }
+async function start() { process.env.PACT_MOCK_AUTH = "1"; server = createPactServer(); await new Promise((resolve) => server.listen(0, resolve)); }
 async function login(as) { return api("/api/auth/mock-login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ as }) }); }
 
-afterEach(async () => { if (server) await new Promise((resolve) => server.close(resolve)); server = undefined; });
+afterEach(async () => { if (server) await new Promise((resolve) => server.close(resolve)); server = undefined; delete process.env.PACT_MOCK_AUTH; });
 
 describe("Pact API", () => {
   it("rejects protected data without a valid token", async () => { await start(); expect((await api("/api/pacts")).status).toBe(401); });
