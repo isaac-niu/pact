@@ -9,3 +9,7 @@ AUTH0_AUDIENCE=
 AUTH0_SECRET=
 API_URL=http://localhost:3001
 PORT=3001
+
+# MongoDB Atlas (optional — server falls back to mock when not configured)
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=pact
