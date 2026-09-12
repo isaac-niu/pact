@@ -4,8 +4,8 @@ export default function Glossary() {
       <div>
         <dt>Slip</dt>
         <dd>
-          One pact ticket: the challenge, virtual SOL stake, both desks, proof photo, and the
-          referee call.
+          One pact ticket: the challenge, virtual SOL stake, both desks, proof (photo, burst, or
+          clip), and the referee call.
         </dd>
       </div>
       <div>

@@ -140,15 +140,33 @@ function readFileAsDataUrl(file) {
   });
 }
 
+async function readProofInput(file) {
+  if (file?.dataUrl || file?.files) {
+    return file;
+  }
+  const list = Array.isArray(file) || file?.item ? Array.from(file) : file ? [file] : [];
+  const files = [];
+  for (const item of list) {
+    files.push({
+      name: item.name || "proof.jpg",
+      mime: item.type || "image/jpeg",
+      dataUrl: await readFileAsDataUrl(item),
+    });
+  }
+  return { files, name: files[0]?.name };
+}
+
 export async function submitEvidence(pactId, file, ctx = {}) {
   actorId = ctx.actorId || actorId;
-  const evidenceDataUrl = await readFileAsDataUrl(file);
+  const payload = await readProofInput(file);
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/evidence`, {
     method: "POST",
     body: JSON.stringify({
       actorId,
-      evidenceName: file.name || "proof.jpg",
-      evidenceDataUrl,
+      evidenceName: payload.name || payload.files?.[0]?.name || "proof.jpg",
+      evidenceDataUrl: payload.dataUrl || payload.files?.[0]?.dataUrl,
+      evidenceFiles: payload.files,
+      evidenceKind: payload.kind,
     }),
   });
   apply(out.state);
