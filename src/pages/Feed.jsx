@@ -9,6 +9,7 @@ import { approachingDeadline } from "../lib/reminders.js";
 import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
+import { railBook } from "../lib/sideStakes.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
 
@@ -23,7 +24,7 @@ const PACT_LABELS = {
 };
 
 export default function Feed() {
-  const { events, pacts, userId } = usePact();
+  const { events, pacts, userId, sideStakes, switchUser } = usePact();
   const [tape, setTape] = useState("public");
   const [filter, setFilter] = useState("all");
   const board = pactsOnTape(pacts, tape, userId);
@@ -38,9 +39,20 @@ export default function Feed() {
           <div className="kicker">Active book</div>
           <h2>{tape === "private" ? "Private tape" : "Public tape"}</h2>
         </div>
-        <Link className="btn btn-lime" to="/create">
-          New slip
-        </Link>
+        <div className="page-head-actions">
+          {userId === "rail" ? (
+            <button className="btn btn-ghost" type="button" onClick={() => switchUser("you")}>
+              Back to ISAAC&apos;s desk
+            </button>
+          ) : tape === "public" ? (
+            <button className="btn btn-ghost" type="button" onClick={() => switchUser("rail")}>
+              Sit the rail
+            </button>
+          ) : null}
+          <Link className="btn btn-lime" to="/create">
+            New slip
+          </Link>
+        </div>
       </div>
       <Glossary />
       <DeadlineBanner />
@@ -115,6 +127,7 @@ export default function Feed() {
             const creator = userById(p.creatorId);
             const badgeClass =
               p.status === "resolved" ? "done" : p.status === "open" ? "" : "live";
+            const rail = railBook(sideStakes, p.id);
             return (
               <Link className="slip" key={p.id} to={`/pact/${p.id}`}>
                 <div>
@@ -133,6 +146,7 @@ export default function Feed() {
                     {normalizeCadence(p.cadence) !== "none"
                       ? ` · ${cadenceLabel(p.cadence)} · streak ${p.streak || 0}`
                       : ""}
+                    {rail.total > 0 ? ` · rail ${sol(rail.total)}` : ""}
                   </div>
                 </div>
                 <div className="stake">
