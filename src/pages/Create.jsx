@@ -1,10 +1,23 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 import { usePact } from "../store.jsx";
+import { api } from "../api.js";
+import { clientEnvReady, env } from "../env.js";
 import { defaultDeadline, localInputValue, sol } from "../lib/format.js";
+
+const LAMPORTS_PER_SOL = 1_000_000_000;
 
 export default function Create() {
   const { createPact, user, opponent, bank } = usePact();
+  // Auth0Provider only mounts here once Auth0 env vars are configured (see
+  // AuthGate). Without it useAuth0() safely returns a stub context frozen
+  // at isAuthenticated: false / isLoading: true — so gate on env readiness
+  // too, or "Sign in" would render forever disabled with no explanation,
+  // and calling its stub loginWithRedirect would throw.
+  const authConfigured = clientEnvReady().ready;
+  const { isAuthenticated, isLoading: authLoading, getAccessTokenSilently, loginWithRedirect } =
+    useAuth0();
   const navigate = useNavigate();
   const [title, setTitle] = useState("I'll upload a gym selfie");
   const [criteria, setCriteria] = useState(
@@ -13,6 +26,11 @@ export default function Create() {
   const [stake, setStake] = useState("2");
   const [deadline, setDeadline] = useState(localInputValue(defaultDeadline()));
   const [visibility, setVisibility] = useState("public");
+  const [destination, setDestination] = useState("desk"); // "desk" | "group"
+  const [groups, setGroups] = useState([]);
+  const [myId, setMyId] = useState(null);
+  const [groupId, setGroupId] = useState("");
+  const [groupsError, setGroupsError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -20,11 +38,59 @@ export default function Create() {
   const pot = Number.isFinite(amount) ? amount * 2 : 0;
   const opponentId = opponent.id;
 
+  const tokenOf = useCallback(
+    () => getAccessTokenSilently({ authorizationParams: { audience: env.AUTH0_AUDIENCE } }),
+    [getAccessTokenSilently],
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setGroups([]);
+      setMyId(null);
+      return undefined;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const token = await tokenOf();
+        const [identity, myGroups] = await Promise.all([
+          api("/api/auth/me", { token }),
+          api("/api/groups", { token }),
+        ]);
+        if (!active) return;
+        setMyId(identity.id);
+        setGroups(myGroups.filter((g) => g.memberIds?.includes(identity.id)));
+      } catch (err) {
+        if (active) setGroupsError(err.message || "Could not load your groups");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, tokenOf]);
+
+  const myGroups = groups.filter((g) => !myId || g.memberIds?.includes(myId));
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
+      if (destination === "group") {
+        if (!groupId) throw new Error("Pick a group to send this slip to");
+        const token = await tokenOf();
+        await api("/api/pacts", {
+          token,
+          method: "POST",
+          body: {
+            title,
+            stakeLamports: Math.round(amount * LAMPORTS_PER_SOL),
+            groupId,
+          },
+        });
+        navigate("/app");
+        return;
+      }
       const pact = await createPact({
         title,
         criteria,
@@ -76,7 +142,7 @@ export default function Create() {
                 type="number"
                 min="0.1"
                 step="0.1"
-                max={bank}
+                max={destination === "desk" ? bank : undefined}
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 required
@@ -89,55 +155,128 @@ export default function Create() {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 required
+                disabled={destination === "group"}
               />
             </label>
           </div>
+
           <fieldset className="opp-field">
-            <legend>Opponent</legend>
-            <div className="opp-card on">
-              <span>
-                <b>{opponent.handle}</b>
-                <em>
-                  {opponent.pill} · the other demo user
-                </em>
-              </span>
-            </div>
-          </fieldset>
-          <fieldset className="opp-field">
-            <legend>Tape</legend>
-            <div className="tape-choice" role="radiogroup" aria-label="Public or private tape">
-              <label className={`opp-card ${visibility === "public" ? "on" : ""}`}>
+            <legend>Send to</legend>
+            <div className="tape-choice" role="radiogroup" aria-label="Opponent or group">
+              <label className={`opp-card ${destination === "desk" ? "on" : ""}`}>
                 <input
                   type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === "public"}
-                  onChange={() => setVisibility("public")}
+                  name="destination"
+                  value="desk"
+                  checked={destination === "desk"}
+                  onChange={() => setDestination("desk")}
                 />
                 <span>
-                  <b>Public tape</b>
-                  <em>Anyone on the board can see this slip and its marks.</em>
+                  <b>{opponent.handle}</b>
+                  <em>{opponent.pill} · 1v1 on this desk</em>
                 </span>
               </label>
-              <label className={`opp-card ${visibility === "private" ? "on" : ""}`}>
+              <label className={`opp-card ${destination === "group" ? "on" : ""}`}>
                 <input
                   type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === "private"}
-                  onChange={() => setVisibility("private")}
+                  name="destination"
+                  value="group"
+                  checked={destination === "group"}
+                  onChange={() => setDestination("group")}
                 />
                 <span>
-                  <b>Private tape</b>
-                  <em>Only you and {opponent.handle} see this group.</em>
+                  <b>A group</b>
+                  <em>Post to everyone in one of your groups.</em>
                 </span>
               </label>
             </div>
           </fieldset>
+
+          {destination === "group" ? (
+            <fieldset className="opp-field">
+              <legend>Group</legend>
+              {!authConfigured ? (
+                <p className="hint">
+                  Groups need Auth0 configured on this desk (see <code>env-template.txt</code>) —
+                  not available on this run.
+                </p>
+              ) : !isAuthenticated ? (
+                <div className="opp-card">
+                  <span>
+                    <b>Sign in required</b>
+                    <em>Groups are shared across real accounts, not this local desk.</em>
+                  </span>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    disabled={authLoading}
+                    onClick={() => loginWithRedirect({ appState: { returnTo: "/create" } })}
+                  >
+                    Sign in
+                  </button>
+                </div>
+              ) : myGroups.length === 0 ? (
+                <p className="hint">
+                  {groupsError ||
+                    "You're not in a group yet. Create or join one in the Pact app, then come back here."}
+                </p>
+              ) : (
+                <label>
+                  Group
+                  <select value={groupId} onChange={(e) => setGroupId(e.target.value)} required>
+                    <option value="" disabled>
+                      Choose a group
+                    </option>
+                    {myGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} · {g.memberIds.length} member{g.memberIds.length === 1 ? "" : "s"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </fieldset>
+          ) : (
+            <fieldset className="opp-field">
+              <legend>Tape</legend>
+              <div className="tape-choice" role="radiogroup" aria-label="Public or private tape">
+                <label className={`opp-card ${visibility === "public" ? "on" : ""}`}>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    checked={visibility === "public"}
+                    onChange={() => setVisibility("public")}
+                  />
+                  <span>
+                    <b>Public tape</b>
+                    <em>Anyone on the board can see this slip and its marks.</em>
+                  </span>
+                </label>
+                <label className={`opp-card ${visibility === "private" ? "on" : ""}`}>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="private"
+                    checked={visibility === "private"}
+                    onChange={() => setVisibility("private")}
+                  />
+                  <span>
+                    <b>Private tape</b>
+                    <em>Only you and {opponent.handle} see this slip.</em>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          )}
+
           {error ? <p className="err">{error}</p> : null}
           <p className="hint">
-            {user.handle} posts a slip. {opponent.handle} must accept and match{" "}
-            {sol(amount || 0)} SOL. Bank {sol(bank)} SOL. Stakes are virtual SOL on this desk.
+            {destination === "group"
+              ? `Posting as the group's stake — everyone in the group sees this slip once it's up.`
+              : `${user.handle} posts a slip. ${opponent.handle} must accept and match ${sol(
+                  amount || 0,
+                )} SOL. Bank ${sol(bank)} SOL. Stakes are virtual SOL on this desk.`}
           </p>
           <button className="btn btn-lime" type="submit" disabled={busy}>
             Post to the board
@@ -149,7 +288,9 @@ export default function Create() {
         <div className="ticket-edge" aria-hidden="true" />
         <header className="ticket-head">
           <span>Preview</span>
-          <span className="stamp">{visibility === "private" ? "PRIVATE" : "PUBLIC"}</span>
+          <span className="stamp">
+            {destination === "group" ? "GROUP" : visibility === "private" ? "PRIVATE" : "PUBLIC"}
+          </span>
         </header>
         <h3>{title.trim() || "Untitled pact"}</h3>
         <p className="ticket-criteria">{criteria.trim() || "No criteria yet"}</p>
@@ -160,8 +301,12 @@ export default function Create() {
           </div>
           <div className="vs-mark">VS</div>
           <div className="side">
-            <div className="odds-label">Friend</div>
-            <div className="side-name">{opponent.handle}</div>
+            <div className="odds-label">{destination === "group" ? "Group" : "Friend"}</div>
+            <div className="side-name">
+              {destination === "group"
+                ? myGroups.find((g) => g.id === groupId)?.name || "—"
+                : opponent.handle}
+            </div>
           </div>
         </div>
         <div className="odds-strip">
@@ -171,7 +316,7 @@ export default function Create() {
           </div>
           <div className="odds-cell">
             <div className="odds-label">Pot</div>
-            <div className="odds-value lime">{sol(pot)}</div>
+            <div className="odds-value lime">{destination === "group" ? "—" : sol(pot)}</div>
           </div>
         </div>
       </article>
