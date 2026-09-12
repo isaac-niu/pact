@@ -15,7 +15,22 @@ cleanup() { rm -f "$KEY_FILE"; }
 trap cleanup EXIT
 
 if [[ -n "${VULTR_SSH_PRIVATE_KEY:-}" ]]; then
-  printf '%s\n' "${VULTR_SSH_PRIVATE_KEY//$'\\n'/$'\n'}" > "$KEY_FILE"
+  python3 - "$KEY_FILE" <<'PY'
+import os, pathlib, sys
+raw = os.environ.get("VULTR_SSH_PRIVATE_KEY") or ""
+k = raw.strip().replace("\\n", "\n")
+path = pathlib.Path(sys.argv[1])
+if "BEGIN" in k:
+    path.write_text(k if k.endswith("\n") else k + "\n")
+else:
+    body = "".join(k.split())
+    wrapped = "\n".join(body[i : i + 70] for i in range(0, len(body), 70))
+    path.write_text(
+        "-----BEGIN OPENSSH PRIVATE KEY-----\n"
+        + wrapped
+        + "\n-----END OPENSSH PRIVATE KEY-----\n"
+    )
+PY
 elif [[ -n "${SSH_KEY:-}" && -f "${SSH_KEY}" ]]; then
   cat "$SSH_KEY" > "$KEY_FILE"
 elif [[ -f "$HOME/.ssh/vultr_deploy" ]]; then
@@ -26,8 +41,8 @@ else
 fi
 chmod 600 "$KEY_FILE"
 
-if ! grep -q "BEGIN" "$KEY_FILE"; then
-  echo "SSH key does not look like a private key." >&2
+if ! ssh-keygen -y -f "$KEY_FILE" >/dev/null 2>&1; then
+  echo "SSH key could not be loaded." >&2
   exit 1
 fi
 
