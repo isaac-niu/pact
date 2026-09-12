@@ -64,6 +64,29 @@ describe("PactProvider", () => {
     expect(created.opponentId).toBe("friend");
     expect(created.status).toBe("open");
     expect(created.visibility).toBe("public");
+    expect(created.cadence).toBe("none");
+  });
+
+  it("writes a series onto a new slip", async () => {
+    const { result } = renderHook(() => usePact(), {
+      wrapper: PactProvider,
+    });
+
+    await act(async () => {
+      await result.current.createPact({
+        title: "Gym 3x",
+        criteria: "Show a photo of the thing.",
+        stake: 1,
+        cadence: "3x-week",
+        seriesUntil: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      });
+    });
+
+    const created = result.current.pacts.find((p) => p.title === "Gym 3x");
+    expect(created.cadence).toBe("3x-week");
+    expect(created.seriesId).toBeTruthy();
+    expect(created.occurrence).toBe(1);
+    expect(created.streak).toBe(0);
   });
 
   it("accepts a pact when called by the opponent", async () => {

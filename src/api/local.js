@@ -11,6 +11,7 @@ import {
   reviewNotice,
 } from "../lib/notifications.js";
 import { applyDeadlineReminders } from "../lib/reminders.js";
+import { applyRecurringSpawns, seriesFields, withNextSpawn } from "../lib/recurring.js";
 import {
   appealNotice,
   canFlagAppeal,
@@ -53,6 +54,13 @@ function upgradePact(p) {
     acceptedAt: p.status === "open" ? null : (p.createdAt ?? Date.now()),
     provedAt: p.evidenceUrl || p.evidenceName ? (p.createdAt ?? Date.now()) : null,
     resolvedAt: p.status === "resolved" ? Date.now() : null,
+    cadence: "none",
+    seriesId: null,
+    occurrence: 1,
+    streak: 0,
+    seriesUntil: null,
+    parentPactId: null,
+    nextSpawnAt: null,
     ...p,
   };
 }
@@ -286,6 +294,7 @@ export async function createPact(input, ctx = {}) {
     acceptedAt: null,
     provedAt: null,
     resolvedAt: null,
+    ...seriesFields(input, now, () => uid("ser")),
   };
 
   persist({
@@ -349,13 +358,13 @@ function settle(latest, verdict) {
   const loserId = winnerId === latest.creatorId ? latest.opponentId : latest.creatorId;
   const resolvedAt = Date.now();
   const pot = latest.stake * 2;
-  const resolved = {
+  const resolved = withNextSpawn({
     ...latest,
     status: "resolved",
     verdict,
     winnerId,
     resolvedAt,
-  };
+  });
 
   persist({
     ...state,
@@ -571,7 +580,8 @@ export async function markAllNoticesReadForUser(ctx = {}) {
 }
 
 export async function tickReminders(now = Date.now()) {
-  const out = applyDeadlineReminders(state, now);
-  if (out.created.length) persist(out.state);
-  return { created: out.created.length };
+  const reminded = applyDeadlineReminders(state, now);
+  const spawned = applyRecurringSpawns(reminded.state, { now, uid, bankOf });
+  if (reminded.created.length || spawned.created.length) persist(spawned.state);
+  return { created: reminded.created.length, spawned: spawned.created.length };
 }

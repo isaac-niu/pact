@@ -734,7 +734,8 @@ textarea {
 .badge.type-deadline,
 .badge.type-appeal,
 .badge.type-flagged,
-.badge.type-graded {
+.badge.type-graded,
+.badge.type-series {
   color: var(--amber);
   border-color: var(--amber);
 }
