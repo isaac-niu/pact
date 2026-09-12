@@ -21,6 +21,7 @@ import { pactChecklist } from "../lib/successCriteria.js";
 import { EscrowRail } from "../components/WalletRail.jsx";
 import { matchStake, normalizeEscrow } from "../lib/solanaEscrow.js";
 import { useWallet } from "../wallet/WalletProvider.jsx";
+import { prefersCameraFirst } from "../lib/cameraFirst.js";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -52,6 +53,7 @@ export default function PactDetail() {
   const [localFiles, setLocalFiles] = useState([]);
   const [gradeReason, setGradeReason] = useState("");
   const [itemMarks, setItemMarks] = useState([]);
+  const cameraFirst = prefersCameraFirst();
   const [flagNote, setFlagNote] = useState("");
   const deskPact = pacts.find((p) => p.id === id);
   const livePact = live.ticket ? toDeskPact(live.ticket) : null;
@@ -308,6 +310,21 @@ export default function PactDetail() {
         <div className="card">
           <div className="kicker">Evidence</div>
           <ProofPreview pact={pact} localFiles={localFiles} />
+          {canUpload && cameraFirst ? (
+            <label className={`dropzone dropzone-camera ${busy ? "is-busy" : ""}`}>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                aria-label="Take a frame"
+                onChange={onFile}
+                disabled={busy}
+              />
+              <span className="dropzone-kicker">{busy ? "Sending to the desk…" : "Phone desk"}</span>
+              <span className="dropzone-title">Take a frame</span>
+              <span className="dropzone-hint">Rear camera. One still for the referee.</span>
+            </label>
+          ) : null}
           {canUpload ? (
             <label
               className={`dropzone ${dragOver ? "is-over" : ""} ${busy ? "is-busy" : ""}`}
@@ -331,7 +348,7 @@ export default function PactDetail() {
                 disabled={busy}
               />
               <span className="dropzone-kicker">{busy ? "Sending to the desk…" : "Proof desk"}</span>
-              <span className="dropzone-title">Upload proof</span>
+              <span className="dropzone-title">{cameraFirst ? "Upload from the roll" : "Upload proof"}</span>
               <span className="dropzone-hint">
                 One photo, a burst (up to 4), or a short clip. PNG, JPG, WebP, MP4, WebM.
               </span>

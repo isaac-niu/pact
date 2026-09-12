@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getSnapshot, replaceDesk, resetDesk } from "../api/local.js";
 import PactDetail from "./PactDetail.jsx";
 import { PactProvider } from "../store.jsx";
@@ -33,13 +33,25 @@ function seedAcceptedGym() {
   });
 }
 
-describe("video and burst proof desk", () => {
+describe("phone-first proof desk", () => {
   beforeEach(() => {
     localStorage.clear();
     resetDesk();
+    window.matchMedia = () => ({
+      matches: true,
+      media: "(pointer: coarse)",
+      addListener() {},
+      removeListener() {},
+      addEventListener() {},
+      removeEventListener() {},
+    });
   });
 
-  it("keeps the single-photo dropzone and also takes a burst or clip", async () => {
+  afterEach(() => {
+    delete window.matchMedia;
+  });
+
+  it("opens the rear camera without dropping the desktop roll", async () => {
     seedAcceptedGym();
     render(
       <MemoryRouter initialEntries={["/pact/test-accepted-gym"]}>
@@ -51,11 +63,14 @@ describe("video and burst proof desk", () => {
       </MemoryRouter>,
     );
 
-    const input = await screen.findByLabelText("Upload proof");
-    expect(input).toHaveAttribute("multiple");
-    expect(input.getAttribute("accept")).toMatch(/image\/\*/);
-    expect(input.getAttribute("accept")).toMatch(/video\/mp4/);
-    expect(screen.getByText(/One photo, a burst/)).toBeInTheDocument();
-    expect(screen.queryByLabelText("Take a frame")).not.toBeInTheDocument();
+    const camera = await screen.findByLabelText("Take a frame");
+    expect(camera).toHaveAttribute("capture", "environment");
+    expect(camera).toHaveAttribute("accept", "image/*");
+    expect(camera).not.toHaveAttribute("multiple");
+
+    const roll = screen.getByLabelText("Upload proof");
+    expect(roll).toHaveAttribute("multiple");
+    expect(roll.getAttribute("accept")).toMatch(/video\/mp4/);
+    expect(screen.getByText("Upload from the roll")).toBeInTheDocument();
   });
 });

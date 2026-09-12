@@ -1342,6 +1342,11 @@ select {
   cursor: wait;
 }
 
+.dropzone-camera {
+  border-color: var(--lime-dim);
+  background: #141a0c;
+}
+
 .dropzone input {
   position: absolute;
   width: 1px;
