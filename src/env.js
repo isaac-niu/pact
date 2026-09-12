@@ -19,15 +19,18 @@
 const REQUIRED = [
   "AUTH0_DOMAIN",
   "AUTH0_CLIENT_ID",
-  "ATLAS_URI",
-  "API_URL",
+  "AUTH0_CLIENT_SECRET",
+  "AUTH0_AUDIENCE",
+  "AUTH0_SECRET",
+  "MONGODB_URI",
+  "MONGODB_DB_NAME",
 ];
 
 /**
  * Read a single VITE_ env var. Returns undefined when absent.
  */
 export function getViteEnv(key) {
-  const value = import.meta.env[`VITE_${key}`];
+  const value = (import.meta.env ?? {})[`VITE_${key}`];
   return value === undefined ? undefined : String(value);
 }
 
@@ -35,9 +38,9 @@ export function getViteEnv(key) {
  * Validate that all required server-side env vars are present.
  * Throws a descriptive error listing every missing variable.
  */
-export function validateEnv() {
+export function validateServerEnv(environment = process.env) {
   const missing = REQUIRED.filter((k) => {
-    const val = process.env[k];
+    const val = environment[k];
     return val === undefined || val.trim() === "";
   });
 
@@ -53,6 +56,9 @@ export function validateEnv() {
     throw new Error(msg);
   }
 }
+
+// Retained as a small compatibility alias while the backend is introduced.
+export const validateEnv = validateServerEnv;
 
 /**
  * Expose only VITE_ vars to the client as a plain object.

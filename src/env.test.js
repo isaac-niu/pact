@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // since vitest's test environment doesn't propagate
 // process.env to import.meta.env the same way.
 
-describe("validateEnv", () => {
+describe("validateServerEnv", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -19,8 +19,11 @@ describe("validateEnv", () => {
   it("throws when all required vars are missing", async () => {
     delete process.env.AUTH0_DOMAIN;
     delete process.env.AUTH0_CLIENT_ID;
-    delete process.env.ATLAS_URI;
-    delete process.env.API_URL;
+    delete process.env.AUTH0_CLIENT_SECRET;
+    delete process.env.AUTH0_AUDIENCE;
+    delete process.env.AUTH0_SECRET;
+    delete process.env.MONGODB_URI;
+    delete process.env.MONGODB_DB_NAME;
 
     const { validateEnv } = await import("./env.js");
     expect(() => validateEnv()).toThrow(
@@ -30,7 +33,7 @@ describe("validateEnv", () => {
 
   it("throws listing each missing variable", async () => {
     delete process.env.AUTH0_DOMAIN;
-    delete process.env.ATLAS_URI;
+    delete process.env.MONGODB_URI;
 
     const { validateEnv } = await import("./env.js");
     expect(() => validateEnv()).toThrow(/AUTH0_DOMAIN/);
@@ -39,8 +42,11 @@ describe("validateEnv", () => {
   it("passes when all required vars are present", async () => {
     process.env.AUTH0_DOMAIN = "example.auth0.com";
     process.env.AUTH0_CLIENT_ID = "abc123";
-    process.env.ATLAS_URI = "mongodb://localhost:27017";
-    process.env.API_URL = "http://localhost:3001";
+    process.env.AUTH0_CLIENT_SECRET = "secret";
+    process.env.AUTH0_AUDIENCE = "https://pact-api";
+    process.env.AUTH0_SECRET = "session-secret";
+    process.env.MONGODB_URI = "mongodb://localhost:27017";
+    process.env.MONGODB_DB_NAME = "pact";
 
     const { validateEnv } = await import("./env.js");
     expect(() => validateEnv()).not.toThrow();
@@ -49,8 +55,11 @@ describe("validateEnv", () => {
   it("treats empty strings as missing", async () => {
     process.env.AUTH0_DOMAIN = "";
     process.env.AUTH0_CLIENT_ID = "abc";
-    process.env.ATLAS_URI = "mongodb://localhost";
-    process.env.API_URL = "http://localhost:3001";
+    process.env.AUTH0_CLIENT_SECRET = "secret";
+    process.env.AUTH0_AUDIENCE = "https://pact-api";
+    process.env.AUTH0_SECRET = "session-secret";
+    process.env.MONGODB_URI = "mongodb://localhost";
+    process.env.MONGODB_DB_NAME = "pact";
 
     const { validateEnv } = await import("./env.js");
     expect(() => validateEnv()).toThrow(/AUTH0_DOMAIN/);
