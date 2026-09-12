@@ -37,5 +37,6 @@ describe("video and burst proof desk", () => {
     expect(input.getAttribute("accept")).toMatch(/image\/\*/);
     expect(input.getAttribute("accept")).toMatch(/video\/mp4/);
     expect(screen.getByText(/One photo, a burst/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Take a frame")).not.toBeInTheDocument();
   });
 });
