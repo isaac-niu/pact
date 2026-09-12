@@ -19,6 +19,7 @@ import {
   gradedNotice,
   requireGradeReason,
 } from "../lib/appeals.js";
+import { applyComment, applyReaction } from "../lib/tapeTalk.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -197,6 +198,8 @@ function normalize(parsed) {
     events,
     ledger: Array.isArray(parsed.ledger) ? parsed.ledger : ledgerFromLegacy(pacts),
     notifications,
+    reactions: Array.isArray(parsed.reactions) ? parsed.reactions : [],
+    comments: Array.isArray(parsed.comments) ? parsed.comments : [],
   };
 }
 
@@ -584,4 +587,20 @@ export async function tickReminders(now = Date.now()) {
   const spawned = applyRecurringSpawns(reminded.state, { now, uid, bankOf });
   if (reminded.created.length || spawned.created.length) persist(spawned.state);
   return { created: reminded.created.length, spawned: spawned.created.length };
+}
+
+export async function reactToMark(eventId, emoji, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const out = applyReaction(state, { eventId, emoji, actorId, uid });
+  persist(out.state);
+  return out.result;
+}
+
+export async function commentOnMark(eventId, body, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const out = applyComment(state, { eventId, body, actorId, uid });
+  persist(out.state);
+  return out.result;
 }

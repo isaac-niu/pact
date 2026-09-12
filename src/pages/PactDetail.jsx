@@ -7,6 +7,7 @@ import { canFlagAppeal, canResolveAppeal } from "../lib/appeals.js";
 import { deadlineTone, formatWhen, sol } from "../lib/format.js";
 import { cadenceLabel, normalizeCadence } from "../lib/recurring.js";
 import { canSeePact, pactVisibility } from "../lib/visibility.js";
+import TapeTalk from "../components/TapeTalk.jsx";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -359,11 +360,14 @@ export default function PactDetail() {
         <ol className="mark-list">
           {marks.map((ev) => (
             <li key={ev.id}>
-              <span className={`badge type-${ev.type}`}>{ev.type}</span>
-              <span>
-                {userById(ev.actorId)?.handle} · {ev.note}
-              </span>
-              <time>{formatWhen(ev.at)}</time>
+              <div className="mark-line">
+                <span className={`badge type-${ev.type}`}>{ev.type}</span>
+                <span>
+                  {userById(ev.actorId)?.handle} · {ev.note}
+                </span>
+                <time>{formatWhen(ev.at)}</time>
+              </div>
+              <TapeTalk eventId={ev.id} />
             </li>
           ))}
         </ol>

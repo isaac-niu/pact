@@ -40,6 +40,8 @@ function apply(snap) {
     events: snap.events || [],
     ledger: snap.ledger || [],
     notifications: snap.notifications || [],
+    reactions: snap.reactions || [],
+    comments: snap.comments || [],
     users: snap.users || [],
   };
   notify();
@@ -195,6 +197,26 @@ export async function tickReminders(now = Date.now()) {
   const out = await req("/api/desk/remind", {
     method: "POST",
     body: JSON.stringify({ now }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function reactToMark(eventId, emoji, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/marks/${encodeURIComponent(eventId)}/react`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, emoji }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function commentOnMark(eventId, body, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/marks/${encodeURIComponent(eventId)}/comment`, {
+    method: "POST",
+    body: JSON.stringify({ actorId, body }),
   });
   apply(out.state);
   return out.result;

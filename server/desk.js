@@ -17,6 +17,7 @@ import {
   gradedNotice,
   requireGradeReason,
 } from "../src/lib/appeals.js";
+import { applyComment, applyReaction } from "../src/lib/tapeTalk.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -263,6 +264,16 @@ export function createDeskLogic(judge) {
         state: spawned.state,
         result: { created: reminded.created.length, spawned: spawned.created.length },
       };
+    },
+
+    async reactToMark(state, eventId, emoji, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      return applyReaction(state, { eventId, emoji, actorId, uid });
+    },
+
+    async commentOnMark(state, eventId, body, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      return applyComment(state, { eventId, body, actorId, uid });
     },
   };
 }

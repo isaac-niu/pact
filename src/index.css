@@ -668,6 +668,11 @@ textarea {
   gap: 10px;
 }
 
+.tape-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
 .tape-row,
 .slip {
   display: grid;
@@ -679,6 +684,11 @@ textarea {
   padding: 14px 18px;
 }
 
+.tape-card .tape-row {
+  border: 0;
+  background: transparent;
+}
+
 .tape-row time {
   color: var(--muted);
   font-family: "IBM Plex Mono", ui-monospace, monospace;
@@ -686,7 +696,8 @@ textarea {
 }
 
 .tape-row:hover,
-.slip:hover {
+.slip:hover,
+.tape-card:hover {
   border-color: #3d452c;
 }
 
@@ -981,6 +992,103 @@ textarea {
   font-size: 14px;
 }
 
+.mark-list li:has(.tape-talk) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.mark-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.tape-talk {
+  display: grid;
+  gap: 8px;
+  padding: 0 18px 12px;
+}
+
+.tape-talk.is-compact {
+  padding-top: 0;
+}
+
+.tape-reacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.react-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.react-btn.on {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.react-btn b {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.take-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.take-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.take-list b {
+  color: var(--lime);
+  letter-spacing: 0.08em;
+}
+
+.take-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.take-form input {
+  padding: 8px 10px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .ledger time,
 .mark-list time {
   color: var(--muted);
@@ -1212,7 +1320,9 @@ label .hint {
   }
 
   .tape-row,
-  .slip {
+  .slip,
+  .take-form,
+  .mark-line {
     grid-template-columns: 1fr auto;
   }
 
