@@ -4,6 +4,7 @@ export const NOTICE_TYPES = {
   ACCEPTED: "accepted",
   PROVED: "proved",
   REVIEW: "review",
+  DEADLINE: "deadline",
 };
 
 export function noticeId(prefix = "ntf") {

@@ -92,6 +92,31 @@ test("accept and review write desk notices for the other side", async () => {
   assert.equal(reviewNotice.userId, "friend");
 });
 
+test("tickReminders writes one deadline notice per live slip in the window", async () => {
+  const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
+  const now = Date.now();
+  let state = emptyDemoState(now);
+  const created = await desk.createPact(
+    state,
+    {
+      title: "Soon",
+      criteria: "Selfie",
+      stake: 1,
+      opponentId: "friend",
+      deadline: now + 4 * 60 * 60 * 1000,
+    },
+    "you",
+  );
+  state = created.state;
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  const first = await desk.tickReminders(state, now);
+  const rows = first.state.notifications.filter((n) => n.type === "deadline" && n.pactId === created.result.id);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].userId, "you");
+  const second = await desk.tickReminders(first.state, now + 30_000);
+  assert.equal(second.result.created, 0);
+});
+
 test("createPact stores public vs private tape", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const pub = await desk.createPact(

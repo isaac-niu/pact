@@ -37,7 +37,7 @@ function leetPact(now) {
     title: "Solve one LeetCode today",
     criteria: "Screenshot of a green accepted submission from today.",
     stake: 1.5,
-    deadline: now + 10 * 60 * 60 * 1000,
+    deadline: now + 5 * 60 * 60 * 1000,
     creatorId: "friend",
     opponentId: "you",
     status: "accepted",

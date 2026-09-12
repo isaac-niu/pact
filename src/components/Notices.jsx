@@ -6,6 +6,7 @@ const LABELS = {
   accepted: "accepted",
   proved: "proved",
   review: "review",
+  deadline: "deadline",
 };
 
 export default function Notices() {

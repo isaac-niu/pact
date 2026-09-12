@@ -91,6 +91,36 @@ describe("PactProvider", () => {
     );
   });
 
+  it("ticks a single deadline reminder onto a live slip", async () => {
+    const { result } = renderHook(() => usePact(), {
+      wrapper: PactProvider,
+    });
+
+    await act(async () => {
+      await result.current.createPact({
+        title: "Soon",
+        criteria: "Show a photo of the thing.",
+        stake: 1,
+        deadline: Date.now() + 3 * 60 * 60 * 1000,
+      });
+    });
+    const id = result.current.pacts.find((p) => p.title === "Soon").id;
+    act(() => result.current.switchUser("friend"));
+    await act(async () => {
+      await result.current.acceptPact(id);
+    });
+    act(() => result.current.switchUser("you"));
+    await act(async () => {
+      await result.current.tickReminders();
+    });
+    const reminders = result.current.notifications.filter((n) => n.type === "deadline" && n.pactId === id);
+    expect(reminders).toHaveLength(1);
+    await act(async () => {
+      await result.current.tickReminders();
+    });
+    expect(result.current.notifications.filter((n) => n.type === "deadline" && n.pactId === id)).toHaveLength(1);
+  });
+
   it("marks desk notices read for the current desk", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,

@@ -9,6 +9,7 @@ import {
   recordOf,
   resetDesk,
   submitEvidence as apiSubmit,
+  tickReminders as apiTickReminders,
   verifyPact as apiVerify,
   subscribe,
   switchUser as apiSwitch,
@@ -22,6 +23,14 @@ export function PactProvider({ children }) {
   const [snap, setSnap] = useState(() => getSnapshot());
 
   useEffect(() => subscribe(setSnap), []);
+
+  useEffect(() => {
+    apiTickReminders().catch(() => {});
+    const timer = setInterval(() => {
+      apiTickReminders().catch(() => {});
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const user = userById(snap.userId);
   const opponent = userById(otherUserId(snap.userId));
@@ -52,6 +61,7 @@ export function PactProvider({ children }) {
       verifyPact: (id, pass) => apiVerify(id, pass, { actorId: snap.userId }),
       markNoticeRead: (id) => apiMarkRead(id, { actorId: snap.userId }),
       markAllNoticesRead: () => apiMarkAllRead({ actorId: snap.userId }),
+      tickReminders: () => apiTickReminders(),
       backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],

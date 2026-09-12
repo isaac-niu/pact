@@ -8,6 +8,7 @@ import {
   provedNotice,
   reviewNotice,
 } from "../src/lib/notifications.js";
+import { applyDeadlineReminders } from "../src/lib/reminders.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -206,6 +207,11 @@ export function createDeskLogic(judge) {
         state: { ...state, notifications: applyMarkAllRead(state.notifications, actorId) },
         result: { ok: true },
       };
+    },
+
+    async tickReminders(state, now = Date.now()) {
+      const out = applyDeadlineReminders(state, now);
+      return { state: out.state, result: { created: out.created.length } };
     },
   };
 }
