@@ -18,6 +18,7 @@ import Crew from "./pages/Crew.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
 import Board from "./pages/Board.jsx";
 import { WalletRail } from "./components/WalletRail.jsx";
+import { OnboardingCoach, OnboardingProvider } from "./components/OnboardingWalkthrough.jsx";
 
 // The Solana wallet-adapter stack is a few hundred KB the app never needs
 // outside this one page — load it only when someone actually visits /wallet.
@@ -124,6 +125,7 @@ function Shell({ children }) {
   const { backend, unreadNotices } = usePact();
   const tapeLabel = unreadNotices > 0 ? `Tape, ${unreadNotices} unread` : "Tape";
   return (
+    <OnboardingProvider>
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
@@ -167,8 +169,10 @@ function Shell({ children }) {
           <AccountControl />
         </div>
       </header>
+      <OnboardingCoach />
       {children}
     </div>
+    </OnboardingProvider>
   );
 }
 

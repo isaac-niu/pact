@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { usePact } from "../store.jsx";
 import { formatWhen, sol } from "../lib/format.js";
 import { WalletRail } from "../components/WalletRail.jsx";
+import { useOnboarding } from "../components/OnboardingWalkthrough.jsx";
 
 export default function Profile() {
   const { user, bank, record, ledger, pacts, resetDesk, backend, sideStakes } = usePact();
+  const tour = useOnboarding();
   const [flash, setFlash] = useState("");
   const mine = pacts.filter((p) => p.creatorId === user.id || p.opponentId === user.id);
   const railTickets = (sideStakes || []).filter((row) => row.userId === user.id);
@@ -13,6 +15,7 @@ export default function Profile() {
 
   function onReset() {
     resetDesk();
+    tour?.reset();
     setFlash("Desk wiped and reseeded — bank back to the opening book.");
   }
 
@@ -104,7 +107,7 @@ export default function Profile() {
               {flash ? (
                 <p className="hint lime-hint">{flash}</p>
               ) : (
-                <p className="hint">Wipes this browser and reseeds the gym demo slip.</p>
+                <p className="hint">Wipes this browser, reseeds the gym demo slip, and replays the first-visit walk.</p>
               )}
             </>
           )}
