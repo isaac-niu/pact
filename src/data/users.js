@@ -7,8 +7,21 @@ export const USERS = [
 export const STARTING_BANK = 50;
 export const DESK_ACTORS = ["you", "friend", "rail"];
 
+export function normalizeHandle(handle) {
+  return String(handle || "")
+    .trim()
+    .replace(/^@/, "")
+    .toUpperCase();
+}
+
 export function userById(id) {
   return USERS.find((u) => u.id === id) ?? null;
+}
+
+export function userByHandle(handle, users = USERS) {
+  const key = normalizeHandle(handle);
+  if (!key) return null;
+  return users.find((u) => normalizeHandle(u.handle) === key) ?? null;
 }
 
 export function otherUserId(id) {
