@@ -46,6 +46,7 @@ export default function People() {
       <FriendsList
         people={people}
         incoming={live.friends.incoming}
+        friends={live.friends.friends}
         onAdd={actions.addFriend}
         onAccept={actions.acceptFriend}
         busy={busy}

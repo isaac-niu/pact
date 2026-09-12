@@ -1213,6 +1213,38 @@ a.side-name:hover {
   text-align: center;
 }
 
+.empty-desk {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 18px 24px;
+  background: var(--panel);
+}
+
+.empty-art {
+  width: min(220px, 100%);
+  height: auto;
+  margin-bottom: 4px;
+}
+
+.empty-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 26px;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.empty-desk .lede {
+  max-width: 420px;
+}
+
+.empty-actions {
+  justify-content: center;
+  margin-top: 6px;
+}
+
 .auth-actions,
 .pact-actions {
   display: flex;

@@ -40,6 +40,9 @@ export default function Crew() {
             join code, then the admin approves.
           </p>
         </div>
+        <a className="btn btn-lime" href="#create-crew">
+          Name a crew
+        </a>
       </div>
       {!live.live ? (
         <p className="hint">
