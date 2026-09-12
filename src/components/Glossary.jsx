@@ -18,6 +18,13 @@ export default function Glossary() {
         </dd>
       </div>
       <div>
+        <dt>Public ticket</dt>
+        <dd>
+          A shareable <code>/u/:handle</code> book: win rate, record, and public pact history. Private
+          tape and the SOL bank stay on /me.
+        </dd>
+      </div>
+      <div>
         <dt>Wallet rail</dt>
         <dd>
           Optional Solana desk. Connect Phantom or sit the demo desk. Stakes still post to the

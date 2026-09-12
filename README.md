@@ -52,6 +52,7 @@ npm start
 | `/feed` | Event tape + slips (signed-in: includes live 1v1s) |
 | `/pact/:id` | Ticket, evidence, verdict (Gemini upload on accepted live slips) |
 | `/me` | Profile, rate, virtual SOL bank |
+| `/u/:handle` | Public ticket — win rate, record, public pact history |
 | `/app` | Authenticated Auth0 / mock ISAAC-FRIEND desk |
 | `/callback` | Auth0 return route |
 

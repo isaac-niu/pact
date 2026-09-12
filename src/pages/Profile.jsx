@@ -24,6 +24,9 @@ export default function Profile() {
           <h2>{user.handle}</h2>
           <p className="lede slim">{user.name} · SOL bank lives in MongoDB on this desk</p>
         </div>
+        <Link className="btn btn-ghost" to={`/u/${user.handle}`}>
+          Open public ticket
+        </Link>
       </div>
 
       <WalletRail />
