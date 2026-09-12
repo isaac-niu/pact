@@ -54,6 +54,9 @@ export default function Home() {
         <Link className="btn btn-ghost" to="/feed">
           Open the tape
         </Link>
+        <Link className="btn btn-ghost" to="/board">
+          Check the board
+        </Link>
       </div>
 
       <div className="hero-board">

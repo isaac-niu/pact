@@ -53,6 +53,7 @@ npm start
 | `/pact/:id` | Ticket, evidence, verdict (Gemini upload on accepted live slips) |
 | `/me` | Profile, rate, virtual SOL bank |
 | `/u/:handle` | Public ticket — win rate, record, public pact history |
+| `/board` | Daily ranks: win rate, hot streak, pot taken |
 | `/app` | Authenticated Auth0 / mock ISAAC-FRIEND desk |
 | `/callback` | Auth0 return route |
 

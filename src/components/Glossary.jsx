@@ -18,6 +18,13 @@ export default function Glossary() {
         </dd>
       </div>
       <div>
+        <dt>Board</dt>
+        <dd>
+          Daily ranks on the open book — win rate, hot streak, pot taken. Global and per-crew.
+          Check back tomorrow.
+        </dd>
+      </div>
+      <div>
         <dt>Public ticket</dt>
         <dd>
           A shareable <code>/u/:handle</code> book: win rate, record, and public pact history. Private

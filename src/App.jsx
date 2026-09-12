@@ -16,6 +16,7 @@ import Callback from "./pages/Callback.jsx";
 import People from "./pages/People.jsx";
 import Crew from "./pages/Crew.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
+import Board from "./pages/Board.jsx";
 import { WalletRail } from "./components/WalletRail.jsx";
 
 // The Solana wallet-adapter stack is a few hundred KB the app never needs
@@ -155,6 +156,7 @@ function Shell({ children }) {
           </NavLink>
           <NavLink to="/people">People</NavLink>
           <NavLink to="/crew">Crew</NavLink>
+          <NavLink to="/board">Board</NavLink>
           <NavLink to="/wallet">Wallet</NavLink>
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/app">Pact app</NavLink>
@@ -180,6 +182,7 @@ export default function App() {
         <Route path="/pact/:id" element={<PactDetail />} />
         <Route path="/me" element={<Profile />} />
         <Route path="/u/:handle" element={<PublicProfile />} />
+        <Route path="/board" element={<Board />} />
         <Route path="/people" element={<People />} />
         <Route path="/crew" element={<Crew />} />
         <Route
