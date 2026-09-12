@@ -20,6 +20,17 @@ function isRefereeApi(url = "") {
 
 export default defineConfig({
   plugins: [react(), refereePlugin(root)],
+  define: {
+    global: "globalThis",
+  },
+  resolve: {
+    alias: {
+      buffer: "buffer",
+    },
+  },
+  optimizeDeps: {
+    include: ["buffer", "@solana/web3.js"],
+  },
   server: {
     host: true,
     port: 5173,

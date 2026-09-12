@@ -1,6 +1,9 @@
+import { Buffer } from "buffer";
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 import * as matchers from "@testing-library/jest-dom/matchers";
+
+if (!globalThis.Buffer) globalThis.Buffer = Buffer;
 
 expect.extend(matchers);
 

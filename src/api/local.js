@@ -29,6 +29,7 @@ import {
   slipCriteria,
 } from "../lib/successCriteria.js";
 import { normalizeProofPayload, primaryProofFile, requireProofFiles } from "../lib/proofMedia.js";
+import { describeRail, mergeEscrow, normalizeEscrow } from "../lib/solanaEscrow.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
 const LEGACY_KEY = "pact.demo.v1";
@@ -74,6 +75,7 @@ function upgradePact(p) {
     evidenceFiles: Array.isArray(p.evidenceFiles) ? p.evidenceFiles : [],
     ...p,
     checklist: pactChecklist({ ...p, checklist: p.checklist }),
+    escrow: normalizeEscrow(p.escrow),
   };
 }
 
@@ -329,6 +331,7 @@ export async function createPact(input, ctx = {}) {
     acceptedAt: null,
     provedAt: null,
     resolvedAt: null,
+    escrow: normalizeEscrow(input.escrow),
     ...seriesFields(input, now, () => uid("ser")),
   };
 
@@ -667,4 +670,26 @@ export async function placeSideStake(pactId, input, ctx = {}) {
   });
   persist(out.state);
   return out.result;
+}
+
+export async function attachEscrow(pactId, patch, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const pact = state.pacts.find((p) => p.id === pactId);
+  if (!pact) throw new Error("Slip not on the board");
+  if (pact.creatorId !== actorId && pact.opponentId !== actorId) {
+    throw new Error("Only a desk on this slip can mark the rail");
+  }
+  const escrow = mergeEscrow(pact.escrow, patch);
+  const next = { ...pact, escrow };
+  const now = Date.now();
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? next : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "escrow", actorId, at: now, note: describeRail(escrow) },
+      ...state.events,
+    ],
+  });
+  return next;
 }

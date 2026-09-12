@@ -14,6 +14,7 @@ import AuthenticatedPactDemo from "./pages/AuthenticatedPactDemo.jsx";
 import Callback from "./pages/Callback.jsx";
 import People from "./pages/People.jsx";
 import Crew from "./pages/Crew.jsx";
+import { WalletRail } from "./components/WalletRail.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -143,6 +144,7 @@ function Shell({ children }) {
           <NavLink to="/app">Pact app</NavLink>
         </nav>
         <div className="top-tools">
+          <WalletRail compact />
           <BalanceControl />
           <AccountControl />
         </div>

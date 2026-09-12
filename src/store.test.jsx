@@ -181,6 +181,35 @@ describe("PactProvider", () => {
     expect(result.current.comments.some((row) => row.body === "Book stands.")).toBe(true);
   });
 
+  it("attaches an escrow lock onto a new slip", async () => {
+    const { result } = renderHook(() => usePact(), {
+      wrapper: PactProvider,
+    });
+
+    await act(async () => {
+      await result.current.createPact({
+        title: "Chain lock",
+        criteria: "Show a photo of the thing.",
+        stake: 1,
+      });
+    });
+    const created = result.current.pacts.find((p) => p.title === "Chain lock");
+    expect(created.escrow.rail).toBe("virtual");
+    await act(async () => {
+      await result.current.attachEscrow(created.id, {
+        rail: "solana",
+        status: "locked",
+        lockSig: "sig-desk",
+        creatorPubkey: "CREATOR",
+      });
+    });
+    expect(result.current.pacts.find((p) => p.id === created.id).escrow).toMatchObject({
+      rail: "solana",
+      status: "locked",
+      lockSig: "sig-desk",
+    });
+  });
+
   it("persists state to localStorage", async () => {
     const { result } = renderHook(() => usePact(), {
       wrapper: PactProvider,

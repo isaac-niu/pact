@@ -4,6 +4,8 @@ Social media for accountability, not attention.
 
 **Loop:** say it → stake virtual SOL → prove it with a photo → share it.
 
+Optional **wallet rail** on `/me` and `/create`: connect Phantom or sit the demo desk. Stakes still post to the virtual book; a connected wallet can lock a memo on Solana devnet.
+
 Person A owns the sportsbook desk UI. Person B owns Auth0 + Mongo API. Person C owns the Gemini referee and GridFS proof. Person D owns Vultr deploy and ElevenLabs.
 
 If Mongo or Gemini env vars are missing, the desk still boots on `localStorage` and the mock referee.
