@@ -7,16 +7,17 @@ import { PactProvider } from "./store.jsx";
 import { boot } from "./api/pact.js";
 import "./index.css";
 
-boot().finally(() => {
-  createRoot(document.getElementById("root")).render(
-    <StrictMode>
-      <BrowserRouter>
-        <AuthGate>
-          <PactProvider>
-            <App />
-          </PactProvider>
-        </AuthGate>
-      </BrowserRouter>
-    </StrictMode>,
-  );
-});
+const root = createRoot(document.getElementById("root"));
+root.render(
+  <StrictMode>
+    <BrowserRouter>
+      <AuthGate>
+        <PactProvider>
+          <App />
+        </PactProvider>
+      </AuthGate>
+    </BrowserRouter>
+  </StrictMode>,
+);
+
+boot().catch(() => {});

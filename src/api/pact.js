@@ -10,9 +10,15 @@ import * as local from "./local.js";
 import * as remote from "./remote.js";
 
 let impl = local;
+const listeners = new Set();
+
+function emit() {
+  for (const fn of listeners) fn(getSnapshot());
+}
 
 export async function boot() {
   if (await remote.maybeRemote()) impl = remote;
+  emit();
   return impl === remote;
 }
 
@@ -32,7 +38,15 @@ export function getSnapshot() {
   return impl.getSnapshot();
 }
 export function subscribe(fn) {
-  return impl.subscribe(fn);
+  listeners.add(fn);
+  fn(getSnapshot());
+  const stopRemote = remote.subscribe(() => emit());
+  const stopLocal = local.subscribe(() => emit());
+  return () => {
+    listeners.delete(fn);
+    stopRemote();
+    stopLocal();
+  };
 }
 export function switchUser(id) {
   return impl.switchUser(id);
