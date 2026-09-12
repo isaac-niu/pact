@@ -49,6 +49,7 @@ describe("local Pact proof of concept", () => {
     renderPactApp("/feed");
 
     expect(screen.getByRole("link", { name: "PACT" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("img", { name: "PACT" })).toHaveAttribute("src", "/pact-logo.png");
     expect(screen.getByRole("link", { name: "Write" })).toHaveAttribute("href", "/create");
     expect(screen.getByRole("link", { name: /^Tape/ })).toHaveAttribute("href", "/feed");
     expect(screen.getByRole("link", { name: "Pact app" })).toHaveAttribute("href", "/app");

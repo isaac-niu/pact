@@ -124,7 +124,16 @@ function Shell({ children }) {
       <header className="topbar">
         <div className="brand">
           <NavLink to="/" className="brand-mark">
-            PACT
+            <img
+              className="brand-logo"
+              src="/pact-logo.png"
+              alt="PACT"
+              width="48"
+              height="48"
+            />
+            <span className="brand-wordmark" aria-hidden="true">
+              PACT
+            </span>
           </NavLink>
           <span className="brand-sub">{backend === "mongo" ? "Live desk" : "Local desk"}</span>
         </div>
