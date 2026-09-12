@@ -78,7 +78,9 @@ Stop talking. Ask for questions.
 
 **Auth0 login fails / not built:** stay on the ISAAC/MAYA switcher. That is the demo.
 
-**Gemini fails or no key:** mocked referee. Have a photo already on disk. Do not wait on Wi‑Fi to an AI studio page.
+**No Gemini key:** mocked referee. Have a photo already on disk. Do not wait on Wi‑Fi to an AI studio page.
+
+**Gemini key set but Flash errors:** honest `gemini-error` (not a dummy pass). Check `GET /api/config` → `features.lastGeminiError`.
 
 **ElevenLabs fails / no key:** the slip still settles. Do not refresh hoping for audio.
 

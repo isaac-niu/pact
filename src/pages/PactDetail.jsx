@@ -20,6 +20,7 @@ const STAMPS = {
 
 function sourceLabel(verdict) {
   if (verdict?.source === "gemini") return "Gemini Flash";
+  if (verdict?.source === "gemini-error") return "Gemini error";
   if (verdict?.source === "appeal") return "open appeal";
   if (verdict?.source === "friend") return "friend grade";
   return "mocked";
