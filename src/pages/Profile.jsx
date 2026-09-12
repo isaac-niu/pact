@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePact } from "../store.jsx";
 import { formatWhen, sol } from "../lib/format.js";
 
 export default function Profile() {
   const { user, bank, record, ledger, pacts, resetDesk } = usePact();
+  const [flash, setFlash] = useState("");
   const mine = pacts.filter((p) => p.creatorId === user.id || p.opponentId === user.id);
   const rate = record.rate == null ? "—" : `${Math.round(record.rate * 100)}%`;
+
+  function onReset() {
+    resetDesk();
+    setFlash("Desk wiped and reseeded — bank back to the opening book.");
+  }
 
   return (
     <div>
@@ -74,10 +81,12 @@ export default function Profile() {
               ))}
             </ul>
           )}
-          <button className="btn btn-ghost" type="button" onClick={() => resetDesk()}>
+          <button className="btn btn-ghost" type="button" onClick={onReset}>
             Reset local desk
           </button>
-          <p className="hint">Wipes this browser and reseeds the three demo slips.</p>
+          {flash ? <p className="hint lime-hint">{flash}</p> : (
+            <p className="hint">Wipes this browser and reseeds the three demo slips.</p>
+          )}
         </div>
       </div>
     </div>

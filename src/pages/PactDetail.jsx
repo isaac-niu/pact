@@ -70,10 +70,9 @@ export default function PactDetail() {
       : `PACT · ${creator.handle} vs ${opponent.handle} · ${pact.title}`;
     try {
       await navigator.clipboard.writeText(line);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
+      setCopied("copied");
     } catch {
-      setCopied(false);
+      setCopied(line);
     }
   }
 
@@ -180,8 +179,11 @@ export default function PactDetail() {
                 {winner.handle} takes the pot · {sol(pot)} SOL
               </div>
               <button className="btn btn-ghost" type="button" onClick={copyShare}>
-                {copied ? "Copied the post" : "Share the ticket"}
+                {copied === "copied" ? "Copied the post" : "Share the ticket"}
               </button>
+              {copied && copied !== "copied" ? (
+                <p className="hint">{copied}</p>
+              ) : null}
             </div>
           ) : null}
         </div>
