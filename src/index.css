@@ -931,6 +931,17 @@ textarea {
   color: var(--amber);
 }
 
+.sidekick-line {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.sidekick-line .kicker {
+  font-style: normal;
+  margin-right: 4px;
+}
+
 .verify-row {
   display: flex;
   flex-wrap: wrap;

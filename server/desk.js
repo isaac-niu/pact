@@ -19,6 +19,7 @@ import {
   requireGradeReason,
 } from "../src/lib/appeals.js";
 import { applyComment, applyReaction } from "../src/lib/tapeTalk.js";
+import { getSidekickLine } from "./ifmSidekick.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -39,7 +40,7 @@ export function recordOf(userId, snap) {
   return { wins, losses: done.length - wins, played: done.length, rate: done.length ? wins / done.length : null };
 }
 
-export function createDeskLogic(judge) {
+export function createDeskLogic(judge, getSidekick = getSidekickLine) {
   return {
     async createPact(state, input, actorId) {
       if (!userById(actorId)) throw new Error("Unknown demo user");
@@ -162,6 +163,14 @@ export function createDeskLogic(judge) {
         criteria: pact.criteria,
         fileName: evidenceName,
         dataUrl: file.dataUrl,
+      });
+      // Sidekick only reacts to the call already made above; a failure here
+      // falls back to a canned line rather than blocking the verdict.
+      verdict.sidekick = await getSidekick({
+        title: pact.title,
+        result: verdict.result,
+        confidence: verdict.confidence,
+        rationale: verdict.rationale,
       });
 
       const latest = nextState.pacts.find((p) => p.id === pactId);
