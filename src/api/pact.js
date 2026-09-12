@@ -34,6 +34,9 @@ export function submitEvidence(...args) {
 export function verifyPact(...args) {
   return impl.verifyPact(...args);
 }
+export function flagAppeal(...args) {
+  return impl.flagAppeal(...args);
+}
 export function markNoticeReadForUser(...args) {
   return impl.markNoticeReadForUser(...args);
 }
@@ -75,6 +78,7 @@ export const pactApi = {
   acceptPact,
   submitEvidence,
   verifyPact,
+  flagAppeal,
   markNoticeReadForUser,
   markAllNoticesReadForUser,
   tickReminders,

@@ -9,6 +9,13 @@ import {
   reviewNotice,
 } from "../src/lib/notifications.js";
 import { applyDeadlineReminders } from "../src/lib/reminders.js";
+import {
+  appealNotice,
+  canFlagAppeal,
+  canResolveAppeal,
+  gradedNotice,
+  requireGradeReason,
+} from "../src/lib/appeals.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -173,22 +180,60 @@ export function createDeskLogic(judge) {
       return { state: settled, result: settled.pacts.find((p) => p.id === pactId) };
     },
 
-    async verifyPact(state, pactId, pass, actorId) {
+    async flagAppeal(state, pactId, note, actorId) {
       if (!userById(actorId)) throw new Error("Unknown demo user");
       const pact = state.pacts.find((p) => p.id === pactId);
       if (!pact) throw new Error("Slip not on the board");
-      if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
-      if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
+      if (!canFlagAppeal(pact, actorId)) throw new Error("This slip cannot be flagged");
+      const now = Date.now();
+      const appeal = {
+        status: "open",
+        flaggedBy: actorId,
+        note: String(note ?? "").trim() || "Flagged the Gemini call.",
+        at: now,
+        resolution: null,
+      };
+      const next = { ...pact, status: "appeal", appeal };
+      return {
+        state: {
+          ...state,
+          pacts: state.pacts.map((p) => (p.id === pactId ? next : p)),
+          events: [{ id: uid("ev"), pactId, type: "flagged", actorId, at: now, note: appeal.note }, ...state.events],
+          notifications: mergeNotices(state.notifications, [appealNotice(next, actorId, now)]),
+        },
+        result: next,
+      };
+    },
+
+    async verifyPact(state, pactId, pass, actorId, reason) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      const pact = state.pacts.find((p) => p.id === pactId);
+      if (!pact) throw new Error("Slip not on the board");
+      if (!canResolveAppeal(pact, actorId)) throw new Error("This slip is not waiting on a visible grade");
+      const gradeReason = requireGradeReason(reason);
+      const now = Date.now();
+      const appeal = {
+        status: "resolved",
+        flaggedBy: pact.appeal?.flaggedBy || actorId,
+        note: pact.appeal?.note || "Friend grade on the REVIEW call.",
+        at: pact.appeal?.at || now,
+        resolution: { actorId, pass: Boolean(pass), reason: gradeReason, at: now },
+      };
+      const framed = { ...pact, appeal };
+      const prepared = {
+        ...state,
+        pacts: state.pacts.map((p) => (p.id === pactId ? framed : p)),
+        events: [{ id: uid("ev"), pactId, type: "graded", actorId, at: now, note: gradeReason }, ...state.events],
+        notifications: mergeNotices(state.notifications, [gradedNotice(framed, actorId, now)]),
+      };
       const verdict = {
         result: pass ? "pass" : "fail",
         confidence: pact.verdict?.confidence ?? 0.5,
-        rationale: pass
-          ? "Friend verified the proof. Desk stands the slip."
-          : "Friend rejected the proof. Stake goes to the counterparty.",
-        source: "friend",
+        rationale: gradeReason,
+        source: pact.status === "appeal" ? "appeal" : "friend",
         auto: true,
       };
-      const next = settle(state, pactId, verdict);
+      const next = settle(prepared, pactId, verdict);
       return { state: next, result: next.pacts.find((p) => p.id === pactId) };
     },
 

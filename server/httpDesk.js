@@ -5,6 +5,7 @@ import {
   acceptPact,
   submitEvidence,
   verifyPact,
+  flagAppeal,
   markNoticeRead,
   markAllNoticesRead,
   tickReminders,
@@ -113,7 +114,7 @@ export async function handleDeskApi(req, res, { send, readBody }) {
     return true;
   }
 
-  const pactMatch = url.match(/^\/api\/pacts\/([^/]+)\/(accept|evidence|verify)$/);
+  const pactMatch = url.match(/^\/api\/pacts\/([^/]+)\/(accept|evidence|verify|flag)$/);
   if (pactMatch && req.method === "POST") {
     const pactId = decodeURIComponent(pactMatch[1]);
     const action = pactMatch[2];
@@ -133,7 +134,12 @@ export async function handleDeskApi(req, res, { send, readBody }) {
       send(res, 200, out);
       return true;
     }
-    const out = await verifyPact(pactId, payload.pass !== false, actorOf(req, payload));
+    if (action === "flag") {
+      const out = await flagAppeal(pactId, payload.note, actorOf(req, payload));
+      send(res, 200, out);
+      return true;
+    }
+    const out = await verifyPact(pactId, payload.pass !== false, actorOf(req, payload), payload.reason);
     send(res, 200, out);
     return true;
   }

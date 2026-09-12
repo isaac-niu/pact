@@ -11,6 +11,13 @@ import {
   reviewNotice,
 } from "../lib/notifications.js";
 import { applyDeadlineReminders } from "../lib/reminders.js";
+import {
+  appealNotice,
+  canFlagAppeal,
+  canResolveAppeal,
+  gradedNotice,
+  requireGradeReason,
+} from "../lib/appeals.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -459,21 +466,66 @@ export async function submitEvidence(pactId, file, ctx = {}) {
   return settle(framed, verdict);
 }
 
+export async function flagAppeal(pactId, note, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  const pact = state.pacts.find((p) => p.id === pactId);
+  if (!pact) throw new Error("Slip not on the board");
+  if (!canFlagAppeal(pact, actorId)) throw new Error("This slip cannot be flagged");
+  const now = Date.now();
+  const appeal = {
+    status: "open",
+    flaggedBy: actorId,
+    note: String(note ?? "").trim() || "Flagged the Gemini call.",
+    at: now,
+    resolution: null,
+  };
+  const next = { ...pact, status: "appeal", appeal };
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? next : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "flagged", actorId, at: now, note: appeal.note },
+      ...state.events,
+    ],
+    notifications: mergeNotices(state.notifications, [appealNotice(next, actorId, now)]),
+  });
+  return next;
+}
+
 export async function verifyPact(pactId, pass, ctx = {}) {
   const actorId = ctx.actorId ?? state.userId;
   requireUser(actorId);
   const pact = state.pacts.find((p) => p.id === pactId);
   if (!pact) throw new Error("Slip not on the board");
-  if (pact.status !== "review") throw new Error("This slip is not waiting on a friend");
-  if (pact.opponentId !== actorId) throw new Error("Only the listed friend can verify");
+  if (!canResolveAppeal(pact, actorId)) throw new Error("This slip is not waiting on a visible grade");
+  const reason = requireGradeReason(ctx.reason);
 
-  const resolved = settle(pact, {
+  const now = Date.now();
+  const appeal = {
+    status: "resolved",
+    flaggedBy: pact.appeal?.flaggedBy || actorId,
+    note: pact.appeal?.note || "Friend grade on the REVIEW call.",
+    at: pact.appeal?.at || now,
+    resolution: { actorId, pass: Boolean(pass), reason, at: now },
+  };
+  const framed = { ...pact, status: pact.status === "appeal" ? "appeal" : "review", appeal };
+
+  persist({
+    ...state,
+    pacts: state.pacts.map((p) => (p.id === pactId ? framed : p)),
+    events: [
+      { id: uid("ev"), pactId, type: "graded", actorId, at: now, note: reason },
+      ...state.events,
+    ],
+    notifications: mergeNotices(state.notifications, [gradedNotice(framed, actorId, now)]),
+  });
+
+  const resolved = settle(framed, {
     result: pass ? "pass" : "fail",
     confidence: pact.verdict?.confidence ?? 0.5,
-    rationale: pass
-      ? "Friend verified the proof. Desk stands the slip."
-      : "Friend rejected the proof. Stake goes to the counterparty.",
-    source: "friend",
+    rationale: reason,
+    source: pact.status === "appeal" ? "appeal" : "friend",
     auto: true,
   });
 

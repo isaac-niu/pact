@@ -92,6 +92,47 @@ test("accept and review write desk notices for the other side", async () => {
   assert.equal(reviewNotice.userId, "friend");
 });
 
+test("either desk can flag REVIEW and a written grade settles the pot", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "review",
+    confidence: 0.55,
+    rationale: "unsure",
+    source: "test",
+    auto: false,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  state = (await desk.acceptPact(state, created.result.id, "friend")).state;
+  state = (
+    await desk.submitEvidence(
+      state,
+      created.result.id,
+      { dataUrl: "data:image/jpeg;base64,aa", name: "blur.jpg" },
+      "you",
+    )
+  ).state;
+  const flagged = await desk.flagAppeal(state, created.result.id, "Date is unreadable.", "you");
+  assert.equal(flagged.result.status, "appeal");
+  assert.equal(flagged.result.appeal.flaggedBy, "you");
+  await assert.rejects(() => desk.verifyPact(flagged.state, created.result.id, true, "friend", "  "));
+  const graded = await desk.verifyPact(
+    flagged.state,
+    created.result.id,
+    true,
+    "friend",
+    "Notes match the written goal.",
+  );
+  assert.equal(graded.result.status, "resolved");
+  assert.equal(graded.result.winnerId, "you");
+  assert.equal(graded.result.verdict.source, "appeal");
+  assert.equal(graded.result.appeal.resolution.reason, "Notes match the written goal.");
+});
+
 test("tickReminders writes one deadline notice per live slip in the window", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const now = Date.now();

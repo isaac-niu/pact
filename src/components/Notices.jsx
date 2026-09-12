@@ -7,6 +7,8 @@ const LABELS = {
   proved: "proved",
   review: "review",
   deadline: "deadline",
+  appeal: "appeal",
+  graded: "graded",
 };
 
 export default function Notices() {

@@ -5,6 +5,8 @@ export const NOTICE_TYPES = {
   PROVED: "proved",
   REVIEW: "review",
   DEADLINE: "deadline",
+  APPEAL: "appeal",
+  GRADED: "graded",
 };
 
 export function noticeId(prefix = "ntf") {
