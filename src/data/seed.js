@@ -9,7 +9,11 @@ function gymPact(now) {
   return {
     id: "demo-settled-gym",
     title: "I'll upload a gym selfie",
-    criteria: "Face or body in frame with gym floor or equipment visible.",
+    criteria: "Face or body in frame · gym floor or equipment visible.",
+    checklist: [
+      { id: "sc_face", label: "Face or body in frame" },
+      { id: "sc_gym", label: "Gym floor or equipment visible" },
+    ],
     stake: 2,
     deadline: now - DAY,
     creatorId: "you",
@@ -21,6 +25,10 @@ function gymPact(now) {
       result: "pass",
       confidence: 0.94,
       rationale: "Clear gym-floor selfie. Subject in frame, workout context visible.",
+      items: [
+        { id: "sc_face", label: "Face or body in frame", pass: true, note: "Subject in frame." },
+        { id: "sc_gym", label: "Gym floor or equipment visible", pass: true, note: "Workout context visible." },
+      ],
     },
     winnerId: "you",
     visibility: "public",
@@ -35,7 +43,11 @@ function leetPact(now) {
   return {
     id: "demo-live-leetcode",
     title: "Solve one LeetCode today",
-    criteria: "Screenshot of a green accepted submission from today.",
+    criteria: "Green accepted submission · today's date on the shot.",
+    checklist: [
+      { id: "sc_green", label: "Green accepted submission" },
+      { id: "sc_today", label: "Today's date on the shot" },
+    ],
     stake: 1.5,
     deadline: now + 5 * 60 * 60 * 1000,
     creatorId: "friend",
@@ -57,7 +69,11 @@ function runPact(now) {
   return {
     id: "demo-open-run",
     title: "Run 5K before work",
-    criteria: "Watch or phone screenshot showing ≥5.00 km completed.",
+    criteria: "Watch or phone screenshot · ≥5.00 km completed.",
+    checklist: [
+      { id: "sc_watch", label: "Watch or phone screenshot" },
+      { id: "sc_5k", label: "≥5.00 km completed" },
+    ],
     stake: 3,
     deadline: now + 18 * 60 * 60 * 1000,
     creatorId: "you",
@@ -79,7 +95,11 @@ function reviewPact(now) {
   return {
     id: "demo-review-standup",
     title: "Show today's standup notes",
-    criteria: "Photo of handwritten or typed standup notes with today's date.",
+    criteria: "Standup notes in frame · today's date readable.",
+    checklist: [
+      { id: "sc_notes", label: "Standup notes in frame" },
+      { id: "sc_date", label: "Today's date readable" },
+    ],
     stake: 1,
     deadline: now + 8 * 60 * 60 * 1000,
     creatorId: "friend",
@@ -93,6 +113,10 @@ function reviewPact(now) {
       rationale: "Notes are in frame but the date is hard to read. Friend should confirm.",
       source: "gemini",
       auto: false,
+      items: [
+        { id: "sc_notes", label: "Standup notes in frame", pass: true, note: "Notes are in frame." },
+        { id: "sc_date", label: "Today's date readable", pass: false, note: "Date is hard to read." },
+      ],
     },
     winnerId: null,
     visibility: "public",

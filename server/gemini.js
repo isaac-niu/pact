@@ -2,7 +2,7 @@
  * Person C referee.
  *
  * Gemini Flash looks at the photo + written goal and returns
- * { pass, confidence, rationale }. Bands:
+ * { pass, confidence, rationale, items }. Bands:
  *   ≥ 0.8  auto-resolve (pass → challenger, fail → friend)
  *   < 0.4  friend wins
  *   else   friend-verify fallback (a button, not a committee)
@@ -10,47 +10,55 @@
  * Missing key / bad image / API error → mock so Person A can still demo.
  */
 
+import {
+  attachChecklistToVerdict,
+  formatChecklistPrompt,
+  pactChecklist,
+} from "../src/lib/successCriteria.js";
+
 export const DEFAULT_MODEL = "gemini-3.6-flash";
 const FLASH_PATH = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-export function mockVerdict({ title, criteria, fileName } = {}) {
+export function mockVerdict({ title, criteria, checklist, fileName } = {}) {
   if (!fileName) {
-    return {
-      result: "fail",
-      confidence: 0.61,
-      rationale: "No frame landed on the slip. Referee cannot stand the pact.",
-      source: "mock",
-      auto: true,
-    };
+    return attachChecklistToVerdict(
+      {
+        result: "fail",
+        confidence: 0.61,
+        rationale: "No frame landed on the slip. Referee cannot stand the pact.",
+        source: "mock",
+        auto: true,
+      },
+      { title, criteria, checklist, fileName },
+    );
   }
   const name = String(fileName).toLowerCase();
   if (/\b(blur|unsure|maybe)\b/.test(name)) {
-    return band(
-      true,
-      0.55,
-      "Frame is too ambiguous for an auto call. Friend verifies.",
-      "mock",
+    return attachChecklistToVerdict(
+      band(true, 0.55, "Frame is too ambiguous for an auto call. Friend verifies.", "mock"),
+      { title, criteria, checklist, fileName },
     );
   }
   if (/\b(cat|dog|meme)\b/.test(name)) {
-    return band(
-      false,
-      0.86,
-      `This frame does not match the written goal (${fileName}).`,
-      "mock",
+    return attachChecklistToVerdict(
+      band(false, 0.86, `This frame does not match the written goal (${fileName}).`, "mock"),
+      { title, criteria, checklist, fileName },
     );
   }
   const goal = criteria?.trim()
     ? `Criteria held: ${criteria.trim().replace(/\.$/, "")}.`
     : `Slip title (“${title}”) is on-brief.`;
-  return {
-    result: "pass",
-    confidence: 0.91,
-    rationale: `Evidence matches the written goal. ${goal}`,
-    source: "mock",
-    auto: true,
-  };
+  return attachChecklistToVerdict(
+    {
+      result: "pass",
+      confidence: 0.91,
+      rationale: `Evidence matches the written goal. ${goal}`,
+      source: "mock",
+      auto: true,
+    },
+    { title, criteria, checklist, fileName },
+  );
 }
 
 export function band(pass, confidence, rationale, source) {
@@ -123,11 +131,16 @@ export async function judgeEvidence(input, env = process.env) {
   const parsed = parseDataUrl(input.dataUrl);
   if (!key || !parsed) return mockVerdict(input);
 
+  const items = pactChecklist(input);
+  const checklistBlock = items.length
+    ? `Success checklist (grade each line HOLD or MISS):\n${formatChecklistPrompt(items)}`
+    : `Success criteria: ${input.criteria || "(none)"}`;
   const prompt = `You are the referee for a 1v1 accountability pact.
 Goal title: ${input.title || "(untitled)"}
-Success criteria: ${input.criteria || "(none)"}
+${checklistBlock}
 Decide if this photo is reasonably sufficient proof that the person did the thing they promised.
-Return JSON only: {"pass": boolean, "confidence": number between 0 and 1, "rationale": one short sentence}.
+Return JSON only: {"pass": boolean, "confidence": number between 0 and 1, "rationale": one short sentence, "items": [{"id": string, "pass": boolean, "note": "short HOLD/MISS reason"}]}.
+Grade every checklist line. pass is true only if every required line holds.
 Confidence is how sure you are of the pass/fail call, not how good the photo looks.
 Do not reward self-harm, illegal activity, or eating-disorder content; fail those with high confidence.`;
 
@@ -167,7 +180,7 @@ Do not reward self-harm, illegal activity, or eating-disorder content; fail thos
     const pass = Boolean(parsedJson.pass);
     const confidence = Number(parsedJson.confidence);
     const rationale = String(parsedJson.rationale || "Gemini returned a verdict.");
-    return band(pass, confidence, rationale, "gemini");
+    return attachChecklistToVerdict(band(pass, confidence, rationale, "gemini"), input, parsedJson.items);
   } catch (err) {
     console.warn("gemini failed", err?.message || err);
     return mockVerdict(input);

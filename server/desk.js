@@ -19,6 +19,7 @@ import {
   requireGradeReason,
 } from "../src/lib/appeals.js";
 import { applyComment, applyReaction } from "../src/lib/tapeTalk.js";
+import { attachChecklistToVerdict, friendItemMarks, slipCriteria } from "../src/lib/successCriteria.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -44,12 +45,11 @@ export function createDeskLogic(judge) {
     async createPact(state, input, actorId) {
       if (!userById(actorId)) throw new Error("Unknown demo user");
       const title = String(input.title ?? "").trim();
-      const criteria = String(input.criteria ?? "").trim();
+      const { criteria, checklist } = slipCriteria(input);
       const stake = Number(input.stake);
       const deadline = Number(input.deadline) || Date.now() + 24 * 60 * 60 * 1000;
       const opponentId = input.opponentId || (actorId === "you" ? "friend" : "you");
       if (!title) throw new Error("Write the challenge");
-      if (!criteria) throw new Error("Say what counts as proof");
       if (!Number.isFinite(stake) || stake <= 0) throw new Error("Stake a positive amount");
       if (opponentId === actorId) throw new Error("Pick the other desk");
       if (!userById(opponentId)) throw new Error("Unknown opponent");
@@ -60,6 +60,7 @@ export function createDeskLogic(judge) {
         id: uid("pkt"),
         title,
         criteria,
+        checklist,
         stake,
         deadline,
         creatorId: actorId,
@@ -157,12 +158,16 @@ export function createDeskLogic(judge) {
         notifications: mergeNotices(state.notifications, [provedNotice(pact, actorId, provedAt)]),
       };
 
-      const verdict = await judge({
-        title: pact.title,
-        criteria: pact.criteria,
-        fileName: evidenceName,
-        dataUrl: file.dataUrl,
-      });
+      const verdict = attachChecklistToVerdict(
+        await judge({
+          title: pact.title,
+          criteria: pact.criteria,
+          checklist: pact.checklist,
+          fileName: evidenceName,
+          dataUrl: file.dataUrl,
+        }),
+        { ...pact, fileName: evidenceName },
+      );
 
       const latest = nextState.pacts.find((p) => p.id === pactId);
       if (verdict.auto === false || verdict.result === "review") {
@@ -214,7 +219,8 @@ export function createDeskLogic(judge) {
       const pact = state.pacts.find((p) => p.id === pactId);
       if (!pact) throw new Error("Slip not on the board");
       if (!canResolveAppeal(pact, actorId)) throw new Error("This slip is not waiting on a visible grade");
-      const gradeReason = requireGradeReason(reason);
+      const extra = reason && typeof reason === "object" ? reason : { reason };
+      const gradeReason = requireGradeReason(extra.reason);
       const now = Date.now();
       const appeal = {
         status: "resolved",
@@ -236,6 +242,7 @@ export function createDeskLogic(judge) {
         rationale: gradeReason,
         source: pact.status === "appeal" ? "appeal" : "friend",
         auto: true,
+        items: friendItemMarks(pact, pass, extra.itemMarks, gradeReason) || pact.verdict?.items,
       };
       const next = settle(prepared, pactId, verdict);
       return { state: next, result: next.pacts.find((p) => p.id === pactId) };

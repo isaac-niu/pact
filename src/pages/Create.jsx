@@ -6,6 +6,9 @@ import { api } from "../api.js";
 import { clientEnvReady, env } from "../env.js";
 import { defaultDeadline, localInputValue, sol } from "../lib/format.js";
 import { cadenceLabel, defaultSeriesUntil } from "../lib/recurring.js";
+import { criteriaFromChecklist, defaultGymChecklist } from "../lib/successCriteria.js";
+import ChecklistEditor from "../components/ChecklistEditor.jsx";
+import { ChecklistList } from "../components/ChecklistMarks.jsx";
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
@@ -21,9 +24,7 @@ export default function Create() {
     useAuth0();
   const navigate = useNavigate();
   const [title, setTitle] = useState("I'll upload a gym selfie");
-  const [criteria, setCriteria] = useState(
-    "Face or body in frame with gym floor or equipment visible.",
-  );
+  const [checklist, setChecklist] = useState(defaultGymChecklist);
   const [stake, setStake] = useState("2");
   const [deadline, setDeadline] = useState(localInputValue(defaultDeadline()));
   const [cadence, setCadence] = useState("none");
@@ -96,7 +97,8 @@ export default function Create() {
       }
       const pact = await createPact({
         title,
-        criteria,
+        checklist,
+        criteria: criteriaFromChecklist(checklist),
         stake: amount,
         deadline: new Date(deadline).getTime(),
         opponentId,
@@ -131,15 +133,7 @@ export default function Create() {
               required
             />
           </label>
-          <label>
-            Success criteria
-            <textarea
-              value={criteria}
-              onChange={(e) => setCriteria(e.target.value)}
-              placeholder="What does the referee need to see?"
-              required
-            />
-          </label>
+          <ChecklistEditor items={checklist} onChange={setChecklist} />
           <div className="form-row">
             <label>
               Virtual SOL stake
@@ -330,7 +324,11 @@ export default function Create() {
           </span>
         </header>
         <h3>{title.trim() || "Untitled pact"}</h3>
-        <p className="ticket-criteria">{criteria.trim() || "No criteria yet"}</p>
+        {checklist.some((item) => item.label.trim()) ? (
+          <ChecklistList items={checklist.filter((item) => item.label.trim())} />
+        ) : (
+          <p className="ticket-criteria">No criteria yet</p>
+        )}
         <div className="vs compact">
           <div className="side">
             <div className="odds-label">Challenger</div>

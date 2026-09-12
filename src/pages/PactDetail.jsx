@@ -10,6 +10,8 @@ import { canSeePact, pactVisibility } from "../lib/visibility.js";
 import TapeTalk from "../components/TapeTalk.jsx";
 import RailBook from "../components/RailBook.jsx";
 import TicketShare from "../components/TicketShare.jsx";
+import { ChecklistGrade, ChecklistGradeForm, ChecklistList } from "../components/ChecklistMarks.jsx";
+import { pactChecklist } from "../lib/successCriteria.js";
 
 const STAMPS = {
   open: { label: "OPEN", className: "stamp-open" },
@@ -36,8 +38,10 @@ export default function PactDetail() {
   const [dragOver, setDragOver] = useState(false);
   const [localPreview, setLocalPreview] = useState("");
   const [gradeReason, setGradeReason] = useState("");
+  const [itemMarks, setItemMarks] = useState([]);
   const [flagNote, setFlagNote] = useState("");
   const pact = pacts.find((p) => p.id === id);
+  const checklist = pactChecklist(pact);
 
   if (!pact || !canSeePact(pact, userId)) {
     return (
@@ -77,7 +81,7 @@ export default function PactDetail() {
     setError("");
     setBusy(true);
     try {
-      await verifyPact(pact.id, pass, gradeReason);
+      await verifyPact(pact.id, pass, gradeReason, itemMarks);
     } catch (err) {
       setError(err.message || "Could not verify");
     } finally {
@@ -167,7 +171,9 @@ export default function PactDetail() {
         <dl className="spec">
           <div>
             <dt>Success criteria</dt>
-            <dd>{pact.criteria}</dd>
+            <dd>
+              {checklist.length ? <ChecklistList items={checklist} /> : pact.criteria}
+            </dd>
           </div>
           <div>
             <dt>Deadline</dt>
@@ -283,6 +289,7 @@ export default function PactDetail() {
                 Confidence {(pact.verdict.confidence * 100).toFixed(0)}% · {sourceLabel(pact.verdict)}
               </div>
               <p>{pact.verdict.rationale}</p>
+              <ChecklistGrade marks={pact.verdict.items} />
               {pact.appeal?.resolution?.reason ? (
                 <p className="hint">
                   Open grade · {userById(pact.appeal.resolution.actorId)?.handle}:{" "}
@@ -315,6 +322,7 @@ export default function PactDetail() {
           ) : null}
           {canVerify ? (
             <>
+              <ChecklistGradeForm items={checklist} marks={itemMarks} onChange={setItemMarks} />
               <label className="appeal-field">
                 Visible grade
                 <textarea
