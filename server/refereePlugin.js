@@ -83,7 +83,6 @@ export async function handleRefereeApi(req, res, helpers = {}) {
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
         elevenlabs,
-        elevenlabs,
         ifm: ifmEnabled(),
         proofSignals: true,
       },
