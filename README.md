@@ -6,6 +6,8 @@ Social media for accountability, not attention.
 
 Person A owns the sportsbook desk UI. Person B owns Auth0 + Mongo API. Person C owns the Gemini referee and GridFS proof. Person D owns Vultr deploy and ElevenLabs.
 
+**Live:** Vultr HTTPS (URL in Slack / Auth0 callbacks). 3-minute script: [docs/DEMO.md](docs/DEMO.md).
+
 If Mongo or Gemini env vars are missing, the desk still boots on `localStorage` and the mock referee.
 
 ## Quick start (laptop)
@@ -15,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. No `.env` required for the local desk. Switch **You (ISAAC)** / **Friend** in the top-right.
+Open `http://localhost:5173`. No `.env` required for the local desk. The judging loop is two Auth0 accounts (Write → friend Accept on `/app` or the ticket → Tape upload). There is no You/Friend pill on `/`.
 
 Optional second terminal for the Person D Node desk (Vite proxies `/api/desk` and `/healthz`):
 
@@ -32,12 +34,12 @@ npm start
 # http://127.0.0.1:3000
 ```
 
-## 60-second click-through
+## 60-second click-through (live)
 
-1. **Write** a slip: “I'll upload a gym selfie”, 2 SOL, Friend.
-2. Switch to **Friend** → **Accept**.
-3. Switch back to **You**. Upload a gym photo. Gemini (or mock) should **PASS** and ISAAC takes the pot.
-4. Repeat with a cat photo against a gym goal. Fail or **REVIEW**. If **REVIEW**, switch to Friend and tap **Friend: pass** or **Friend: fail**.
+1. Sign in on `/`. **Write** a gym-selfie slip, 2 SOL, pick a real friend (not Group).
+2. Friend signs in → **Accept** on `/app` or the ticket.
+3. Challenger opens Tape → ticket → upload a gym photo. Gemini Flash grades it.
+4. Full script: [docs/DEMO.md](docs/DEMO.md).
 
 ## Routes
 

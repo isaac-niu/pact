@@ -2,71 +2,61 @@
 
 **Pitch line:** Social media for accountability, not attention.
 
-**Live URL:** this agent did not receive `VULTR_HOST` / SSH. After Person D SSHs to the box, put that URL here and in Auth0 callbacks. Until then, demo on `npm run dev` or `npm start`.
+**Live URL:** the Vultr HTTPS origin Person D posted in Slack (hard-refresh). Do not commit the IP.
 
 **Loop (say this while clicking):** Say it → stake it → prove it → share it.
 
-Do **not** say Venmo + Twitter + gambling. Stakes are **virtual SOL**.
+Do **not** say Venmo + Twitter + gambling. Stakes are **virtual SOL** in Mongo, not on-chain. `/wallet` is a separate Solana Wallet Standard / devnet page.
 
-Use two demo users already in the top-right pill: **You (ISAAC)** and **Friend**. No Auth0 required for this POC.
+There is **no You / Friend pill** on `/` or Tape. Tape’s extra control is **Sit the rail** (spectator). The 3-minute Gemini loop is two **Auth0** accounts.
 
 ---
 
 ## 0:00–0:20 — Pitch + board
 
-Open the live URL (or localhost). Home: “Bet on the version of you that shows up.”
+Open the live URL. Home: “Bet on the version of you that shows up.”
 
-**Say:** “This is a social network built around doing the thing you said you’d do. You put a pact on the board, a friend matches a virtual stake, you prove it with a photo, a referee calls it, and the result is the post.”
+**Say:** “This is a social network built around doing the thing you said you’d do. You put a pact on the board, a friend matches a virtual stake, you prove it with a photo, Gemini calls it, and the result is the post.”
 
-Click **View the board**. First visit is pre-seeded so judges never see an empty feed:
-
-- Settled gym selfie (ISAAC won)
-
-Click the settled gym slip so they see a ticket, not a form.
+Click **Open the tape**. Seeded tape is settled gym only. Click that ticket so they see a slip, not a form.
 
 ---
 
 ## 0:20–1:10 — Say it / stake it
 
-Click **Write slip** (or **Open a pact**).
+**Sign in** on `/` (top-right). Click **Write**. Leave “I’ll upload a gym selfie,” stake **2** SOL.
 
-Leave the default challenge or type: “I’ll upload a gym selfie.” Stake **2** SOL. Click **Post to the board**.
+Under Friend, pick your **signed-in friend** (not Group, not “This desk · FRIEND”). **Post to the board.**
 
-**Say:** “ISAAC just posted a 1v1 commitment. Friend has to accept before the pot locks.”
+**Say:** “That’s a live 1v1 in Atlas. Friend has to accept before the pot locks.”
 
-Switcher → **Friend**. Click **Accept · 2.00 SOL**. Pot shows **4.00 SOL**.
+Switch Auth0 account (or a second browser). Open **Pact app** (`/app`) or the ticket. **Accept**. Pot **4.00** virtual SOL.
 
-**Say:** “Both sides matched virtual SOL. No wallet, no chain — the ledger is the ticket.”
+**Say:** “Both sides matched virtual SOL. No chain — the ledger is the ticket.”
 
 ---
 
 ## 1:10–2:10 — Prove it
 
-Switcher → **You**. Upload any photo (gym selfie preferred; a cat still demos the loop). Click **Send to referee**.
+Back on the challenger account. **Tape** → the live ticket → upload a gym photo → **Send to referee**.
 
-**If Gemini is wired (Person C):** the verdict is real vision output `{pass, confidence, rationale}`.
+**Say:** “Gemini Flash grades the photo against the written goal.” Verdict `source: gemini`. If Flash errors, it is `gemini-error`, not a dummy pass.
 
-**If Gemini is not wired (current POC):** a mocked referee still returns pass/fail + rationale in ~1.4s. **Say:** “Tonight the desk is a local referee. Same ticket — tomorrow this is Gemini Flash on the photo plus the written goal.”
-
-Do **not** apologize at length. Show the verdict card.
+If ElevenLabs speaks, let it. If silent: “Voice is optional; the ticket is the product.”
 
 ---
 
 ## 2:10–2:40 — Share it
 
-**Say:** “ISAAC takes the pot. That’s the post: not a selfie for likes — a settled pact.”
+**Say:** “That’s the post: not a selfie for likes — a settled pact.” Point at **Share** / the ticket card.
 
-Go back to **Board**. Point at the new settled slip in the feed.
-
-If the announcer key is present, the desk reads the rationale + winner. Mute/replay are on the ticket.
-
-**If ElevenLabs is silent:** ignore it. One line: “Voice is optional; the ticket is the product.”
+Optional 10s: **People** (two Auth0 users), **Crew**, or **Sit the rail** as a spectator. Do not wait on IFM (no Hugging Face token).
 
 ---
 
-## 2:40–3:00 — What’s next (one slide, don’t build it)
+## 2:40–3:00 — What’s next
 
-“Same loop with Auth0 login, Mongo, a live Vultr URL, Gemini on proof, virtual SOL in the database. Groups, DMs, real money — not this round.”
+“Same loop: Auth0, Mongo on Atlas, Gemini on proof, virtual SOL in the database, this Vultr URL. Real money and on-chain SOL — not this round.”
 
 Stop talking. Ask for questions.
 
@@ -74,40 +64,40 @@ Stop talking. Ask for questions.
 
 ## Backup paths (practice these once)
 
-**Auth0 login fails / not built:** stay on the You / Friend switcher. That is the demo.
+**Auth0 login fails:** you cannot Accept as Friend in one tab. Do not hunt for You/Friend chips. Use `npm run dev` only if the live URL is down **and** you have two Auth0 logins locally.
 
-**No Gemini key:** mocked referee. Have a photo already on disk. Do not wait on Wi‑Fi to an AI studio page.
+**No friends in the Write dropdown:** both accounts must have signed in once. **People** → add/accept friend, then Write again.
 
-**Gemini key set but Flash errors:** honest `gemini-error` (not a dummy pass). Check `GET /api/config` → `features.lastGeminiError`.
+**No Gemini key / no image:** mock referee. Have a photo on disk.
 
-**ElevenLabs fails / no key:** the slip still settles. Do not refresh hoping for audio.
+**Gemini key set but Flash errors:** honest `gemini-error`. `GET /api/config` → `features.lastGeminiError`.
 
-**Empty board:** first load should seed. If someone already used this browser, click **Write slip** and run the loop live — that’s stronger anyway.
+**ElevenLabs fails / no key:** the slip still settles.
 
-**Upload / referee button missing:** you are the wrong user. Challenger uploads; counterparty accepts. Flip the pill.
+**Upload button missing:** you are the wrong account. Challenger uploads; counterparty accepts.
 
-**Live URL down:** `npm run dev` on a laptop, same clicks. Person D: `systemctl status pact` and `curl localhost/api/health` on the box.
+**Live URL down:** Person D: `systemctl status pact` and `curl -k https://127.0.0.1/api/health` on the box.
 
-**Wrong story:** if a judge asks about Solana on-chain, be honest: virtual SOL in the app (and Mongo when B lands). Do not say “we would have used Solana.”
+**Judge asks about Solana:** virtual SOL on the desk; `/wallet` is a separate devnet demo. Do not say “we would have used Solana.”
 
 ---
 
 ## Demo accounts
 
-| Pill | Handle | Role |
-| --- | --- | --- |
-| You | ISAAC | Challenger (writes slip, uploads proof) |
-| Friend | FRIEND | Counterparty (accepts, matches stake) |
+| Role | How |
+| --- | --- |
+| Challenger | Auth0 account that writes the slip and uploads proof |
+| Friend | Second Auth0 account that accepts on `/app` or the ticket |
 
-When Auth0 exists: two seeded logins from Person B. Sign in on `/`, Write a slip to that friend (not the You/Friend switcher), they accept on `/app` or the ticket, then open Tape and upload — Gemini Flash grades the live 1v1. Until then, the pill is the two accounts.
+Unsigned Write still posts a localStorage desk slip to FRIEND. Tape will not let you accept that slip in one tab.
 
 ---
 
 ## Presenter checklist (T-minus 10)
 
-- [ ] Public URL opens on a **phone** and a **laptop**
-- [ ] `/api/health` returns `"ok": true`
+- [ ] Live HTTPS URL opens on a **phone** and a **laptop**
+- [ ] `/api/health` returns `"ok": true` and `"mongo": true`
+- [ ] Two Auth0 accounts already friends on **People**
 - [ ] Photo file sitting on the demo machine
-- [ ] Practice once with Friend accepted + You upload
+- [ ] Practice once: Write → friend Accept → challenger upload → Gemini
 - [ ] Know the one-sentence Gemini and ElevenLabs fallbacks
-- [ ] Auth0 callback includes the Vultr origin **if** login is live
