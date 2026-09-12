@@ -4,6 +4,7 @@ import { geminiEnabled, getLastGeminiError, judgeEvidence } from "./gemini.js";
 import { getSidekickLine, ifmEnabled } from "./ifmSidekick.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
+import { describeProofSignalHook, ingestProofSignal } from "../src/lib/proofSignals.js";
 import path from "node:path";
 import { handleOgApi } from "./ogTicket.js";
 
@@ -82,8 +83,11 @@ export async function handleRefereeApi(req, res, helpers = {}) {
         mongo: mongoConfigured() && mongo,
         mongoError: mongo ? null : mongoError(),
         elevenlabs,
+        elevenlabs,
         ifm: ifmEnabled(),
+        proofSignals: true,
       },
+      proofSignals: describeProofSignalHook(),
     });
     return true;
   }
@@ -98,6 +102,18 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       return true;
     }
     return false;
+  }
+
+  if (url === "/api/proof-signals" && req.method === "GET") {
+    write(res, 200, describeProofSignalHook());
+    return true;
+  }
+
+  if (url === "/api/proof-signals" && req.method === "POST") {
+    const payload = await parseBody(req, 32_000);
+    const out = ingestProofSignal(payload);
+    write(res, out.ok ? 200 : 400, out);
+    return true;
   }
 
   const evidenceMatch = url.match(/^\/api\/evidence\/([^/]+)$/);
@@ -142,6 +158,9 @@ export async function handleRefereeApi(req, res, helpers = {}) {
       checklist: payload.checklist,
       fileName: payload.fileName,
       dataUrl: payload.dataUrl,
+      files: payload.files,
+      kind: payload.kind,
+      signal: payload.signal,
     });
     // Sidekick only reacts to the call already made above — it can't change
     // pass/fail/review, and a failure here falls back to a canned line

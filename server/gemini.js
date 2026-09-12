@@ -17,6 +17,7 @@ import {
   formatChecklistPrompt,
   pactChecklist,
 } from "../src/lib/successCriteria.js";
+import { labelSignal, signalSupportsGoal } from "../src/lib/proofSignals.js";
 
 export const DEFAULT_MODEL = "gemini-3.6-flash";
 const FLASH_PATH = (model) =>
@@ -26,7 +27,20 @@ const GEMINI_TIMEOUT_MS = 20_000;
 /** Last Flash failure for GET /api/config. Never stores secrets. */
 let lastGeminiError = null;
 
-export function mockVerdict({ title, criteria, checklist, fileName } = {}) {
+export function mockVerdict({ title, criteria, checklist, fileName, signal } = {}) {
+  if (signal) {
+    const hold = signalSupportsGoal(signal, { title, criteria });
+    const line = hold
+      ? `Alternate proof holds. ${labelSignal(signal)}.`
+      : `Alternate proof is off the written line. ${labelSignal(signal)}.`;
+    return attachChecklistToVerdict(band(hold, hold ? 0.88 : 0.86, line, "mock"), {
+      title,
+      criteria,
+      checklist,
+      fileName: hold ? "signal.jpg" : "off.jpg",
+      signal,
+    });
+  }
   if (!fileName) {
     return attachChecklistToVerdict(
       {
@@ -101,8 +115,17 @@ export function parseDataUrl(dataUrl) {
   const m = String(dataUrl || "").match(/^data:([^;]+);base64,(.+)$/);
   if (!m) return null;
   const mime = m[1].toLowerCase();
-  if (!mime.startsWith("image/")) return null;
+  if (!mime.startsWith("image/") && !mime.startsWith("video/")) return null;
   return { mime, data: m[2] };
+}
+
+function mediaParts(input) {
+  const rows = Array.isArray(input.files) && input.files.length
+    ? input.files
+    : input.dataUrl
+      ? [{ dataUrl: input.dataUrl }]
+      : [];
+  return rows.map((row) => parseDataUrl(row.dataUrl)).filter(Boolean);
 }
 
 function extractJson(text) {
@@ -194,20 +217,28 @@ function geminiErrorVerdict(kind, status = null) {
 
 export async function judgeEvidence(input, env = process.env) {
   const key = env.GEMINI_API_KEY;
-  const parsed = parseDataUrl(input.dataUrl);
-  if (!key || !parsed) return mockVerdict(input);
+  const frames = mediaParts(input);
+  if (!key || (!frames.length && !input.signal)) return mockVerdict(input);
+  if (input.signal && !frames.length) return mockVerdict(input);
 
   const items = pactChecklist(input);
   const checklistBlock = items.length
     ? `Success checklist (grade each line HOLD or MISS):\n${formatChecklistPrompt(items)}`
     : `Success criteria: ${input.criteria || "(none)"}`;
+  const mediaLine =
+    input.kind === "video"
+      ? "The attached file is a short video clip."
+      : frames.length > 1
+        ? `The attached files are a ${frames.length}-frame photo burst. Use the set, not one frame.`
+        : "The attached file is a photo.";
   const prompt = `You are the referee for a 1v1 accountability pact.
 Goal title: ${input.title || "(untitled)"}
 ${checklistBlock}
-Decide if this photo is reasonably sufficient proof that the person did the thing they promised.
+${mediaLine}
+Decide if this evidence is reasonably sufficient proof that the person did the thing they promised.
 Return JSON only: {"pass": boolean, "confidence": number between 0 and 1, "rationale": one short sentence, "items": [{"id": string, "pass": boolean, "note": "short HOLD/MISS reason"}]}.
 Grade every checklist line. pass is true only if every required line holds.
-Confidence is how sure you are of the pass/fail call, not how good the photo looks.
+Confidence is how sure you are of the pass/fail call, not how good the evidence looks.
 Do not reward self-harm, illegal activity, or eating-disorder content; fail those with high confidence.`;
 
   const url = env.GEMINI_API_URL || FLASH_PATH(env.GEMINI_MODEL || DEFAULT_MODEL);
@@ -217,7 +248,7 @@ Do not reward self-harm, illegal activity, or eating-disorder content; fail thos
         role: "user",
         parts: [
           { text: prompt },
-          { inlineData: { mimeType: parsed.mime, data: parsed.data } },
+          ...frames.map((frame) => ({ inlineData: { mimeType: frame.mime, data: frame.data } })),
         ],
       },
     ],

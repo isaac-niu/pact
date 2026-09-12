@@ -1507,3 +1507,37 @@ label .hint {
   margin: 0 0 16px;
   color: var(--muted);
 }
+
+.proof-burst {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+
+.proof-burst .preview {
+  max-height: 220px;
+}
+
+.proof-signals {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.signal-stubs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.signal-card {
+  padding: 14px 16px;
+}
+
+.signal-title {
+  margin: 6px 0 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

@@ -13,6 +13,7 @@ function isRefereeApi(url = "") {
     pathName === "/api/referee" ||
     pathName === "/api/config" ||
     pathName === "/api/pacts/verify" ||
+    pathName === "/api/proof-signals" ||
     pathName.startsWith("/api/evidence/")
   );
 }

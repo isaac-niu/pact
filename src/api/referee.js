@@ -11,20 +11,36 @@
  */
 
 import { attachChecklistToVerdict } from "../lib/successCriteria.js";
+import { labelSignal, signalSupportsGoal } from "../lib/proofSignals.js";
 
-export async function judgeEvidence({ title, criteria, checklist, fileName, dataUrl, ...extra }) {
+export async function judgeEvidence({ title, criteria, checklist, fileName, dataUrl, files, kind, signal, ...extra }) {
   try {
     const res = await fetch("/api/referee", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title, criteria, checklist, fileName, dataUrl, ...extra }),
+      body: JSON.stringify({ title, criteria, checklist, fileName, dataUrl, files, kind, signal, ...extra }),
     });
     if (res.ok) return await res.json();
   } catch {
     /* Vite plugin not running — fall through to local mock. */
   }
 
-  const input = { title, criteria, checklist, fileName };
+  const input = { title, criteria, checklist, fileName, signal };
+  if (signal) {
+    const hold = signalSupportsGoal(signal, input);
+    return attachChecklistToVerdict(
+      {
+        result: hold ? "pass" : "fail",
+        confidence: hold ? 0.88 : 0.86,
+        rationale: hold
+          ? `Alternate proof holds. ${labelSignal(signal)}.`
+          : `Alternate proof is off the written line. ${labelSignal(signal)}.`,
+        source: "mock",
+        auto: true,
+      },
+      { ...input, fileName: hold ? "signal.jpg" : "off.jpg" },
+    );
+  }
   if (!fileName) {
     return attachChecklistToVerdict(
       {

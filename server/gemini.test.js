@@ -172,6 +172,17 @@ test("middle confidence waits on a friend", () => {
   assert.equal(v.auto, false);
 });
 
+test("demo GPS pin mock-passes a gym slip without a photo", () => {
+  const v = mockVerdict({
+    title: "Gym selfie",
+    criteria: "Face visible",
+    signal: { kind: "gps", lat: 37.7763, lng: -122.4241, label: "Gym pin", source: "demo" },
+  });
+  assert.equal(v.result, "pass");
+  assert.equal(v.auto, true);
+  assert.match(v.rationale, /GPS check-in/);
+});
+
 test("missing photo mock-fails so the desk can still talk", () => {
   const v = mockVerdict({ title: "Gym", fileName: null });
   assert.equal(v.result, "fail");
@@ -208,8 +219,9 @@ test("blurry filename parks in friend-verify", () => {
   assert.equal(v.auto, false);
 });
 
-test("parseDataUrl accepts image payloads only", () => {
+test("parseDataUrl accepts image and short-clip payloads", () => {
   assert.deepEqual(parseDataUrl("data:image/jpeg;base64,abc"), { mime: "image/jpeg", data: "abc" });
+  assert.deepEqual(parseDataUrl("data:video/mp4;base64,abc"), { mime: "video/mp4", data: "abc" });
   assert.equal(parseDataUrl("data:text/plain;base64,abc"), null);
   assert.equal(parseDataUrl("not-a-data-url"), null);
 });

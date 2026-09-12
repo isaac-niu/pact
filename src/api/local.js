@@ -28,6 +28,7 @@ import {
   pactChecklist,
   slipCriteria,
 } from "../lib/successCriteria.js";
+import { normalizeProofPayload, primaryProofFile, requireProofFiles } from "../lib/proofMedia.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
 const LEGACY_KEY = "pact.demo.v1";
@@ -69,6 +70,8 @@ function upgradePact(p) {
     seriesUntil: null,
     parentPactId: null,
     nextSpawnAt: null,
+    evidenceKind: p.evidenceKind || "photo",
+    evidenceFiles: Array.isArray(p.evidenceFiles) ? p.evidenceFiles : [],
     ...p,
     checklist: pactChecklist({ ...p, checklist: p.checklist }),
   };
@@ -264,6 +267,22 @@ function readFileAsDataUrl(file) {
   });
 }
 
+async function readProofInput(file) {
+  const fromPayload = normalizeProofPayload(file);
+  if (fromPayload.files.length || fromPayload.signal) return fromPayload;
+  const raw = Array.isArray(file) || file?.item ? Array.from(file) : file ? [file] : [];
+  const list = requireProofFiles(raw.filter((row) => !row?.dataUrl));
+  const files = [];
+  for (const item of list) {
+    files.push({
+      name: item.name || "proof.jpg",
+      mime: item.type || item.mime || "image/jpeg",
+      dataUrl: await readFileAsDataUrl(item),
+    });
+  }
+  return normalizeProofPayload({ files });
+}
+
 function requireUser(actorId) {
   const user = userById(actorId);
   if (!user) throw new Error("Unknown demo user");
@@ -302,6 +321,9 @@ export async function createPact(input, ctx = {}) {
     status: "open",
     evidenceUrl: null,
     evidenceName: null,
+    evidenceKind: "photo",
+    evidenceFiles: [],
+    evidenceSignal: null,
     verdict: null,
     winnerId: null,
     visibility: input.visibility === "private" ? "private" : "public",
@@ -424,10 +446,11 @@ export async function submitEvidence(pactId, file, ctx = {}) {
   if (!["accepted", "evidence"].includes(pact.status)) {
     throw new Error("This slip is not live for proof");
   }
-  if (!file) throw new Error("Add a photo first");
-
-  const evidenceUrl = await readFileAsDataUrl(file);
-  const evidenceName = file.name || "proof.jpg";
+  const payload = await readProofInput(file);
+  const primary = primaryProofFile(payload);
+  if (!primary && !payload.signal) throw new Error("Add a photo first");
+  const evidenceName = payload.label;
+  const evidenceUrl = primary?.dataUrl || null;
   const provedAt = Date.now();
 
   persist({
@@ -439,6 +462,9 @@ export async function submitEvidence(pactId, file, ctx = {}) {
             status: "judging",
             evidenceUrl,
             evidenceName,
+            evidenceKind: payload.kind,
+            evidenceFiles: payload.files,
+            evidenceSignal: payload.signal || null,
             provedAt,
             verdict: null,
             winnerId: null,
@@ -459,6 +485,9 @@ export async function submitEvidence(pactId, file, ctx = {}) {
       checklist: pact.checklist,
       fileName: evidenceName,
       dataUrl: evidenceUrl,
+      files: payload.files,
+      kind: payload.kind,
+      signal: payload.signal,
       pactId,
       creatorId: pact.creatorId,
       opponentId: pact.opponentId,

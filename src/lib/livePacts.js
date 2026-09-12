@@ -140,15 +140,26 @@ function readFileAsDataUrl(file) {
 }
 
 export async function submitLiveProof(pact, file, tokenOf) {
-  if (!file) throw new Error("Add a photo first");
-  const dataUrl = await readFileAsDataUrl(file);
-  const evidenceName = file.name || "proof.jpg";
+  const list = Array.isArray(file) ? file.filter(Boolean) : file ? [file] : [];
+  const primary = list[0];
+  if (!primary) throw new Error("Add a photo first");
+  const files = await Promise.all(
+    list.map(async (item) => ({
+      name: item.name || "proof.jpg",
+      mime: item.type || "image/jpeg",
+      dataUrl: await readFileAsDataUrl(item),
+    })),
+  );
+  const evidenceName = files.length > 1 ? `${files.length}-frame burst` : files[0].name || "proof.jpg";
+  const dataUrl = files[0].dataUrl;
   const verdict = await judgeEvidence({
     title: pact.title,
     criteria: pact.criteria,
     checklist: pact.checklist,
     fileName: evidenceName,
     dataUrl,
+    files,
+    kind: files.length > 1 ? "burst" : undefined,
     pactId: pact.id,
     creatorId: pact.creatorId,
     opponentId: pact.opponentId,

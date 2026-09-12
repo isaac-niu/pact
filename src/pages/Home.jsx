@@ -41,9 +41,9 @@ export default function Home() {
 
       <p className="lede">
         Social media for accountability, not attention. You write a slip, a friend
-        matches the stake, you prove it with a photo, the referee stands or fades it,
-        and the winner takes the pot. Post to the public tape or keep the group on a
-        private tape.
+        matches the stake, you prove it with a photo, a burst, or a short clip, the
+        referee stands or fades it, and the winner takes the pot. Post to the public
+        tape or keep the group on a private tape.
       </p>
       <Glossary />
 
@@ -80,7 +80,7 @@ export default function Home() {
             </div>
           </div>
           <footer className="ticket-foot">
-            Friend must accept before the pot locks. Proof is any photo.
+            Friend must accept before the pot locks. Proof is a photo, a burst, or a short clip.
           </footer>
         </article>
 

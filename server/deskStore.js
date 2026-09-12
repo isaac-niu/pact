@@ -1,4 +1,5 @@
 import { featureFlags } from "./env.js";
+import { describeProofSignalHook } from "../src/lib/proofSignals.js";
 import { mongoReady, mongoConfigured, mongoError, getDb, connectMongo } from "./mongo.js";
 import { createDeskLogic, seededState, bankOf, recordOf } from "./desk.js";
 import { normalizeDeskActor } from "../src/data/users.js";
@@ -19,7 +20,9 @@ export function liveConfig(env = process.env) {
       mongoConfigured: mongoConfigured(env),
       mongoError: mongoReady() ? null : mongoError(),
       lastGeminiError: getLastGeminiError(),
+      proofSignals: true,
     },
+    proofSignals: describeProofSignalHook(),
     auth0: flags.auth0
       ? {
           domain: env.AUTH0_DOMAIN,

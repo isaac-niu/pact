@@ -86,7 +86,7 @@ describe("live 1v1 on Tape", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("heading", { name: "I'll upload a gym selfie" })).toBeInTheDocument();
-    const input = screen.getByLabelText("Upload photo");
+    const input = screen.getByLabelText("Upload proof");
     const file = new File(["gym"], "gym.jpg", { type: "image/jpeg" });
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => {
