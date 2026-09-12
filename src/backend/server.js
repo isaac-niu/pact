@@ -176,7 +176,17 @@ export function createPactRequestHandler(options = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/groups") {
       const groups = await store.listGroupsForUser(user.id);
-      return send(res, 200, groups.filter((group) => group.discoverable || isGroupMember(group, user) || group.creatorId === user.id).map((group) => publicGroup(group, user)));
+      return send(res, 200, groups.filter((group) => !group.archivedAt && (group.discoverable || isGroupMember(group, user) || group.creatorId === user.id)).map((group) => publicGroup(group, user)));
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/groups/directory") {
+      const groups = await store.listGroupsForUser(user.id);
+      const needle = (url.searchParams.get("q") || "").trim().toLowerCase();
+      const listed = groups
+        .filter((group) => group.discoverable && !group.archivedAt)
+        .filter((group) => !needle || group.name.toLowerCase().includes(needle))
+        .map((group) => publicGroup(group, user));
+      return send(res, 200, listed);
     }
 
     if (req.method === "POST" && url.pathname === "/api/groups") {

@@ -52,6 +52,56 @@ export function JoinCodeForm({ onSubmit, busy, embedded = false }) {
   );
 }
 
+export function DirectoryBrowse({ groups, query, onQuery, userId, onJoin, busy }) {
+  return (
+    <div className="card">
+      <div className="kicker">Directory</div>
+      <h3 className="subhead">Listed crews</h3>
+      <p className="hint">Public crews that checked “list in the directory” show on this board.</p>
+      <label>
+        Search the board
+        <input
+          value={query}
+          onChange={(event) => onQuery(event.target.value)}
+          placeholder="Dawn gym"
+          aria-label="Search listed crews"
+        />
+      </label>
+      {groups.length === 0 ? (
+        <p className="hint">No listed crews on this filter. Check “list in the directory” when you create one.</p>
+      ) : (
+        groups.map((group) => {
+          const member = group.memberIds?.includes(userId) || group.creatorId === userId;
+          const joining = busy === `join:${group.id}`;
+          return (
+            <article className="slip" key={group.id}>
+              <div>
+                <b className="slip-title">{group.name}</b>
+                <p className="meta">
+                  {group.visibility} · listed · {group.memberIds?.length || 0} member
+                  {(group.memberIds?.length || 0) === 1 ? "" : "s"}
+                </p>
+                {member ? (
+                  <p className="hint lime-hint">On your desk</p>
+                ) : (
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    disabled={joining || group.requested}
+                    onClick={() => onJoin(group.id)}
+                  >
+                    {joining ? "Requesting…" : group.requested ? "Requested" : "Request to join"}
+                  </button>
+                )}
+              </div>
+            </article>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 export function GroupList({ groups, userId, onJoin, onApprove, busy }) {
   if (!groups.length) return <p className="hint">No groups yet. Create one or request to join.</p>;
   return groups.map((group) => {

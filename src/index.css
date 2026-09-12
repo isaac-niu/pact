@@ -414,6 +414,10 @@ h2 {
   margin-top: 16px;
 }
 
+.card > label {
+  margin-top: 10px;
+}
+
 .ticket-card-frame {
   margin: 12px 0;
   background: #070806;
@@ -421,7 +425,8 @@ h2 {
   overflow: hidden;
 }
 
-.ticket-card-frame svg {
+.ticket-card-frame svg,
+.ticket-card-frame img {
   display: block;
   width: 100%;
   height: auto;
