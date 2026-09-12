@@ -1,15 +1,41 @@
 # PACT environment variable template
 # Copy to .env or .env.local and fill in values.
-# Do NOT commit real secrets.
+# Do NOT commit real secrets, Auth0 client secrets, Atlas passwords,
+# or full connection strings with credentials.
 
-AUTH0_DOMAIN=
-AUTH0_CLIENT_ID=
-AUTH0_CLIENT_SECRET=
-AUTH0_AUDIENCE=
-AUTH0_SECRET=
-MONGODB_URI=
+# --- Live Auth0 (SPA + API) ---
+# Application type: Single Page Application
+# Allowed Callback URLs: http://localhost:5173/callback
+# Allowed Logout URLs:    http://localhost:5173
+# Allowed Web Origins:    http://localhost:5173
+#
+# Also create an Auth0 API whose Identifier is a stable value such as
+# https://pact-api (recommended). AUTH0_AUDIENCE and VITE_AUTH0_AUDIENCE
+# must match that Identifier exactly.
+#
+# Invalid (common footgun): https//localhost   ← missing ':' after https
+# Invalid:                  https://localhost  ← this is not an API identifier
+# Valid example:            https://pact-api
+
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_CLIENT_ID=your-spa-client-id
+AUTH0_CLIENT_SECRET=your-spa-client-secret
+AUTH0_AUDIENCE=https://pact-api
+AUTH0_SECRET=replace-with-a-long-random-session-secret
+
+# --- MongoDB Atlas ---
+# Use the Atlas connection string, but keep the password out of git.
+MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DB_NAME=pact
-VITE_AUTH0_DOMAIN=
-VITE_AUTH0_CLIENT_ID=
+
+# --- Browser-safe Auth0 / API (Vite exposes only VITE_* vars) ---
+VITE_AUTH0_DOMAIN=your-tenant.us.auth0.com
+VITE_AUTH0_CLIENT_ID=your-spa-client-id
+VITE_AUTH0_AUDIENCE=https://pact-api
+VITE_AUTH0_CALLBACK_URL=http://localhost:5173/callback
 VITE_API_URL=http://localhost:3001
 PORT=3001
+
+# --- Deterministic local QA (ISAAC / MAYA, in-memory Maps) ---
+# Leave this unset (or anything other than 1) for live Auth0 + Atlas.
+# PACT_MOCK_AUTH=1
