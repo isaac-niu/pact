@@ -6,6 +6,7 @@ import { buildAnnouncement, synthesize } from "./elevenlabs.js";
 import { handleDeskApi } from "./httpDesk.js";
 import { connectMongo } from "./mongo.js";
 import { handleRefereeApi } from "./refereePlugin.js";
+import { handleOgApi, htmlWithTicketOg } from "./ogTicket.js";
 import { bootAuthApi, getAuthApiHandler, isPersonBApi } from "./authGateway.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -88,7 +89,7 @@ function safeJoin(dir, reqPath) {
   return abs;
 }
 
-function serveStatic(req, res) {
+async function serveStatic(req, res) {
   if (!existsSync(DIST)) {
     send(
       res,
@@ -125,8 +126,12 @@ function serveStatic(req, res) {
   const type = MIME[ext] || "application/octet-stream";
   const cache =
     ext === ".html" ? "no-store" : "public, max-age=31536000, immutable";
+  let body = readFileSync(target);
+  if (ext === ".html") {
+    body = await htmlWithTicketOg(body.toString("utf8"), urlPath, req);
+  }
   res.writeHead(200, { "content-type": type, "cache-control": cache });
-  res.end(readFileSync(target));
+  res.end(body);
 }
 
 async function handleApi(req, res) {
@@ -146,6 +151,7 @@ async function handleApi(req, res) {
       if (!raw.length) return {};
       return JSON.parse(raw.toString("utf8"));
     };
+    if (await handleOgApi(req, res, { send })) return;
     if (await handleRefereeApi(req, res, { send, readJson })) return;
   } catch (err) {
     const msg = String(err.message || "server_error");
@@ -214,7 +220,7 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    serveStatic(req, res);
+    await serveStatic(req, res);
   } catch (err) {
     if (!res.headersSent) send(res, 500, { error: "server_error" });
     console.error(err);

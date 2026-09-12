@@ -4,6 +4,7 @@ import { geminiEnabled, judgeEvidence } from "./gemini.js";
 import { connectMongo, mongoConfigured, mongoError, mongoReady } from "./mongo.js";
 import { persistPactProof, readEvidence, storeEvidence } from "./evidenceStore.js";
 import path from "node:path";
+import { handleOgApi } from "./ogTicket.js";
 
 function send(res, status, body, headers = {}) {
   const isJson = body !== null && typeof body === "object" && !Buffer.isBuffer(body);
@@ -200,6 +201,7 @@ export function refereePlugin(rootDir) {
       server.middlewares.use(async (req, res, next) => {
         try {
           if (await handleRefereeApi(req, res)) return;
+          if (await handleOgApi(req, res, { send })) return;
         } catch (err) {
           const msg = err.message || "referee_error";
           send(res, msg === "too_large" ? 413 : 400, { error: msg });
