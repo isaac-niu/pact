@@ -1,5 +1,13 @@
 import { STARTING_BANK, userById } from "../src/data/users.js";
 import { emptyDemoState } from "../src/data/seed.js";
+import {
+  acceptedNotice,
+  markAllNoticesRead as applyMarkAllRead,
+  markNoticeRead as applyMarkRead,
+  mergeNotices,
+  provedNotice,
+  reviewNotice,
+} from "../src/lib/notifications.js";
 
 export function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -99,6 +107,7 @@ export function createDeskLogic(judge) {
             },
             ...state.ledger,
           ],
+          notifications: mergeNotices(state.notifications, [acceptedNotice(next, actorId, now)]),
         },
         result: next,
       };
@@ -133,6 +142,7 @@ export function createDeskLogic(judge) {
           { id: uid("ev"), pactId, type: "proved", actorId, at: provedAt, note: evidenceName },
           ...state.events,
         ],
+        notifications: mergeNotices(state.notifications, [provedNotice(pact, actorId, provedAt)]),
       };
 
       const verdict = await judge({
@@ -145,9 +155,15 @@ export function createDeskLogic(judge) {
       const latest = nextState.pacts.find((p) => p.id === pactId);
       if (verdict.auto === false || verdict.result === "review") {
         const reviewed = { ...latest, status: "review", verdict };
+        const now = Date.now();
         nextState = {
           ...nextState,
           pacts: nextState.pacts.map((p) => (p.id === pactId ? reviewed : p)),
+          events: [
+            { id: uid("ev"), pactId, type: "review", actorId: reviewed.opponentId, at: now, note: "Gemini unsure — friend verifies" },
+            ...nextState.events,
+          ],
+          notifications: mergeNotices(nextState.notifications, [reviewNotice(reviewed, now)]),
         };
         return { state: nextState, result: reviewed };
       }
@@ -173,6 +189,23 @@ export function createDeskLogic(judge) {
       };
       const next = settle(state, pactId, verdict);
       return { state: next, result: next.pacts.find((p) => p.id === pactId) };
+    },
+
+    async markNoticeRead(state, noticeId, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      const notifications = applyMarkRead(state.notifications, noticeId, actorId);
+      return {
+        state: { ...state, notifications },
+        result: notifications.find((n) => n.id === noticeId) || null,
+      };
+    },
+
+    async markAllNoticesRead(state, actorId) {
+      if (!userById(actorId)) throw new Error("Unknown demo user");
+      return {
+        state: { ...state, notifications: applyMarkAllRead(state.notifications, actorId) },
+        result: { ok: true },
+      };
     },
   };
 }

@@ -113,7 +113,8 @@ export function BalanceControl() {
 }
 
 function Shell({ children }) {
-  const { backend } = usePact();
+  const { backend, unreadNotices } = usePact();
+  const tapeLabel = unreadNotices > 0 ? `Tape, ${unreadNotices} unread` : "Tape";
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -128,7 +129,14 @@ function Shell({ children }) {
             Pitch
           </NavLink>
           <NavLink to="/create">Write</NavLink>
-          <NavLink to="/feed">Tape</NavLink>
+          <NavLink to="/feed" aria-label={tapeLabel}>
+            Tape
+            {unreadNotices > 0 ? (
+              <span className="nav-badge" aria-hidden="true">
+                {unreadNotices}
+              </span>
+            ) : null}
+          </NavLink>
           <NavLink to="/people">People</NavLink>
           <NavLink to="/crew">Crew</NavLink>
           <NavLink to="/me">Me</NavLink>

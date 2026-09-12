@@ -54,6 +54,44 @@ test("high-confidence pass pays the challenger", async () => {
   assert.equal(bankOf("you", out.state), before + 4);
 });
 
+test("accept and review write desk notices for the other side", async () => {
+  const desk = createDeskLogic(async () => ({
+    result: "review",
+    confidence: 0.55,
+    rationale: "unsure",
+    source: "test",
+    auto: false,
+  }));
+  let state = emptyDemoState();
+  const created = await desk.createPact(
+    state,
+    { title: "Gym", criteria: "Selfie", stake: 2, opponentId: "friend" },
+    "you",
+  );
+  state = created.state;
+  const accepted = await desk.acceptPact(state, created.result.id, "friend");
+  state = accepted.state;
+  const acceptedNotice = state.notifications.find(
+    (n) => n.type === "accepted" && n.pactId === created.result.id,
+  );
+  assert.equal(acceptedNotice.userId, "you");
+  const proved = await desk.submitEvidence(
+    state,
+    created.result.id,
+    { dataUrl: "data:image/jpeg;base64,aa", name: "blur.jpg" },
+    "you",
+  );
+  const provedNotice = proved.state.notifications.find(
+    (n) => n.type === "proved" && n.pactId === created.result.id,
+  );
+  const reviewNotice = proved.state.notifications.find(
+    (n) => n.type === "review" && n.pactId === created.result.id,
+  );
+  assert.equal(proved.result.status, "review");
+  assert.equal(provedNotice.userId, "friend");
+  assert.equal(reviewNotice.userId, "friend");
+});
+
 test("createPact stores public vs private tape", async () => {
   const desk = createDeskLogic(async () => ({ result: "pass", confidence: 0.9, auto: true }));
   const pub = await desk.createPact(

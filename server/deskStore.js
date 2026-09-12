@@ -90,6 +90,7 @@ function publicState(state, actorId = "you") {
     pacts: state.pacts,
     events: state.events,
     ledger: state.ledger,
+    notifications: state.notifications || [],
     users: usersFromState(state),
     backend: "mongo",
   };
@@ -121,4 +122,12 @@ export function submitEvidence(pactId, file, actorId) {
 
 export function verifyPact(pactId, pass, actorId) {
   return mutate((state) => desk.verifyPact(state, pactId, pass, actorId));
+}
+
+export function markNoticeRead(noticeId, actorId) {
+  return mutate((state) => desk.markNoticeRead(state, noticeId, actorId));
+}
+
+export function markAllNoticesRead(actorId) {
+  return mutate((state) => desk.markAllNoticesRead(state, actorId));
 }

@@ -1,8 +1,9 @@
 import { STARTING_BANK } from "./users.js";
+import { NOTICE_TYPES, notice } from "../lib/notifications.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 function gymPact(now) {
   return {
@@ -74,14 +75,43 @@ function runPact(now) {
   };
 }
 
+function reviewPact(now) {
+  return {
+    id: "demo-review-standup",
+    title: "Show today's standup notes",
+    criteria: "Photo of handwritten or typed standup notes with today's date.",
+    stake: 1,
+    deadline: now + 8 * 60 * 60 * 1000,
+    creatorId: "friend",
+    opponentId: "you",
+    status: "review",
+    evidenceUrl: null,
+    evidenceName: "standup.jpg",
+    verdict: {
+      result: "review",
+      confidence: 0.61,
+      rationale: "Notes are in frame but the date is hard to read. Friend should confirm.",
+      source: "gemini",
+      auto: false,
+    },
+    winnerId: null,
+    visibility: "public",
+    createdAt: now - 9 * 60 * 60 * 1000,
+    acceptedAt: now - 8 * 60 * 60 * 1000,
+    provedAt: now - 25 * 60 * 1000,
+    resolvedAt: null,
+  };
+}
+
 export function demoPacts(now = Date.now()) {
-  return [gymPact(now), leetPact(now), runPact(now)];
+  return [gymPact(now), leetPact(now), runPact(now), reviewPact(now)];
 }
 
 export function demoEvents(pacts) {
   const gym = pacts.find((p) => p.id === "demo-settled-gym");
   const leet = pacts.find((p) => p.id === "demo-live-leetcode");
   const run = pacts.find((p) => p.id === "demo-open-run");
+  const review = pacts.find((p) => p.id === "demo-review-standup");
   return [
     { id: "ev-gym-post", pactId: gym.id, type: "posted", actorId: gym.creatorId, at: gym.createdAt, note: gym.title },
     { id: "ev-gym-acc", pactId: gym.id, type: "accepted", actorId: gym.opponentId, at: gym.acceptedAt, note: "Matched the stake" },
@@ -91,6 +121,10 @@ export function demoEvents(pacts) {
     { id: "ev-leet-post", pactId: leet.id, type: "posted", actorId: leet.creatorId, at: leet.createdAt, note: leet.title },
     { id: "ev-leet-acc", pactId: leet.id, type: "accepted", actorId: leet.opponentId, at: leet.acceptedAt, note: "Matched the stake" },
     { id: "ev-run-post", pactId: run.id, type: "posted", actorId: run.creatorId, at: run.createdAt, note: run.title },
+    { id: "ev-rev-post", pactId: review.id, type: "posted", actorId: review.creatorId, at: review.createdAt, note: review.title },
+    { id: "ev-rev-acc", pactId: review.id, type: "accepted", actorId: review.opponentId, at: review.acceptedAt, note: "Matched the stake" },
+    { id: "ev-rev-pro", pactId: review.id, type: "proved", actorId: review.creatorId, at: review.provedAt, note: review.evidenceName },
+    { id: "ev-rev-rev", pactId: review.id, type: "review", actorId: review.opponentId, at: review.provedAt + 1000, note: "Gemini unsure — friend verifies" },
   ].sort((a, b) => b.at - a.at);
 }
 
@@ -98,6 +132,7 @@ export function demoLedger(pacts) {
   const gym = pacts.find((p) => p.id === "demo-settled-gym");
   const leet = pacts.find((p) => p.id === "demo-live-leetcode");
   const run = pacts.find((p) => p.id === "demo-open-run");
+  const review = pacts.find((p) => p.id === "demo-review-standup");
   const pot = gym.stake * 2;
   return [
     { id: "ld-gym-a", userId: gym.creatorId, amount: -gym.stake, kind: "stake", pactId: gym.id, at: gym.createdAt, note: gym.title },
@@ -106,6 +141,44 @@ export function demoLedger(pacts) {
     { id: "ld-leet-a", userId: leet.creatorId, amount: -leet.stake, kind: "stake", pactId: leet.id, at: leet.createdAt, note: leet.title },
     { id: "ld-leet-b", userId: leet.opponentId, amount: -leet.stake, kind: "stake", pactId: leet.id, at: leet.acceptedAt, note: leet.title },
     { id: "ld-run-a", userId: run.creatorId, amount: -run.stake, kind: "stake", pactId: run.id, at: run.createdAt, note: run.title },
+    { id: "ld-rev-a", userId: review.creatorId, amount: -review.stake, kind: "stake", pactId: review.id, at: review.createdAt, note: review.title },
+    { id: "ld-rev-b", userId: review.opponentId, amount: -review.stake, kind: "stake", pactId: review.id, at: review.acceptedAt, note: review.title },
+  ].sort((a, b) => b.at - a.at);
+}
+
+export function demoNotices(pacts) {
+  const gym = pacts.find((p) => p.id === "demo-settled-gym");
+  const leet = pacts.find((p) => p.id === "demo-live-leetcode");
+  const review = pacts.find((p) => p.id === "demo-review-standup");
+  return [
+    notice({
+      id: "ntf-rev-you",
+      userId: review.opponentId,
+      type: NOTICE_TYPES.REVIEW,
+      pactId: review.id,
+      title: "Your turn to verify",
+      body: `REVIEW on “${review.title}” — grade the frame.`,
+      at: review.provedAt + 1000,
+    }),
+    notice({
+      id: "ntf-leet-friend",
+      userId: leet.creatorId,
+      type: NOTICE_TYPES.ACCEPTED,
+      pactId: leet.id,
+      title: "Friend matched the slip",
+      body: `ISAAC accepted “${leet.title}” and locked the pot.`,
+      at: leet.acceptedAt,
+    }),
+    notice({
+      id: "ntf-gym-you",
+      userId: gym.creatorId,
+      type: NOTICE_TYPES.ACCEPTED,
+      pactId: gym.id,
+      title: "Friend matched the slip",
+      body: `MAYA accepted “${gym.title}” and locked the pot.`,
+      at: gym.acceptedAt,
+      readAt: gym.acceptedAt,
+    }),
   ].sort((a, b) => b.at - a.at);
 }
 
@@ -118,5 +191,6 @@ export function emptyDemoState(now = Date.now()) {
     pacts,
     events: demoEvents(pacts),
     ledger: demoLedger(pacts),
+    notifications: demoNotices(pacts),
   };
 }

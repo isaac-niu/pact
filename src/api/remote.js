@@ -39,6 +39,7 @@ function apply(snap) {
     pacts: snap.pacts || [],
     events: snap.events || [],
     ledger: snap.ledger || [],
+    notifications: snap.notifications || [],
     users: snap.users || [],
   };
   notify();
@@ -155,6 +156,26 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   const out = await req(`/api/pacts/${encodeURIComponent(pactId)}/verify`, {
     method: "POST",
     body: JSON.stringify({ actorId, pass }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function markNoticeReadForUser(noticeId, ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req(`/api/notices/${encodeURIComponent(noticeId)}/read`, {
+    method: "POST",
+    body: JSON.stringify({ actorId }),
+  });
+  apply(out.state);
+  return out.result;
+}
+
+export async function markAllNoticesReadForUser(ctx = {}) {
+  actorId = ctx.actorId || actorId;
+  const out = await req("/api/notices/read-all", {
+    method: "POST",
+    body: JSON.stringify({ actorId }),
   });
   apply(out.state);
   return out.result;

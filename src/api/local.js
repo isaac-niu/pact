@@ -1,6 +1,15 @@
 import { STARTING_BANK, otherUserId, userById } from "../data/users.js";
 import { emptyDemoState, SEED_VERSION } from "../data/seed.js";
 import { defaultDeadline } from "../lib/format.js";
+import {
+  acceptedNotice,
+  markAllNoticesRead,
+  markNoticeRead,
+  mergeNotices,
+  noticesFromLifecycle,
+  provedNotice,
+  reviewNotice,
+} from "../lib/notifications.js";
 import { judgeEvidence } from "./referee.js";
 
 export const STORAGE_KEY = "pact.demo.v2";
@@ -160,13 +169,18 @@ function loadState() {
 
 function normalize(parsed) {
   const pacts = Array.isArray(parsed.pacts) ? parsed.pacts.map(upgradePact) : [];
+  const events = Array.isArray(parsed.events) ? parsed.events : eventsFromLegacy(pacts);
+  const notifications = Array.isArray(parsed.notifications)
+    ? parsed.notifications
+    : noticesFromLifecycle(pacts, events);
   return {
     userId: parsed.userId === "friend" ? "friend" : "you",
     seedVersion: SEED_VERSION,
     startingBank: Number.isFinite(parsed.startingBank) ? parsed.startingBank : STARTING_BANK,
     pacts,
-    events: Array.isArray(parsed.events) ? parsed.events : eventsFromLegacy(pacts),
+    events,
     ledger: Array.isArray(parsed.ledger) ? parsed.ledger : ledgerFromLegacy(pacts),
+    notifications,
   };
 }
 
@@ -316,6 +330,7 @@ export async function acceptPact(pactId, ctx = {}) {
       },
       ...state.ledger,
     ],
+    notifications: mergeNotices(state.notifications, [acceptedNotice(next, actorId, now)]),
   });
 
   return next;
@@ -397,6 +412,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
       { id: uid("ev"), pactId, type: "proved", actorId, at: provedAt, note: evidenceName },
       ...state.events,
     ],
+    notifications: mergeNotices(state.notifications, [provedNotice(pact, actorId, provedAt)]),
   });
 
   const verdict = await judgeEvidence({
@@ -434,6 +450,7 @@ export async function submitEvidence(pactId, file, ctx = {}) {
         },
         ...state.events,
       ],
+      notifications: mergeNotices(state.notifications, [reviewNotice(reviewed)]),
     });
     return reviewed;
   }
@@ -478,4 +495,24 @@ export async function verifyPact(pactId, pass, ctx = {}) {
   }).catch(() => {});
 
   return resolved;
+}
+
+export async function markNoticeReadForUser(noticeId, ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  persist({
+    ...state,
+    notifications: markNoticeRead(state.notifications, noticeId, actorId),
+  });
+  return (state.notifications || []).find((n) => n.id === noticeId) || null;
+}
+
+export async function markAllNoticesReadForUser(ctx = {}) {
+  const actorId = ctx.actorId ?? state.userId;
+  requireUser(actorId);
+  persist({
+    ...state,
+    notifications: markAllNoticesRead(state.notifications, actorId),
+  });
+  return { ok: true };
 }

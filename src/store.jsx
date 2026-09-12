@@ -4,6 +4,8 @@ import {
   bankOf,
   createPact as apiCreate,
   getSnapshot,
+  markAllNoticesReadForUser as apiMarkAllRead,
+  markNoticeReadForUser as apiMarkRead,
   recordOf,
   resetDesk,
   submitEvidence as apiSubmit,
@@ -12,6 +14,7 @@ import {
   switchUser as apiSwitch,
 } from "./api/pact.js";
 import { USERS, otherUserId, userById } from "./data/users.js";
+import { noticesForUser, unreadCount } from "./lib/notifications.js";
 
 const PactContext = createContext(null);
 
@@ -33,6 +36,9 @@ export function PactProvider({ children }) {
       pacts: snap.pacts,
       events: snap.events,
       ledger: snap.ledger,
+      notifications: snap.notifications || [],
+      notices: noticesForUser(snap.notifications, snap.userId),
+      unreadNotices: unreadCount(snap.notifications, snap.userId),
       bank,
       record,
       users: USERS,
@@ -44,6 +50,8 @@ export function PactProvider({ children }) {
       acceptPact: (id) => apiAccept(id, { actorId: snap.userId }),
       submitEvidence: (id, file) => apiSubmit(id, file, { actorId: snap.userId }),
       verifyPact: (id, pass) => apiVerify(id, pass, { actorId: snap.userId }),
+      markNoticeRead: (id) => apiMarkRead(id, { actorId: snap.userId }),
+      markAllNoticesRead: () => apiMarkAllRead({ actorId: snap.userId }),
       backend: snap.backend || "local",
     }),
     [bank, opponent, record, snap, user],

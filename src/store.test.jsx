@@ -86,6 +86,27 @@ describe("PactProvider", () => {
     });
 
     expect(result.current.pacts.find((p) => p.id === id).status).toBe("accepted");
+    expect(result.current.notifications.some((n) => n.type === "accepted" && n.pactId === id && n.userId === "you")).toBe(
+      true,
+    );
+  });
+
+  it("marks desk notices read for the current desk", async () => {
+    const { result } = renderHook(() => usePact(), {
+      wrapper: PactProvider,
+    });
+
+    expect(result.current.unreadNotices).toBeGreaterThan(0);
+    const first = result.current.notices.find((n) => !n.readAt);
+    await act(async () => {
+      await result.current.markNoticeRead(first.id);
+    });
+    expect(result.current.notices.find((n) => n.id === first.id).readAt).toBeTruthy();
+
+    await act(async () => {
+      await result.current.markAllNoticesRead();
+    });
+    expect(result.current.unreadNotices).toBe(0);
   });
 
   it("persists state to localStorage", async () => {

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { usePact, userById } from "../store.jsx";
 import { formatClock, sol } from "../lib/format.js";
 import Glossary from "../components/Glossary.jsx";
+import Notices from "../components/Notices.jsx";
 import { eventsOnTape, pactVisibility, pactsOnTape } from "../lib/visibility.js";
 
 const EVENT_FILTERS = ["all", "posted", "accepted", "proved", "won", "lost"];
@@ -37,6 +38,7 @@ export default function Feed() {
         </Link>
       </div>
       <Glossary />
+      <Notices />
       <div className="filters" role="tablist" aria-label="Tape">
         <button type="button" className={tape === "public" ? "on" : ""} onClick={() => setTape("public")}>
           Public tape
