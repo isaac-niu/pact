@@ -293,7 +293,7 @@ describe("Pact API authorization", () => {
   });
 
   it("lists discoverable crews on the directory board", async () => {
-    const { carol } = await startLive();
+    const { carol: _carol } = await startLive();
     await api("/api/groups", {
       method: "POST",
       headers: auth("alice", { "content-type": "application/json" }),
