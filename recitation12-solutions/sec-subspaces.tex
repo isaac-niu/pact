@@ -1,0 +1,91 @@
+\section{Subspaces}
+
+\subsection{Q1. Definition}
+
+\begin{promptbox}
+Define ``$V$ is a subspace of $W$''.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+A subset $V\subseteq W$ is a \emph{subspace} of the vector space $W$ if $V$ is
+itself a vector space under the addition and scalar multiplication of $W$.
+\end{definition*}
+In practice one checks the subspace criteria: $\zero\in V$, and
+$a\vec{u}+b\vec{v}\in V$ whenever $\vec{u},\vec{v}\in V$ and $a,b\in\F$
+(equivalently: closed under addition and under scalar multiplication).
+\end{coursebox}
+
+\subsection{Q2. Kernel and image are subspaces}
+
+\begin{promptbox}
+Show that $\ker(T)$ and $\im(T)$ are subspaces if $T$ is a linear transformation.
+\end{promptbox}
+
+\begin{coursebox}
+Let $T:V\to W$ be linear.
+
+\textbf{Kernel.}
+$T(\zero)=\zero$, so $\zero\in\ker T$. If $\vv,\ww\in\ker T$ and $a,b\in\F$, then
+\[
+T(a\vv+b\ww)=aT(\vv)+bT(\ww)=\zero,
+\]
+so $a\vv+b\ww\in\ker T$.
+
+\textbf{Image.}
+$\zero=T(\zero)\in\im T$. If $\ww_i=T(\vv_i)$ and $a,b\in\F$, then
+$a\ww_1+b\ww_2=T(a\vv_1+b\vv_2)\in\im T$.
+\end{coursebox}
+
+\subsection{Q3. Without linearity, those sets need not be subspaces}
+
+\begin{promptbox}
+Show that if $f$ is not a linear transformation, $\{\vv\in V:f(\vv)=\zero\}$ and
+$\{f(\vv):\vv\in V\}$ need not be subspaces.
+\end{promptbox}
+
+\begin{coursebox}
+Take $V=W=\mathbb{R}$ over $\mathbb{R}$.
+
+\textbf{Zero-set need not be a subspace.}
+Let $f(x)=x^2-1$. Then $\{x:f(x)=0\}=\{-1,1\}$, which does not contain $0$ and
+is not closed under addition.
+
+(Even simpler: $f(x)=x+1$. Then $\{x:f(x)=0\}=\{-1\}$, not a subspace.)
+
+\textbf{Image need not be a subspace.}
+Let $g(x)=x^2$. Then $\{g(x):x\in\mathbb{R}\}=[0,\infty)$, which is not closed
+under scalar multiplication by $-1$.
+
+(Alternatively $g(x)=1$ constantly: the image is $\{1\}$, which does not contain
+$0$.)
+\end{coursebox}
+
+\subsection{Q4. Images and preimages of subspaces}
+
+\begin{promptbox}
+For all subspaces $U_1\subseteq V$, $U_2\subseteq W$ and $T:V\to W$, we have that
+$T^{-1}(U_2)\subseteq V$ and $T(U_1)\subseteq W$ are subspaces.
+\end{promptbox}
+
+\begin{coursebox}
+Assume $T$ is linear (as is implicit in this section of the course).
+
+\textbf{Preimage.}
+$T(\zero)=\zero\in U_2$, so $\zero\in T^{-1}(U_2)$. If $\vv,\ww\in T^{-1}(U_2)$
+and $a,b\in\F$, then $T(\vv),T(\ww)\in U_2$, hence
+$T(a\vv+b\ww)=aT(\vv)+bT(\ww)\in U_2$ because $U_2$ is a subspace. Thus
+$a\vv+b\ww\in T^{-1}(U_2)$.
+
+\textbf{Image.}
+$T(\zero)=\zero\in T(U_1)$. If $T(\vv),T(\ww)$ are in $T(U_1)$ with
+$\vv,\ww\in U_1$, then $a\vv+b\ww\in U_1$, so
+$aT(\vv)+bT(\ww)=T(a\vv+b\ww)\in T(U_1)$.
+\end{coursebox}
+
+\begin{laterbox}
+These are the statements $\ker T=T^{-1}(\{\zero\})$ and $\im T=T(V)$ as special
+cases. After rank-nullity one also knows dimensions:
+$\dim T(U_1)=\dim U_1-\dim(U_1\cap\ker T)$ and
+$\dim T^{-1}(U_2)=\dim(U_2\cap\im T)+\dim\ker T$.
+\end{laterbox}

@@ -1,0 +1,128 @@
+\section{Rank--nullity}
+
+\subsection{Q1. $\dim\im(T_A)=\rank(A)$}
+
+\begin{promptbox}
+Prove that $\dim(\im(T_A))=\rank(A)$.
+\end{promptbox}
+
+\begin{coursebox}
+By definition, $\im(T_A)$ is the column space of $A$, and $\rank(A)$ is defined
+to be the dimension of the column space (equivalently, the number of pivot
+columns of $A$, which form a basis of that column space by RREF Q8). Hence the
+equality is tautological once those identifications are made.
+
+If rank was defined as the number of nonzero rows of $\RREF(A)$: that number
+equals the number of pivot columns, which is the length of a basis of
+$\im(T_A)$.
+\end{coursebox}
+
+\subsection{Q2. Rank--nullity}
+
+\begin{promptbox}
+Rank-nullity. Prove that if $T:V\to W$ and $\dim(V)<\infty$,
+$\dim(\im(T))+\dim(\ker(T))=\dim(V)$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $n=\dim V$ and let $(\vv_1,\ldots,\vv_k)$ be a basis of $\ker T$
+(possibly $k=0$). Extend to a basis
+$(\vv_1,\ldots,\vv_k,\vec{u}_1,\ldots,\vec{u}_{n-k})$ of $V$ (extension lemma).
+
+We claim $\bigl(T(\vec{u}_1),\ldots,T(\vec{u}_{n-k})\bigr)$ is a basis of
+$\im T$.
+
+\textbf{Spanning.}
+For $\vv=\sum a_i\vv_i+\sum b_j\vec{u}_j$,
+\[
+T(\vv)=\sum b_j T(\vec{u}_j)
+\]
+because $T(\vv_i)=\zero$. So the $T(\vec{u}_j)$ span $\im T$.
+
+\textbf{Independence.}
+If $\sum b_j T(\vec{u}_j)=\zero$, then $T\bigl(\sum b_j\vec{u}_j\bigr)=\zero$,
+so $\sum b_j\vec{u}_j\in\ker T=\operatorname{Span}(\vv_1,\ldots,\vv_k)$. Then
+$\sum b_j\vec{u}_j-\sum c_i\vv_i=\zero$ for some $c_i$, and independence of the
+full basis of $V$ forces every $b_j=0$.
+
+Therefore $\dim\im T=n-k=\dim V-\dim\ker T$.
+\end{coursebox}
+
+\begin{laterbox}
+For $T_A$, this is ``number of columns $=$ number of pivot columns $+$ number of
+free columns'', which is visible from RREF. The abstract proof above is the
+same counting after choosing coordinates.
+\end{laterbox}
+
+\subsection{Q3. $\dim T^{-1}(U)\le\dim U+\dim\ker T$}
+
+\begin{promptbox}
+Let $T:V\to W$ and $U\subseteq W$ a subspace. Show that
+$\dim(T^{-1}(U))\le\dim(U)+\dim(\ker(T))$.
+Find examples of when equality does and doesn't hold.
+\end{promptbox}
+
+\begin{coursebox}
+Assume $\dim V<\infty$ (so all dimensions below are finite). Restrict the
+codomain: the restriction
+\[
+T\big|_{T^{-1}(U)}:T^{-1}(U)\longrightarrow U\cap\im(T)
+\]
+is linear, surjective (by definition of image), and has kernel
+$\ker T\cap T^{-1}(U)=\ker T$. Rank-nullity therefore gives
+\[
+\dim T^{-1}(U)
+=\dim\bigl(U\cap\im(T)\bigr)+\dim\ker T
+\le\dim U+\dim\ker T,
+\]
+using $U\cap\im(T)\subseteq U$.
+
+\textbf{Equality} holds if and only if $U\cap\im(T)=U$, i.e.\ iff
+$U\subseteq\im(T)$.
+
+\textbf{Equality example.}
+Let $T=\id_V:V\to V$ and let $U\subseteq V$ be any subspace. Then
+$\ker T=\{\zero\}$ and $T^{-1}(U)=U$, so
+$\dim T^{-1}(U)=\dim U=\dim U+\dim\ker T$.
+
+\textbf{Strict inequality example.}
+Let $T=0:V\to W$ with $\dim V\ge 1$ and let $U\subseteq W$ satisfy
+$\dim U\ge 1$ (e.g.\ $U=W$ if $\dim W\ge 1$). Then $T^{-1}(U)=V$, and
+\[
+\dim V\le\dim U+\dim V
+\]
+is equality only if $\dim U=0$. For $\dim U>0$ we have a strict inequality:
+$\dim T^{-1}(U)=\dim V<\dim U+\dim V$.
+
+A mixed example: inclusion $T:\F^2\to\F^3$, $T(x,y)=(x,y,0)$, and
+$U=\operatorname{Span}\{e_3\}$. Then $U\cap\im T=\{\zero\}$,
+$T^{-1}(U)=\ker T=\{\zero\}$, and $0<1+0$.
+\end{coursebox}
+
+\begin{laterbox}
+The identity $\dim T^{-1}(U)=\dim(U\cap\im T)+\dim\ker T$ is the precise
+sharpening; the inequality in the prompt is what you get by crudely estimating
+$\dim(U\cap\im T)\le\dim U$.
+\end{laterbox}
+
+\subsection{Q4. $\dim T(U)\le\dim U$, and equality}
+
+\begin{promptbox}
+Let $T:V\to W$ and $U\subseteq V$ a subspace. Show that $\dim(T(U))\le\dim(U)$.
+When does equality hold?
+\end{promptbox}
+
+\begin{coursebox}
+The restriction $T|_U:U\to T(U)$ is linear and surjective, with kernel
+$U\cap\ker T$. Rank-nullity yields
+\[
+\dim T(U)=\dim U-\dim(U\cap\ker T)\le\dim U.
+\]
+
+\textbf{Equality} holds iff $\dim(U\cap\ker T)=0$ iff $U\cap\ker T=\{\zero\}$
+iff $T|_U$ is injective.
+
+Special cases: equality for every $U$ iff $\ker T=\{\zero\}$ iff $T$ is
+injective. Equality for $U=V$ is the statement $\dim\im T=\dim V$, again
+injectivity of $T$.
+\end{coursebox}

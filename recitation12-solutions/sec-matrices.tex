@@ -1,0 +1,161 @@
+\section{Matrices}
+
+Let $T:V\to W$ be linear, let $\cB=(\bb_1,\ldots,\bb_n)$ be a basis of $V$ and
+$\cC=(\vec{c}_1,\ldots,\vec{c}_m)$ a basis of $W$. Write $\Mat_{m\times n}(\F)$
+for $m\times n$ matrices over $\F$, and $\mathcal{L}(V,W)$ for linear maps
+$V\to W$.
+
+\subsection{Q1. Definition of $[T]_{\cC\cB}$ and the map $T\mapsto[T]_{\cC\cB}$}
+
+\begin{promptbox}
+Define $[T]_{\cC\cB}$ and show that $T\mapsto[T]_{\cC\cB}$ is an invertible
+linear transformation.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+The \emph{matrix of $T$ with respect to $\cB$ and $\cC$} is the $m\times n$
+matrix $[T]_{\cC\cB}$ whose $j$th column is $[T(\bb_j)]_{\cC}$.
+\end{definition*}
+
+Let $\Psi:\mathcal{L}(V,W)\to\Mat_{m\times n}(\F)$ by $\Psi(T)=[T]_{\cC\cB}$.
+
+\textbf{Linearity.}
+The $j$th column of $[S+T]_{\cC\cB}$ is
+$[(S+T)(\bb_j)]_{\cC}=[S(\bb_j)]_{\cC}+[T(\bb_j)]_{\cC}$, and likewise
+$[aT]_{\cC\cB}=a[T]_{\cC\cB}$. So $\Psi$ is linear.
+
+\textbf{Inverse.}
+Given $A\in\Mat_{m\times n}(\F)$ with columns $\vec{a}_1,\ldots,\vec{a}_n\in\F^m$,
+let $\ww_j$ be the unique vector in $W$ with $[\ww_j]_{\cC}=\vec{a}_j$, and let
+$T$ be the unique linear map with $T(\bb_j)=\ww_j$ (Linear Transformations Q3).
+Then $[T]_{\cC\cB}=A$. Uniqueness of $T$ for a given matrix is the same
+construction in reverse. Thus $\Psi$ is bijective, hence an invertible linear
+map: $\mathcal{L}(V,W)\cong\Mat_{m\times n}(\F)$.
+\end{coursebox}
+
+\begin{laterbox}
+Once dimensions are in hand,
+$\dim\mathcal{L}(V,W)=(\dim V)(\dim W)=nm=\dim\Mat_{m\times n}(\F)$, so it is
+enough to check that $\Psi$ is injective: $[T]_{\cC\cB}=0$ means $T(\bb_j)=\zero$
+for all $j$, so $T=0$.
+\end{laterbox}
+
+\subsection{Q2. Every matrix is some $[T]_{\cC\cB}$}
+
+\begin{promptbox}
+Show that every matrix $A$ can be written as $A=[T]_{\cC\cB}$ for some linear
+transformation $T$ and bases $\cC$ and $\cB$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $A\in\F^{m\times n}$. Take $V=\F^n$, $W=\F^m$, let $\cB$ and $\cC$ be the
+standard bases, and let $T=T_A$ (the map $\vec{x}\mapsto A\vec{x}$; defined in
+Q5). The $j$th column of $A$ is $A e_j=T_A(e_j)$, whose standard coordinates are
+the $j$th column of $A$. Thus $[T_A]_{\cC\cB}=A$.
+\end{coursebox}
+
+\begin{laterbox}
+You may also keep $V$ and $W$ arbitrary of dimensions $n$ and $m$, choose any
+bases $\cB,\cC$, and take the unique $T$ with $[T]_{\cC\cB}=A$ (Q1). So every
+matrix arises in every pair of spaces of the right dimensions.
+\end{laterbox}
+
+\subsection{Q3. $[T]_{\cC\cB}[\vv]_{\cB}=[T(\vv)]_{\cC}$}
+
+\begin{promptbox}
+Prove that $[T]_{\cC\cB}[\vv]_{\cB}=[T(\vv)]_{\cC}$.
+\end{promptbox}
+
+\begin{coursebox}
+Write $\vv=\sum_{j=1}^n x_j\bb_j$, so $[\vv]_{\cB}=\vec{x}=(x_1,\ldots,x_n)^T$.
+Then $T(\vv)=\sum_{j=1}^n x_j T(\bb_j)$, hence
+\begin{align*}
+[T(\vv)]_{\cC}
+&=\sum_{j=1}^n x_j [T(\bb_j)]_{\cC}
+=[T]_{\cC\cB}\,\vec{x}
+=[T]_{\cC\cB}\,[\vv]_{\cB},
+\end{align*}
+because multiplying a matrix by $\vec{x}$ is the corresponding linear combination
+of its columns.
+\end{coursebox}
+
+\subsection{Q4. Composition corresponds to matrix multiplication}
+
+\begin{promptbox}
+Prove that $[S\circ T]_{\cC\cA}=[S]_{\cC\cB}[T]_{\cB\cA}$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $T:U\to V$ and $S:V\to W$, with bases $\cA$ of $U$, $\cB$ of $V$, $\cC$ of $W$.
+For any $\vec{u}\in U$, Q3 three times gives
+\begin{align*}
+[S\circ T]_{\cC\cA}\,[\vec{u}]_{\cA}
+&=[(S\circ T)(\vec{u})]_{\cC}
+=[S(T(\vec{u}))]_{\cC}
+=[S]_{\cC\cB}[T(\vec{u})]_{\cB}\\
+&=[S]_{\cC\cB}[T]_{\cB\cA}\,[\vec{u}]_{\cA}.
+\end{align*}
+The coordinate map $U\to\F^{\dim U}$ is surjective, so two matrices that act the
+same on every coordinate vector are equal:
+$[S\circ T]_{\cC\cA}=[S]_{\cC\cB}[T]_{\cB\cA}$.
+
+(Directly on columns: the $j$th column of the left side is
+$[(S\circ T)(a_j)]_{\cC}=[S]_{\cC\cB}[T(a_j)]_{\cB}$, which is the $j$th column
+of the product.)
+\end{coursebox}
+
+\subsection{Q5. Define $T_A$}
+
+\begin{promptbox}
+Define $T_A$.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+For $A\in\F^{m\times n}$, the associated linear map is
+\[
+T_A:\F^n\to\F^m,\qquad T_A(\vec{x}):=A\vec{x}.
+\]
+\end{definition*}
+Its standard matrix is $A$ itself. Kernel and image of $T_A$ are the nullspace
+and column space of $A$.
+\end{coursebox}
+
+\subsection{Q6. When is $[T_A]_{\cC\cB}=A$ for every $A$?}
+
+\begin{promptbox}
+For which $\cC,\cB$ can we say for all $A$ that $[T_A]_{\cC\cB}=A$?
+\end{promptbox}
+
+\begin{coursebox}
+Here $T_A:\F^n\to\F^m$, so $\cB$ is a basis of $\F^n$ and $\cC$ is a basis of
+$\F^m$. Let $P$ be the matrix with columns the $\cB$-vectors (so $P$ is the
+change-of-basis matrix from $\cB$-coordinates to standard coordinates:
+$\vec{x}=P[\vec{x}]_{\cB}$), and let $Q$ be the matrix with columns the
+$\cC$-vectors. Then
+\[
+T_A(\vec{x})=A\vec{x}
+\implies
+Q[T_A(\vec{x})]_{\cC}=A P[\vec{x}]_{\cB},
+\]
+hence $[T_A]_{\cC\cB}=Q^{-1}AP$.
+
+We need $Q^{-1}AP=A$ for \emph{every} $A\in\F^{m\times n}$. Taking $A=I$ (when
+$m=n$) already forces $Q^{-1}P=I$, so $P=Q$; then $Q^{-1}AQ=A$ for all $A$
+forces $Q$ to commute with every matrix, hence $Q$ is scalar, but
+$Q^{-1}AQ=A$ for all $A$ in the rectangular case as well:
+
+Take $A=E_{ij}$ (matrix units). Then $Q^{-1}E_{ij}P=E_{ij}$ for all $i,j$
+implies $P=I_n$ and $Q=I_m$.
+
+Thus $[T_A]_{\cC\cB}=A$ for all $A$ if and only if $\cB$ is the standard basis
+of $\F^n$ and $\cC$ is the standard basis of $\F^m$.
+\end{coursebox}
+
+\begin{laterbox}
+In one line: $[T_A]_{\cC\cB}=Q^{-1}AP$, and the only pair of invertible
+matrices satisfying $Q^{-1}AP=A$ identically is $P=I$, $Q=I$. (If $m=n$ this
+is the statement that the only change of basis leaving every matrix numerically
+unchanged is the identity basis.)
+\end{laterbox}

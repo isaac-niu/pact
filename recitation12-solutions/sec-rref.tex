@@ -1,0 +1,189 @@
+\section{RREF}
+
+The matrix on the handout was printed as a stacked list of nine entries. We
+interpret it as the $3\times 3$ matrix obtained by reading those entries in
+row-major order
+\[
+A=\begin{pmatrix}0&1&0\\3&0&1\\6&5&2\end{pmatrix}.
+\]
+(The algorithm and structural theorems below do not depend on this choice.)
+
+\subsection{Q1. The RREF algorithm, and $\RREF(A)$}
+
+\begin{promptbox}
+State the RREF algorithm and compute the RREF of
+$A=\begin{pmatrix}0&1&0\\3&0&1\\6&5&2\end{pmatrix}$.
+\end{promptbox}
+
+\begin{coursebox}
+\textbf{Algorithm} (Gaussian elimination to reduced row echelon form).
+Start with $A$ and a ``current'' top-left position $(r,c)=(1,1)$. Repeat until
+you run out of rows or columns:
+\begin{enumerate}[leftmargin=1.8em]
+\item Among rows $r,\ldots,m$, find a row whose entry in column $c$ is nonzero.
+If none exists, increment $c$ and repeat.
+\item Swap that row with row $r$ (a pivot now sits at $(r,c)$).
+\item Scale row $r$ so the pivot equals $1$.
+\item Add multiples of row $r$ to every other row so that all other entries in
+column $c$ become $0$.
+\item Increment $r$ and $c$ and continue.
+\end{enumerate}
+The output is $\RREF(A)$: each pivot is $1$, each pivot is the first nonzero
+entry of its row, and each pivot column is a standard basis vector.
+
+\textbf{Computation.}
+Column $1$ is nonzero. Swap row $1$ with row $2$, then scale the new row $1$ by
+$1/3$:
+\[
+\begin{pmatrix}3&0&1\\0&1&0\\6&5&2\end{pmatrix}
+\to
+\begin{pmatrix}1&0&1/3\\0&1&0\\6&5&2\end{pmatrix}.
+\]
+Subtract $6$ times row $1$ from row $3$:
+\[
+\begin{pmatrix}1&0&1/3\\0&1&0\\0&5&0\end{pmatrix}.
+\]
+Subtract $5$ times row $2$ from row $3$:
+\[
+\begin{pmatrix}1&0&1/3\\0&1&0\\0&0&0\end{pmatrix}.
+\]
+Pivots are already $1$ and already clear above. So
+\[
+\RREF(A)=\begin{pmatrix}1&0&1/3\\0&1&0\\0&0&0\end{pmatrix}.
+\]
+\end{coursebox}
+
+\subsection{Q2. $\RREF(A)=GA$ for some invertible $G$}
+
+\begin{promptbox}
+Prove that $\RREF(A)=GA$ for some invertible $G$.
+\end{promptbox}
+
+\begin{coursebox}
+Each elementary row operation is left-multiplication by an elementary matrix
+$E$ (swap: a transposition matrix; scale row $i$ by $\lambda\neq 0$: the
+diagonal matrix with $\lambda$ in position $i$; add $\lambda$ times row $j$ to
+row $i$: $I+\lambda E_{ij}$). Every elementary matrix is invertible (the inverse
+operation is elementary). The algorithm applies finitely many such operations,
+so $\RREF(A)=E_k\cdots E_1 A=GA$ with $G=E_k\cdots E_1$ invertible.
+\end{coursebox}
+
+\subsection{Q3. $\ker(T_A)=\ker(T_{\RREF(A)})$}
+
+\begin{promptbox}
+Prove that $\ker(T_A)=\ker(T_{\RREF(A)})$.
+\end{promptbox}
+
+\begin{coursebox}
+By Q2, $\RREF(A)=GA$ with $G$ invertible. Then $A\vec{x}=\zero$ iff
+$GA\vec{x}=\zero$ (multiply by $G$ or by $G^{-1}$). Thus
+$\ker T_A=\ker T_{GA}=\ker T_{\RREF(A)}$.
+\end{coursebox}
+
+\subsection{Q4. Example with $\im(T_A)\neq\im(T_{\RREF(A)})$}
+
+\begin{promptbox}
+Find an example of $A$ with $\im(T_A)\neq\im(T_{\RREF(A)})$.
+\end{promptbox}
+
+\begin{coursebox}
+Row operations change column space in general. Take
+\[
+A=\begin{pmatrix}1&0\\1&0\end{pmatrix},\qquad
+\RREF(A)=\begin{pmatrix}1&0\\0&0\end{pmatrix}.
+\]
+Then $\im(T_A)=\operatorname{Span}\{(1,1)^T\}$ while
+$\im(T_{\RREF(A)})=\operatorname{Span}\{(1,0)^T\}$, which are unequal.
+\end{coursebox}
+
+\subsection{Q5. Same image without $A$ already in RREF}
+
+\begin{promptbox}
+Is it possible that $\im(T_A)=\im(T_{\RREF(A)})$ but $A\neq\RREF(A)$?
+\end{promptbox}
+
+\begin{coursebox}
+Yes. Take
+\[
+A=\begin{pmatrix}2&0\\0&0\end{pmatrix},\qquad
+\RREF(A)=\begin{pmatrix}1&0\\0&0\end{pmatrix}.
+\]
+The column spaces are both $\operatorname{Span}\{(1,0)^T\}$, but $A\neq\RREF(A)$.
+
+(The phenomenon is: scaling a pivot column of $A$ does not change its span, but
+does change the matrix.)
+\end{coursebox}
+
+\subsection{Q6. Row-equivalent matrices have the same RREF}
+
+\begin{promptbox}
+True/false: If $A=GB$ for some invertible $G$, then $\RREF(A)=\RREF(B)$.
+\end{promptbox}
+
+\begin{coursebox}
+\textbf{True.}
+$A=GB$ with $G$ invertible means $A$ and $B$ are row-equivalent: they have the
+same row space and, more to the point, each is obtained from the other by
+elementary row operations. The reduced row echelon form of a matrix is
+\emph{unique}, so there is only one RREF in a row-equivalence class. Hence
+$\RREF(A)=\RREF(B)$.
+
+(If uniqueness of RREF has not been proved yet: $\RREF(A)=G_A A=G_A G B$ and
+$\RREF(B)=G_B B$ are both RREF matrices that are row-equivalent, and one checks
+that a matrix in RREF is determined by its pivot pattern and row space, or
+invokes uniqueness.)
+\end{coursebox}
+
+\begin{laterbox}
+Uniqueness of RREF is the key lemma. A quick uniqueness argument: if $R$ and $S$
+are both RREF and $R=HS$ for invertible $H$, then $R$ and $S$ have the same
+nullspace, hence the same pivot columns (the non-free coordinates), and comparing
+pivot columns --- which are standard basis vectors --- forces $H=I$ on the
+pivot rows, hence $R=S$.
+\end{laterbox}
+
+\subsection{Q7. RREF when $T_A$ is injective}
+
+\begin{promptbox}
+If $T_A$ is injective, what does $\RREF(A)$ look like?
+\end{promptbox}
+
+\begin{coursebox}
+$T_A:\F^n\to\F^m$ injective means $\ker T_A=\{\zero\}$, so there are no free
+variables: every column is a pivot column. That requires $n\le m$, and
+\[
+\RREF(A)=\begin{pmatrix}I_n\\0_{(m-n)\times n}\end{pmatrix}
+\]
+(the block $0$ is absent if $m=n$, in which case $\RREF(A)=I_n$).
+\end{coursebox}
+
+\subsection{Q8. Bases of $\im(T_A)$ and $\ker(T_A)$ from $\RREF(A)$}
+
+\begin{promptbox}
+Given $\RREF(A)$, describe how to find a basis for $\im(T_A)$ and $\ker(T_A)$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $R=\RREF(A)$.
+\begin{itemize}
+\item \textbf{Image / column space of $A$.}
+The pivot columns of $R$ mark the pivot columns of $A$. Those columns of the
+\emph{original} matrix $A$ form a basis of $\im(T_A)$. (Do not take columns of
+$R$: Q4 shows they may span the wrong space.)
+\item \textbf{Kernel / nullspace of $A$.}
+Free variables correspond to non-pivot columns. For each free variable $x_j$,
+set $x_j=1$ and set the other free variables to $0$; solve the pivot equations
+(which are immediate from $R$) for the pivot variables. The resulting $n$
+special solutions form a basis of $\ker(T_A)$. Equivalently, if the non-pivot
+columns of $R$ are $R\vec{e}_{j_k}$, each special solution is
+$\vec{e}_{j_k}$ minus the linear combination of pivot columns that $R$ uses to
+express that column.
+\end{itemize}
+
+\textbf{Illustration with the matrix of Q1.}
+$R=\begin{pmatrix}1&0&1/3\\0&1&0\\0&0&0\end{pmatrix}$ has pivots in columns
+$1,2$. A basis of $\im(T_A)$ is the first two columns of $A$:
+$(0,3,6)^T$ and $(1,0,5)^T$. One free variable $x_3$, and
+$x_1+(1/3)x_3=0$, $x_2=0$, so a basis of the kernel is
+$\bigl((-1/3),\,0,\,1\bigr)^T$.
+\end{coursebox}

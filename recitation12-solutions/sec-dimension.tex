@@ -1,0 +1,176 @@
+\section{Dimension}
+
+\subsection{Q1. An independent list is no longer than a basis}
+
+\begin{promptbox}
+Prove that the length of a linearly independent list is at most the length of a
+basis.
+\end{promptbox}
+
+\begin{coursebox}
+Let $(\vv_1,\ldots,\vv_k)$ be linearly independent in $V$, and let
+$(\ww_1,\ldots,\ww_n)$ be a basis of $V$. We show $k\le n$ by the replacement
+(Steinitz) argument.
+
+The list $(\vv_1,\ww_1,\ldots,\ww_n)$ is spanning (it still spans $V$) and
+linearly dependent ($\vv_1$ is in the span of the $\ww$'s). In a dependent
+spanning list, some vector is in the span of the preceding ones; that vector
+cannot be $\vv_1$ (independence of a single nonzero vector, or $\vv_1\neq\zero$),
+so some $\ww_{j_1}$ is in the span of $\{\vv_1\}\cup\{\ww_i:i\neq j_1\}$. Drop it:
+$(\vv_1,\ww_1,\ldots,\widehat{\ww_{j_1}},\ldots,\ww_n)$ still spans.
+
+Repeat: adjoin $\vv_2$ on the left. The list is dependent, and sequential
+independence of $(\vv_1,\vv_2)$ means the vector we drop is one of the remaining
+$\ww$'s. After $k$ steps we have replaced $k$ of the $\ww$'s by $\vv_1,\ldots,\vv_k$
+and still have a spanning list. We cannot have run out of $\ww$'s before using
+all $\vv$'s: otherwise $(\vv_1,\ldots,\vv_k)$ would be dependent. Hence $k\le n$.
+\end{coursebox}
+
+\begin{laterbox}
+After linear maps: independence of $(\vv_1,\ldots,\vv_k)$ means the map
+$\F^k\to V$, $e_i\mapsto\vv_i$ is injective, so $k=\dim\F^k\le\dim V=n$ once
+one knows injective maps cannot raise dimension (Dimension Q3 / rank-nullity).
+That proof is shorter but logically later.
+\end{laterbox}
+
+\subsection{Q2. Define $\dim(V)$}
+
+\begin{promptbox}
+Define $\dim(V)$.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+If $V$ has a finite basis, the \emph{dimension} $\dim V$ is the length of any
+basis of $V$. This is well-defined by Q1: two bases are independent lists each
+spanning, so each is no longer than the other.
+
+If $V$ has no finite spanning list, one writes $\dim V=\infty$.
+$\dim\{\zero\}=0$, the length of the empty basis.
+\end{definition*}
+\end{coursebox}
+
+\subsection{Q3. Injective maps preserve dimension of the image}
+
+\begin{promptbox}
+Show that if $T:V\to W$ is an injective linear transformation,
+$\dim(\im(T))=\dim(V)$.
+\end{promptbox}
+
+\begin{coursebox}
+Assume $\dim V=n<\infty$ (otherwise both sides are infinite if $T$ is injective
+and $V$ is infinite-dimensional, with the usual caveats). Let $(\vv_1,\ldots,\vv_n)$
+be a basis of $V$. Linear Transformations Q6 says
+$\bigl(T(\vv_1),\ldots,T(\vv_n)\bigr)$ is independent; Linear Transformations Q5
+says it spans $\im(T)$. So it is a basis of $\im(T)$ of length $n$, and
+$\dim\im(T)=n=\dim V$.
+
+(Equivalently: $T:V\to\im(T)$ is an isomorphism, and isomorphisms preserve the
+length of bases.)
+\end{coursebox}
+
+\begin{laterbox}
+Rank-nullity: $\dim\im(T)=\dim V-\dim\ker T=\dim V$ because $\ker T=\{\zero\}$.
+\end{laterbox}
+
+\subsection{Q4. Extension lemma}
+
+\begin{promptbox}
+Extension Lemma: If $\dim(V)<\infty$, any linearly independent list can be
+extended to a basis.
+\end{promptbox}
+
+\begin{coursebox}
+Let $(\vv_1,\ldots,\vv_k)$ be independent and let $(\ww_1,\ldots,\ww_n)$ be a
+basis, $n=\dim V$. Consider the concatenated list
+$(\vv_1,\ldots,\vv_k,\ww_1,\ldots,\ww_n)$. It spans $V$. Apply the extraction
+procedure of Span Q5: keep a vector iff it is not in the span of those already
+kept. All of $\vv_1,\ldots,\vv_k$ are kept (they start independent). The
+surviving list is independent, still spans $V$, and is therefore a basis
+extending the original list.
+\end{coursebox}
+
+\begin{laterbox}
+If you already know that independent lists have length $\le n$ and that a
+spanning list of length $n$ is a basis, you may add one vector at a time from
+outside the current span; the process stops by length at latest at $n$, and
+must stop with a spanning list.
+\end{laterbox}
+
+\subsection{Q5. Dimension of a subspace}
+
+\begin{promptbox}
+If $V\subseteq W$ is a subspace, $\dim(V)\le\dim(W)$.
+\end{promptbox}
+
+\begin{coursebox}
+If $\dim W=\infty$ there is nothing to prove. If $\dim W=n<\infty$, a basis of
+$V$ is a linearly independent list in $W$, hence has length at most $n$ by Q1.
+
+(If $\dim V=\dim W<\infty$ then any basis of $V$ is an independent list of
+length $\dim W$ in $W$, hence a basis of $W$, so $V=W$.)
+\end{coursebox}
+
+\subsection{Q6. Complementary subspace}
+
+\begin{promptbox}
+If $\dim(W)<\infty$ and $U\subseteq W$ is a subspace, then there exists a
+subspace $V\subseteq W$ such that $U\cap V=\{\zero\}$ and
+$\dim(U)+\dim(V)=\dim(W)$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $(\vec{u}_1,\ldots,\vec{u}_k)$ be a basis of $U$. Extend it to a basis
+$(\vec{u}_1,\ldots,\vec{u}_k,\vv_1,\ldots,\vv_{n-k})$ of $W$ by the extension
+lemma, where $n=\dim W$. Set $V=\operatorname{Span}(\vv_1,\ldots,\vv_{n-k})$.
+
+Then $\dim V=n-k$, so $\dim U+\dim V=n=\dim W$. If $\vec{x}\in U\cap V$, then
+$\vec{x}=\sum a_i\vec{u}_i=\sum b_j\vv_j$, hence
+$\sum a_i\vec{u}_i-\sum b_j\vv_j=\zero$. Independence of the full basis forces
+all coefficients to vanish, so $\vec{x}=\zero$.
+\end{coursebox}
+
+\begin{laterbox}
+$V$ is a complement of $U$ in $W$: equivalently $W=U\oplus V$. Complements are
+not unique unless $U=W$ or $U=\{\zero\}$. After you have an inner product one
+can choose the orthogonal complement, which is unique; that is later than this
+handout.
+\end{laterbox}
+
+\subsection{Q7. $\dim(U+V)=\dim U+\dim V-\dim(U\cap V)$}
+
+\begin{promptbox}
+Show that $\dim(U+V)=\dim(U)+\dim(V)-\dim(U\cap V)$.
+\end{promptbox}
+
+\begin{coursebox}
+Assume $U,V\subseteq W$ are finite-dimensional (e.g.\ if $\dim W<\infty$).
+Let $(\vec{z}_1,\ldots,\vec{z}_r)$ be a basis of $U\cap V$. Extend it to a
+basis $(\vec{z}_1,\ldots,\vec{z}_r,\vec{u}_1,\ldots,\vec{u}_s)$ of $U$ and to a
+basis $(\vec{z}_1,\ldots,\vec{z}_r,\vv_1,\ldots,\vv_t)$ of $V$. We claim
+\[
+\cB=(\vec{z}_1,\ldots,\vec{z}_r,\vec{u}_1,\ldots,\vec{u}_s,\vv_1,\ldots,\vv_t)
+\]
+is a basis of $U+V$.
+
+\textbf{Spanning.}
+A typical vector of $U+V$ is $\vec{u}+\vv$ with $\vec{u}\in U$, $\vv\in V$,
+hence is a combination of the $\vec{z}$'s, $\vec{u}$'s, and $\vv$'s.
+
+\textbf{Independence.}
+If $\sum a_i\vec{z}_i+\sum b_j\vec{u}_j+\sum c_k\vv_k=\zero$, then
+$\sum c_k\vv_k=-\sum a_i\vec{z}_i-\sum b_j\vec{u}_j\in U$, so
+$\sum c_k\vv_k\in U\cap V=\operatorname{Span}(\vec{z}_i)$. But
+$(\vec{z}_1,\ldots,\vec{z}_r,\vv_1,\ldots,\vv_t)$ is independent, so every
+$c_k=0$ and then every $a_i,b_j=0$ by independence of the $U$-basis.
+
+Thus $\dim(U+V)=r+s+t$, while $\dim U=r+s$, $\dim V=r+t$, $\dim(U\cap V)=r$,
+which is the formula.
+\end{coursebox}
+
+\begin{laterbox}
+Map $U\times V\to U+V$ by $(\vec{u},\vv)\mapsto\vec{u}+\vv$. It is surjective
+with kernel $\{(x,-x):x\in U\cap V\}\cong U\cap V$. Rank-nullity on $U\times V$
+(whose dimension is $\dim U+\dim V$) yields the same identity. This is the
+slick end-of-handout proof.
+\end{laterbox}
