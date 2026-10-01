@@ -1,0 +1,129 @@
+\section{Span, Linear Independence, Bases}
+
+We take the following as the working definitions at this point of the course
+(Axler / 21-242 style). A \emph{linear combination} of a list
+$\cL=(\vv_1,\ldots,\vv_n)$ is a vector $\sum_{i=1}^n a_i\vv_i$ with $a_i\in\F$.
+
+\subsection{Q1. Definition of $\operatorname{Span}(\cL)$}
+
+\begin{promptbox}
+State the definition of $\operatorname{Span}(\cL)$.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+If $\cL=(\vv_1,\ldots,\vv_n)$ is a list of vectors in $V$, then
+\[
+\operatorname{Span}(\cL)
+:=\Bigl\{\, \sum_{i=1}^n a_i\vv_i : a_1,\ldots,a_n\in\F \,\Bigr\}.
+\]
+If $\cL$ is empty, $\operatorname{Span}(\cL)=\{\zero\}$.
+\end{definition*}
+Equivalently: $\operatorname{Span}(\cL)$ is the set of all linear combinations
+of vectors appearing in $\cL$. It is the smallest subspace of $V$ containing
+every vector of $\cL$.
+\end{coursebox}
+
+\subsection{Q2. Definition of linear independence}
+
+\begin{promptbox}
+State the definition of linear independence.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}[Axler / sequential form]
+A list $(\vv_1,\ldots,\vv_n)$ in $V$ is \emph{linearly independent} if no vector
+in the list is a linear combination of the preceding ones: that is,
+$\vv_1\neq\zero$ and $\vv_j\notin\operatorname{Span}(\vv_1,\ldots,\vv_{j-1})$
+for each $j=2,\ldots,n$. The empty list is linearly independent.
+\end{definition*}
+A list is \emph{linearly dependent} if it is not linearly independent.
+
+(An equivalent and often more convenient form is Q3 below.)
+\end{coursebox}
+
+\subsection{Q3. Independence iff only the trivial combination is $\zero$}
+
+\begin{promptbox}
+Prove that $\vv_1,\vv_2,\ldots,\vv_n\subseteq V$ is linearly independent if and
+only if $\sum_{i=1}^n a_i\vv_i=\zero$ implies $a_i=0$ for all $i$.
+\end{promptbox}
+
+\begin{coursebox}
+Write $\cL=(\vv_1,\ldots,\vv_n)$. We use the sequential definition from Q2.
+
+($\Rightarrow$).
+Suppose $\cL$ is linearly independent and $\sum_{i=1}^n a_i\vv_i=\zero$.
+If some coefficient is nonzero, let $j$ be the \emph{largest} index with
+$a_j\neq 0$. Then
+\[
+\vv_j
+=\sum_{i=1}^{j-1}\Bigl(-\frac{a_i}{a_j}\Bigr)\vv_i
+\in\operatorname{Span}(\vv_1,\ldots,\vv_{j-1})
+\]
+(if $j=1$ this says $\vv_1=\zero$). This contradicts sequential independence.
+Hence every $a_i=0$.
+
+($\Leftarrow$).
+Suppose the only linear combination equal to $\zero$ is the trivial one.
+If the list failed sequential independence, some $\vv_j$ would lie in
+$\operatorname{Span}(\vv_1,\ldots,\vv_{j-1})$, say
+$\vv_j=\sum_{i<j}c_i\vv_i$. Then
+\[
+\sum_{i<j}c_i\vv_i + (-1)\vv_j+\sum_{i>j}0\cdot\vv_i=\zero
+\]
+is a nontrivial combination (the coefficient of $\vv_j$ is $-1$), a contradiction.
+Thus $\cL$ is linearly independent.
+\end{coursebox}
+
+\begin{laterbox}
+After bases and dimension: a list of length $n$ in an $n$-dimensional space is
+independent iff it is spanning iff it is a basis, and the trivial-combination
+criterion is the statement that the map $\F^n\to V$,
+$e_i\mapsto\vv_i$, is injective. That is a cleaner packaging, but it uses the
+linear-map language from the next section.
+\end{laterbox}
+
+\subsection{Q4. Can $\zero$ appear in a linearly independent list?}
+
+\begin{promptbox}
+Can $\zero$ appear in a linearly independent list?
+\end{promptbox}
+
+\begin{coursebox}
+No. If $\vv_j=\zero$, then $1\cdot\vv_j=\zero$ is a nontrivial linear combination
+of the list (or, in sequential language, $\zero$ always lies in the span of the
+preceding vectors, including the empty span when $j=1$).
+
+So any list containing $\zero$ is linearly dependent.
+\end{coursebox}
+
+\subsection{Q5. Every list contains a basis of its span}
+
+\begin{promptbox}
+Prove that for any list $\cL\subseteq V$, there exists a sublist $\cL'\subseteq\cL$
+such that $\cL'$ is a basis for $\operatorname{Span}(\cL)$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $\cL=(\vv_1,\ldots,\vv_n)$. Build $\cL'$ by reading $\cL$ from left to right
+and keeping a vector if and only if it is not in the span of those already kept.
+(Equivalently: drop each vector that is a linear combination of the preceding
+vectors of $\cL$.)
+
+\begin{itemize}
+\item $\cL'$ is linearly independent by construction (sequential definition).
+\item $\operatorname{Span}(\cL')=\operatorname{Span}(\cL)$: every dropped vector
+already lay in the span of earlier kept vectors, so by induction each $\vv_j$
+lies in $\operatorname{Span}(\cL')$. The reverse inclusion is obvious.
+\end{itemize}
+A linearly independent spanning list of $\operatorname{Span}(\cL)$ is a basis
+of $\operatorname{Span}(\cL)$.
+\end{coursebox}
+
+\begin{laterbox}
+Once you have the extension lemma and $\dim$: take a maximal linearly independent
+sublist $\cL'\subseteq\cL$. Maximality implies it spans $\operatorname{Span}(\cL)$,
+else you could add another vector of $\cL$. Finite generation of the span is
+what makes maximality work without Zorn.
+\end{laterbox}

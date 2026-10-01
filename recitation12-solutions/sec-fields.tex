@@ -1,0 +1,135 @@
+\section{Fields and Vector Spaces}
+
+\subsection{Q1. Unique additive identity}
+
+\begin{promptbox}
+State and prove that $\zero\in V$ is the unique additive identity.
+\end{promptbox}
+
+\begin{coursebox}
+\textbf{Statement.}
+There is a unique vector $\zero\in V$ such that $\vv+\zero=\vv$ for every $\vv\in V$.
+
+\textbf{Existence} is an axiom of a vector space.
+
+\textbf{Uniqueness.}
+Suppose $\vec{e}\in V$ also satisfies $\vv+\vec{e}=\vv$ for every $\vv\in V$.
+Taking $\vv=\zero$ and using that $\zero$ is an additive identity gives
+\[
+\vec{e}
+=\zero+\vec{e}
+=\zero.
+\]
+Thus the additive identity is unique.
+\end{coursebox}
+
+\begin{laterbox}
+The same one-line uniqueness argument works in any abelian group, so it is not
+special to vector spaces. After you know that $V\cong\F^n$ when $\dim V=n<\infty$,
+uniqueness of $\zero$ in $V$ is equivalent to uniqueness of the zero tuple in
+$\F^n$, but that is a strictly heavier route and hides that the claim is purely
+algebraic.
+\end{laterbox}
+
+\subsection{Q2. $0\vv=\zero$}
+
+\begin{promptbox}
+Prove that $0\vv=\zero$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $\vv\in V$. Then
+\[
+0\vv=(0+0)\vv=0\vv+0\vv
+\]
+by distributivity. Add the additive inverse $-(0\vv)$ to both sides:
+\[
+\zero=0\vv.
+\]
+(Equivalently: $0\vv+0\vv=0\vv$ and Q4 below, or cancellation.)
+\end{coursebox}
+
+\begin{laterbox}
+In coordinates relative to any basis $\cB$, we have $[0\vv]_{\cB}=0[\vv]_{\cB}=\zero$
+in $\F^n$, hence $0\vv=\zero$. This uses the coordinate isomorphism, which is
+later in the handout.
+\end{laterbox}
+
+\subsection{Q3. $-\vv=(-1)\vv$}
+
+\begin{promptbox}
+Prove that $-\vv=(-1)\vv$.
+\end{promptbox}
+
+\begin{coursebox}
+It is enough to check that $(-1)\vv$ is an additive inverse of $\vv$, because
+additive inverses are unique (if $\vv+\ww=\zero=\vv+\vec{u}$ then
+$\ww=\zero+\ww=(-\vv+\vv)+\ww=-\vv+(\vv+\ww)=-\vv+\zero=-\vv$, and likewise
+$\vec{u}=-\vv$).
+
+Now
+\[
+\vv+(-1)\vv=1\cdot\vv+(-1)\vv=\bigl(1+(-1)\bigr)\vv=0\vv=\zero,
+\]
+using Q2. Therefore $-\vv=(-1)\vv$.
+\end{coursebox}
+
+\begin{laterbox}
+The coordinate proof is again $[\vv]+[(-1)\vv]=[\vv]+(-1)[\vv]=\zero$ in $\F^n$.
+The axiom-level proof is the one you want on a midterm at this stage of the
+course.
+\end{laterbox}
+
+\subsection{Q4. Cancellation / $\vv+\ww=\vv$ implies $\ww=\zero$}
+
+\begin{promptbox}
+Show that if $\vv+\ww=\vv$, then $\ww=\zero$.
+\end{promptbox}
+
+\begin{coursebox}
+Add $-\vv$ to both sides:
+\[
+-\vv+(\vv+\ww)=-\vv+\vv
+\implies
+(-\vv+\vv)+\ww=\zero
+\implies
+\zero+\ww=\zero
+\implies
+\ww=\zero.
+\]
+\end{coursebox}
+
+\begin{laterbox}
+This is the cancellation law in the abelian group $(V,+)$. Equivalently,
+the translation map $T_{\vv}(\ww)=\vv+\ww$ is injective (in fact invertible,
+with inverse $T_{-\vv}$).
+\end{laterbox}
+
+\subsection{Q5. $\vv=-\vv$ need not imply $\vv=\zero$}
+
+\begin{promptbox}
+Show that $\vv=-\vv$ does not necessarily imply $\vv=\zero$.
+\end{promptbox}
+
+\begin{coursebox}
+The equation $\vv=-\vv$ is equivalent to $2\vv=\zero$. If $1+1\neq 0$ in $\F$
+(characteristic not $2$), we may multiply by the scalar $2^{-1}$ and conclude
+$\vv=\zero$. So a counterexample must live in characteristic $2$.
+
+Take $\F=\F_2=\{0,1\}$ with $1+1=0$, and take $V=\F_2$ as a vector space over
+itself. Let $\vv=1$. Then
+\[
+-\vv=(-1)\vv=1\cdot 1=1=\vv,
+\]
+but $\vv\neq\zero$.
+
+(The same phenomenon occurs in any vector space over a field of characteristic
+$2$: every vector satisfies $\vv=-\vv$.)
+\end{coursebox}
+
+\begin{laterbox}
+Once you have bases: if $\operatorname{char}\F=2$ and $\dim V\ge 1$, any nonzero
+basis vector is a counterexample. If $\operatorname{char}\F\neq 2$, then
+$\vv=-\vv$ really does imply $\vv=\zero$, so the hypothesis ``not necessarily''
+is a characteristic-$2$ statement, not a dimension statement.
+\end{laterbox}

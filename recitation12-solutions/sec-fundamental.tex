@@ -1,0 +1,109 @@
+\section{Fundamental theorems}
+
+\subsection{Q1. State the fundamental theorems of linear algebra}
+
+\begin{promptbox}
+State the fundamental theorems of linear algebra.
+\end{promptbox}
+
+\begin{coursebox}
+At the level of this midterm (finite-dimensional spaces, no inner products
+required), the core theorems are the following.
+
+\begin{theorem*}[Rank--nullity]
+If $T:V\to W$ is linear and $\dim V<\infty$, then
+$\dim\im(T)+\dim\ker(T)=\dim V$.
+\end{theorem*}
+
+\begin{theorem*}[Rank]
+For $A\in\F^{m\times n}$,
+\[
+\rank(A):=\dim\im(T_A)=\text{(number of pivots in $\RREF(A)$)}
+\]
+equals the dimension of the column space and of the row space of $A$.
+\end{theorem*}
+
+\begin{theorem*}[Characterizations of injectivity / surjectivity]
+Let $T:V\to W$ with $\dim V=n<\infty$, $\dim W=m<\infty$, and let $\cB$ be a
+basis of $V$.
+\begin{itemize}
+\item $T$ injective $\iff\ker T=\{\zero\}\iff T(\cB)$ independent
+$\iff\dim\im(T)=n\iff n\le m$ and $\rank=n$.
+\item $T$ surjective $\iff\im(T)=W\iff T(\cB)$ spans $W$
+$\iff\dim\im(T)=m\iff m\le n$ and $\rank=m$.
+\item If $n=m$, these are all equivalent to $T$ being invertible.
+\end{itemize}
+For $T_A$, injectivity means every column is a pivot; surjectivity means every
+row has a pivot.
+\end{theorem*}
+
+\begin{theorem*}[Left and right inverses]
+$T_A$ is injective iff $A$ has a left inverse ($BA=I_n$ for some $B$).
+$T_A$ is surjective iff $A$ has a right inverse ($AC=I_m$ for some $C$).
+\end{theorem*}
+
+(If the course has already named the ``four subspaces'' theorem over $\mathbb{R}$
+with orthogonality, that is a later refinement using a transpose/inner product
+and is not needed for the proofs below.)
+\end{coursebox}
+
+\subsection{Q2. $T_A$ injective implies $A$ has a left inverse}
+
+\begin{promptbox}
+Prove that $T_A$ injective implies $A$ has a left inverse.
+\end{promptbox}
+
+\begin{coursebox}
+Let $A\in\F^{m\times n}$ with $T_A:\F^n\to\F^m$ injective. Then
+$\ker T_A=\{\zero\}$, so the columns of $A$ are independent. In particular
+$n\le m$.
+
+Let $\cB=(A e_1,\ldots,A e_n)$, a linearly independent list in $\F^m$. Extend it
+to a basis $\cC=(\ww_1,\ldots,\ww_m)$ of $\F^m$ with $\ww_j=A e_j$ for
+$j\le n$ (possible because we may add vectors from a spanning list, e.g.\ the
+standard basis, that are not yet in the span).
+
+Define $S:\F^m\to\F^n$ to be the unique linear map with
+\[
+S(\ww_j)=\begin{cases}
+e_j & 1\le j\le n,\\
+\zero & n<j\le m.
+\end{cases}
+\]
+Then $S(T_A(e_j))=S(\ww_j)=e_j$ for $j=1,\ldots,n$, so $S\circ T_A=\id_{\F^n}$.
+Letting $B$ be the standard matrix of $S$, we have $BA=I_n$.
+\end{coursebox}
+
+\begin{laterbox}
+By rank-nullity, injectivity means $\rank(A)=n$. Then $\RREF(A)=\begin{pmatrix}I_n\\0\end{pmatrix}=GA$
+for invertible $G$, so the first $n$ rows of $G$ form a left inverse of $A$.
+This is the computational version of the same fact.
+\end{laterbox}
+
+\subsection{Q3. $T_A$ surjective implies $A$ has a right inverse}
+
+\begin{promptbox}
+Prove that $T_A$ surjective implies $A$ has a right inverse.
+\end{promptbox}
+
+\begin{coursebox}
+Let $T_A:\F^n\to\F^m$ be surjective. For each standard basis vector $e_i\in\F^m$
+choose a preimage $\vv_i\in\F^n$ with $A\vv_i=e_i$. Let $C$ be the $n\times m$
+matrix with columns $\vv_1,\ldots,\vv_m$. Then
+\[
+AC e_i=A\vv_i=e_i\qquad(i=1,\ldots,m),
+\]
+so $AC=I_m$. (The map $T_C$ is a right inverse of $T_A$.)
+\end{coursebox}
+
+\begin{laterbox}
+Surjectivity means $\rank(A)=m$, so $m\le n$ and
+$\RREF(A)=\begin{pmatrix}I_m&F\end{pmatrix}$ after row operations:
+$GA=\begin{pmatrix}I_m&F\end{pmatrix}$. A particular right inverse is
+$C=\begin{pmatrix}I_m\\0\end{pmatrix}G$ when we pad with free-variable zeros
+after undoing $G$, or more invariantly: choose any complementary subspace to
+$\ker T_A$ (Dimension Q6); $T_A$ restricted there is an isomorphism
+$\F^n/\text{direction of }\ker\to\F^m$, and the inverse of that isomorphism,
+extended by $0$ on a complement, is a right inverse. The preimage-of-basis
+argument above is the one to write at this point in the recitation.
+\end{laterbox}

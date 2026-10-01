@@ -1,0 +1,48 @@
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black}
+
+\theoremstyle{definition}
+\newtheorem*{definition*}{Definition}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem*{lemma*}{Lemma}
+
+\newtcolorbox{promptbox}{
+  colback=blue!4, colframe=blue!40!black, boxrule=0.6pt,
+  fonttitle=\bfseries, title=Prompt, breakable, sharp corners
+}
+\newtcolorbox{coursebox}{
+  colback=green!3, colframe=green!40!black, boxrule=0.6pt,
+  fonttitle=\bfseries, title=Course-level solution, breakable, sharp corners
+}
+\newtcolorbox{laterbox}{
+  colback=orange!4, colframe=orange!50!black, boxrule=0.6pt,
+  fonttitle=\bfseries,
+  title=Later-course solution (using ideas from the rest of the handout),
+  breakable, sharp corners
+}
+
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\im}{\operatorname{im}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\RREF}{\operatorname{RREF}}
+\newcommand{\id}{\operatorname{id}}
+\newcommand{\Mat}{\operatorname{Mat}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\zero}{\vec{0}}
+\newcommand{\vv}{\vec{v}}
+\newcommand{\ww}{\vec{w}}
+\newcommand{\bb}{\vec{b}}
+\newcommand{\ee}{\vec{e}}
+
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.35em}
+\setlist[itemize]{leftmargin=1.4em,itemsep=0.25em}

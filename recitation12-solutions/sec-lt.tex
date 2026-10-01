@@ -1,0 +1,165 @@
+\section{Linear Transformations}
+
+\subsection{Q1. Definition}
+
+\begin{promptbox}
+State the definition of a linear transformation.
+\end{promptbox}
+
+\begin{coursebox}
+\begin{definition*}
+A map $T:V\to W$ is a \emph{linear transformation} if
+\[
+T(a\vv+b\ww)=a\,T(\vv)+b\,T(\ww)
+\qquad\text{for all }\vv,\ww\in V\text{ and all }a,b\in\F.
+\]
+Equivalently: $T(\vv+\ww)=T(\vv)+T(\ww)$ and $T(a\vv)=a\,T(\vv)$.
+\end{definition*}
+\end{coursebox}
+
+\subsection{Q2. $T(\zero_V)=\zero_W$}
+
+\begin{promptbox}
+Prove that $T(\zero_V)=\zero_W$.
+\end{promptbox}
+
+\begin{coursebox}
+\[
+T(\zero_V)=T(\zero_V+\zero_V)=T(\zero_V)+T(\zero_V).
+\]
+Cancellation (Fields Q4) yields $T(\zero_V)=\zero_W$.
+
+Alternatively, $T(\zero_V)=T(0\cdot\zero_V)=0\cdot T(\zero_V)=\zero_W$.
+\end{coursebox}
+
+\subsection{Q3. Unique linear map sending a basis to prescribed vectors}
+
+\begin{promptbox}
+If $\vv_1,\ldots,\vv_n$ are a basis for $V$ and $\ww_1,\ldots,\ww_n\in W$, there
+exists a unique linear transformation $T:V\to W$ with $T(\vv_i)=\ww_i$ for all
+$i\in[n]$.
+\end{promptbox}
+
+\begin{coursebox}
+\textbf{Existence.}
+Each $\vv\in V$ may be written uniquely as $\vv=\sum_{i=1}^n a_i\vv_i$. Define
+\[
+T(\vv):=\sum_{i=1}^n a_i\ww_i.
+\]
+If $\vv=\sum a_i\vv_i$ and $\vec{u}=\sum b_i\vv_i$, then
+$c\vv+d\vec{u}=\sum(ca_i+db_i)\vv_i$, so
+\[
+T(c\vv+d\vec{u})=\sum(ca_i+db_i)\ww_i=c\,T(\vv)+d\,T(\vec{u}).
+\]
+By construction $T(\vv_i)=\ww_i$.
+
+\textbf{Uniqueness.}
+If $S$ is linear and $S(\vv_i)=\ww_i$, then for $\vv=\sum a_i\vv_i$,
+\[
+S(\vv)=\sum a_i S(\vv_i)=\sum a_i\ww_i=T(\vv).
+\]
+\end{coursebox}
+
+\begin{laterbox}
+In matrix language (next section): the unique $T$ is the map whose matrix
+$[T]_{\cC\cB}$ has $j$th column $[\ww_j]_{\cC}$, for any basis $\cC$ of $W$.
+Uniqueness is the statement that a linear map is determined by its matrix.
+\end{laterbox}
+
+\subsection{Q4. Coordinates $[\vv]_{\cB}$}
+
+\begin{promptbox}
+Define $[\vv]_{\cB}$ (where $\cB$ is a basis for $V$) and prove that
+$\vv\mapsto[\vv]_{\cB}$ is an invertible linear transformation.
+\end{promptbox}
+
+\begin{coursebox}
+Let $\cB=(\bb_1,\ldots,\bb_n)$ be a basis of $V$. Every $\vv\in V$ may be written
+uniquely as $\vv=\sum_{i=1}^n a_i\bb_i$. Define
+\[
+[\vv]_{\cB}:=\begin{pmatrix}a_1\\\vdots\\a_n\end{pmatrix}\in\F^n.
+\]
+
+Let $\Phi_{\cB}:V\to\F^n$ by $\Phi_{\cB}(\vv)=[\vv]_{\cB}$.
+
+\textbf{Linearity.}
+If $\vv=\sum a_i\bb_i$ and $\ww=\sum c_i\bb_i$, then
+$r\vv+s\ww=\sum(ra_i+sc_i)\bb_i$, so
+$[\ r\vv+s\ww\ ]_{\cB}=r[\vv]_{\cB}+s[\ww]_{\cB}$.
+
+\textbf{Invertibility.}
+$\Phi_{\cB}$ is bijective because each coordinate tuple corresponds to exactly
+one linear combination of $\cB$. Explicitly, the inverse is
+\[
+\Phi_{\cB}^{-1}:\F^n\to V,\qquad
+\begin{pmatrix}a_1\\\vdots\\a_n\end{pmatrix}\mapsto\sum_{i=1}^n a_i\bb_i,
+\]
+which is linear (it is the unique map sending the standard basis vector $e_i$
+to $\bb_i$, by Q3). Thus $\Phi_{\cB}$ is an invertible linear transformation,
+i.e.\ an isomorphism $V\cong\F^n$.
+\end{coursebox}
+
+\subsection{Q5. Surjectivity iff the image of a basis spans}
+
+\begin{promptbox}
+Let $\cB\subseteq V$ be a basis. Prove that $T:V\to W$ is surjective iff
+$T(\bb_1),\ldots,T(\bb_n)$ spans $W$.
+\end{promptbox}
+
+\begin{coursebox}
+Let $\cB=(\bb_1,\ldots,\bb_n)$. For any $\vv=\sum a_i\bb_i$,
+\[
+T(\vv)=\sum a_i T(\bb_i),
+\]
+so
+\[
+\im(T)=\operatorname{Span}\bigl(T(\bb_1),\ldots,T(\bb_n)\bigr).
+\]
+Therefore $T$ is surjective iff $\im(T)=W$ iff $T(\bb_1),\ldots,T(\bb_n)$ spans $W$.
+\end{coursebox}
+
+\subsection{Q6. Injectivity iff the image of a basis is independent}
+
+\begin{promptbox}
+Prove that $T:V\to W$ is injective iff $T(\bb_1),\ldots,T(\bb_n)$ is linearly
+independent.
+\end{promptbox}
+
+\begin{coursebox}
+($\Rightarrow$).
+Suppose $T$ is injective and $\sum a_i T(\bb_i)=\zero$. Then
+$T\bigl(\sum a_i\bb_i\bigr)=\zero$, so $\sum a_i\bb_i\in\ker T=\{\zero\}$
+(injective linear maps have trivial kernel: if $T(\vv)=T(\ww)$ then
+$T(\vv-\ww)=\zero$, so $\vv-\ww=\zero$). Independence of $\cB$ forces every
+$a_i=0$. Thus $\bigl(T(\bb_i)\bigr)$ is independent.
+
+($\Leftarrow$).
+Suppose $\bigl(T(\bb_i)\bigr)$ is independent and $T(\vv)=\zero$. Write
+$\vv=\sum a_i\bb_i$. Then $\sum a_i T(\bb_i)=\zero$, so every $a_i=0$, hence
+$\vv=\zero$. Thus $\ker T=\{\zero\}$, so $T$ is injective.
+\end{coursebox}
+
+\begin{laterbox}
+After rank-nullity: $T$ is injective iff $\dim\ker T=0$ iff
+$\dim\im(T)=\dim V=n$ iff the $n$ vectors $T(\bb_i)$ are independent in $W$
+(an independent list of length $\dim\im(T)$ is a basis of the image).
+\end{laterbox}
+
+\subsection{Q7. Bijectivity iff the image of a basis is a basis}
+
+\begin{promptbox}
+Prove that $T:V\to W$ is bijective iff $T(\bb_1),\ldots,T(\bb_n)$ is a basis for $W$.
+\end{promptbox}
+
+\begin{coursebox}
+$T$ is bijective iff $T$ is injective and surjective iff
+$\bigl(T(\bb_i)\bigr)$ is linearly independent (Q6) and spanning (Q5) iff
+$\bigl(T(\bb_i)\bigr)$ is a basis of $W$.
+\end{coursebox}
+
+\begin{laterbox}
+If you already know $\dim W=n=\dim V$, any two of independent / spanning /
+basis for the list $\bigl(T(\bb_i)\bigr)$ are equivalent, matching the later
+fact that injectivity, surjectivity, and bijectivity coincide when
+$\dim V=\dim W<\infty$.
+\end{laterbox}
