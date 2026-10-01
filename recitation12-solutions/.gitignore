@@ -1,5 +1,7 @@
 build/
 questions/
+__pycache__/
+*.pyc
 *.aux
 *.log
 *.out
